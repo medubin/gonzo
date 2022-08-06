@@ -1,0 +1,27 @@
+type UserID string
+
+type User {
+  Id UserID
+  Name string
+}
+
+type TestRequest {
+  Message string
+  Count int
+  Many []string
+  User User
+  Users []User
+}
+
+type TestHeader {
+  ID string
+  SessionToken string
+}
+
+type TestResponse {
+  User User
+}
+
+Server {
+  POST url/to/use Test body(TestRequest) returns(TestResponse)
+}
