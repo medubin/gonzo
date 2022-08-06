@@ -24,4 +24,6 @@ type TestResponse {
 
 Server {
   POST url/to/use Test body(TestRequest) returns(TestResponse)
+  GET url/to/get TestGet returns(TestResponse)
+  PUT url/that/returns/nothing TestNothing
 }

@@ -10,7 +10,19 @@ import (
 	"strings"
 )
 
-var re = regexp.MustCompile(`(?mi)^(?P<t>return|body)\((?P<v>[a-zA-Z]+)\)$`)
+var re = regexp.MustCompile(`(?mi)^(?P<t>returns|body)\((?P<v>[a-zA-Z]+)\)$`)
+
+// type Items struct {
+// 	items    []string
+// 	position int
+// }
+
+// func InitItems(items []string) Items {
+// 	return Items{
+// 		items:    items,
+// 		position: 0,
+// 	}
+// }
 
 func GenerateAPI(name string) (string, error) {
 	items, err := ParseFile(name)
@@ -112,22 +124,25 @@ func GenerateOutput(items []string) string {
 			i++
 			//  url := items[i]
 			i++
-			// name := items[i]
-			// for i+1 < len(items) && strings.Contains(items[i+1], "(") && strings.HasSuffix(items[i+1], ")") {
-			// if err := s.Err(); err != nil {
-			// returnValue:=
+			name := items[i]
+
+			returns := ""
+			parameters := []string{}
 			for i < len(items) {
-				match := re.FindStringSubmatch(items[i+1]);
+				match := re.FindStringSubmatch(items[i+1])
 				if match == nil {
 					break
 				}
 				parName := match[1]
 				parType := match[2]
-
-				println(parName)
-				println(parType)
+				if parName == "returns" {
+					returns = parType
+				} else {
+					parameters = append(parameters, fmt.Sprintf("%s %s", parName, parType))
+				}
 				i++
 			}
+			t.WriteString(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
 
 			// }
 			// subItems := strings.Split(items[i+1], "(")

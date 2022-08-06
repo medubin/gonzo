@@ -14,12 +14,27 @@ type User struct {
 	Name string
 }
 
-type TaskRequest struct {
+type TestRequest struct {
 	Message string
 	Count   int
 	Many    []string
 	User    User
 	Users   []User
+}
+
+type TestHeader struct {
+	ID           string
+	SessionToken string
+}
+
+type TestResponse struct {
+	User User
+}
+
+type Server interface {
+	Test(body TestRequest) TestResponse
+	TestGet() TestResponse
+	TestNothing()
 }
 
 `
