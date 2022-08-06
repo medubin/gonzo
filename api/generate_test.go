@@ -7,7 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const expectdOutput = `type UserID string
+const expectdOutput = `mux.HandleFunc("url/to/use", utils.Handle(server.Test))
+mux.HandleFunc("url/to/get", utils.Handle(server.TestGet))
+mux.HandleFunc("url/that/returns/nothing", utils.Handle(server.TestNothing))
+
+type UserID string
 
 type User struct {
 	Id   UserID
@@ -35,8 +39,7 @@ type Server interface {
 	Test(body TestRequest) TestResponse
 	TestGet() TestResponse
 	TestNothing()
-}
-`
+}`
 
 func TestMain(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {

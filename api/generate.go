@@ -45,21 +45,49 @@ func InitItems(items []string) Items {
 }
 
 type Output struct {
+	InStruct        bool
+	InServer        bool
 	variables       []string
 	currentVariable string
+	server          []string
 }
 
 func (o *Output) Add(line string) {
 	o.currentVariable += line
 }
 
+func (o *Output) AddStruct(name string) {
+	o.Add(fmt.Sprintf("type %s struct {\n", name))
+}
+
+func (o *Output) AddAlias(name string, typeName string) {
+	o.Add(fmt.Sprintf("type %s %s\n", name, typeName))
+}
+
+func (o *Output) AddStructField(name string, typeName string) {
+	o.Add(fmt.Sprintf("%s %s\n", name, typeName))
+}
+
+func (o *Output) AddEndpoint(verb string, url string, name string, parameters []string, returns string) {
+	o.Add(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
+	o.server = append(o.server, fmt.Sprintf("mux.HandleFunc(\"%s\", utils.Handle(server.%s))", url, name))
+}
+
 func (o *Output) FinishVariable() {
+	o.InStruct = false
+	o.InServer = false
 	o.variables = append(o.variables, o.currentVariable)
 	o.currentVariable = ""
 }
 
 func (o *Output) String() string {
-	return strings.Join(o.variables, "\n")
+	if o.currentVariable != "" {
+		panic("AAA")
+	}
+	variables := strings.Join(o.variables, "\n\n")
+	server := strings.Join(o.server, "\n")
+
+	return fmt.Sprintf("%s\n\n%s", server, variables)
 }
 
 func GenerateAPI(name string) (string, error) {
@@ -108,19 +136,12 @@ func itemize(s *bufio.Scanner) ([]string, error) {
 
 func GenerateOutput(items Items) string {
 	output := Output{}
-	inStruct := false
-	inServer := false
-
-	// Server function
-	// var s bytes.Buffer
 
 	for items.ValidPosition() {
 		item := items.Item()
 
 		if item == "}" {
-			inStruct = false
-			inServer = false
-			output.Add(fmt.Sprintf("}\n"))
+			output.Add("}")
 			output.FinishVariable()
 
 			// Lines that start with "type" should always have 3 items
@@ -128,21 +149,20 @@ func GenerateOutput(items Items) string {
 			name := items.NextItem()
 			typeName := items.NextItem()
 			if typeName == "{" {
-				inStruct = true
-				typeName = "struct {"
-				output.Add(fmt.Sprintf("%s %s %s\n", item, name, typeName))
+				output.InStruct = true
+				output.AddStruct(name)
 			} else {
-				output.Add(fmt.Sprintf("%s %s %s\n", item, name, typeName))
+				output.AddAlias(name, typeName)
 				output.FinishVariable()
 			}
 			// fields in structs should have 2 items
-		} else if inStruct {
+		} else if output.InStruct {
 			typeName := items.NextItem()
-			output.Add(fmt.Sprintf("%s %s\n", item, typeName))
+			output.AddStructField(item, typeName)
 			// Server setup contains 2 items
 		} else if item == "Server" {
 			output.Add("type Server interface {\n")
-			inServer = true
+			output.InServer = true
 			items.Next()
 			// Server can have a variable amount of items
 			// The first 3 are HTTP verb (POST, GET, PUT, PATCH, and DELETE), url, and function name
@@ -150,10 +170,9 @@ func GenerateOutput(items Items) string {
 			// current types: body, header, returns
 			// example: body(TestBody)
 			// TODO allow for more then body and return
-		} else if inServer {
-			//  verb := item
-			items.Next()
-			//  url := items[i]
+		} else if output.InServer {
+			verb := item
+			url := items.NextItem()
 			name := items.NextItem()
 
 			returns := ""
@@ -172,7 +191,7 @@ func GenerateOutput(items Items) string {
 				}
 				items.Next()
 			}
-			output.Add(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
+			output.AddEndpoint(verb, url, name, parameters, returns)
 
 		} else {
 			panic("AHHH")
