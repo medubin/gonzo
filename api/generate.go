@@ -2,7 +2,6 @@ package api
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"go/format"
 	"os"
@@ -12,23 +11,63 @@ import (
 
 var re = regexp.MustCompile(`(?mi)^(?P<t>returns|body)\((?P<v>[a-zA-Z]+)\)$`)
 
-// type Items struct {
-// 	items    []string
-// 	position int
-// }
+type Items struct {
+	items    []string
+	position int
+}
 
-// func InitItems(items []string) Items {
-// 	return Items{
-// 		items:    items,
-// 		position: 0,
-// 	}
-// }
+func (i *Items) ValidPosition() bool {
+	return i.position < len(i.items)
+}
+
+func (i *Items) Item() string {
+	return i.items[i.position]
+}
+
+func (i *Items) Next() {
+	i.position++
+}
+
+func (i *Items) NextItem() string {
+	i.Next()
+	return i.Item()
+}
+
+func (i *Items) PeekItem() string {
+	return i.items[i.position+1]
+}
+
+func InitItems(items []string) Items {
+	return Items{
+		items:    items,
+		position: 0,
+	}
+}
+
+type Output struct {
+	variables       []string
+	currentVariable string
+}
+
+func (o *Output) Add(line string) {
+	o.currentVariable += line
+}
+
+func (o *Output) FinishVariable() {
+	o.variables = append(o.variables, o.currentVariable)
+	o.currentVariable = ""
+}
+
+func (o *Output) String() string {
+	return strings.Join(o.variables, "\n")
+}
 
 func GenerateAPI(name string) (string, error) {
-	items, err := ParseFile(name)
+	i, err := ParseFile(name)
 	if err != nil {
 		return "", err
 	}
+	items := InitItems(i)
 	output := GenerateOutput(items)
 
 	formattedOutput, err := format.Source([]byte(output))
@@ -67,52 +106,44 @@ func itemize(s *bufio.Scanner) ([]string, error) {
 	return items, nil
 }
 
-func GenerateOutput(items []string) string {
-	indentation := ""
+func GenerateOutput(items Items) string {
+	output := Output{}
 	inStruct := false
 	inServer := false
-
-	// types
-	var t bytes.Buffer
 
 	// Server function
 	// var s bytes.Buffer
 
-	i := 0
-	for i < len(items) {
-		item := items[i]
+	for items.ValidPosition() {
+		item := items.Item()
 
 		if item == "}" {
-			indentation = indentation[2:]
 			inStruct = false
 			inServer = false
-			t.WriteString(fmt.Sprintf("%s}\n\n", indentation))
+			output.Add(fmt.Sprintf("}\n"))
+			output.FinishVariable()
 
 			// Lines that start with "type" should always have 3 items
 		} else if item == "type" {
-			i++
-			name := items[i]
-			i++
-			typeName := items[i]
+			name := items.NextItem()
+			typeName := items.NextItem()
 			if typeName == "{" {
-				indentation += "  "
 				inStruct = true
 				typeName = "struct {"
+				output.Add(fmt.Sprintf("%s %s %s\n", item, name, typeName))
 			} else {
-				typeName = typeName + "\n"
+				output.Add(fmt.Sprintf("%s %s %s\n", item, name, typeName))
+				output.FinishVariable()
 			}
-			t.WriteString(fmt.Sprintf("%s %s %s\n", item, name, typeName))
 			// fields in structs should have 2 items
 		} else if inStruct {
-			i++
-			typeName := items[i]
-			t.WriteString(fmt.Sprintf("%s%s %s\n", indentation, item, typeName))
+			typeName := items.NextItem()
+			output.Add(fmt.Sprintf("%s %s\n", item, typeName))
 			// Server setup contains 2 items
 		} else if item == "Server" {
-			t.WriteString("type Server interface { \n")
+			output.Add("type Server interface {\n")
 			inServer = true
-			indentation += "  "
-			i++
+			items.Next()
 			// Server can have a variable amount of items
 			// The first 3 are HTTP verb (POST, GET, PUT, PATCH, and DELETE), url, and function name
 			// followed by key value pairs in the form of name(type)
@@ -121,15 +152,14 @@ func GenerateOutput(items []string) string {
 			// TODO allow for more then body and return
 		} else if inServer {
 			//  verb := item
-			i++
+			items.Next()
 			//  url := items[i]
-			i++
-			name := items[i]
+			name := items.NextItem()
 
 			returns := ""
 			parameters := []string{}
-			for i < len(items) {
-				match := re.FindStringSubmatch(items[i+1])
+			for items.ValidPosition() {
+				match := re.FindStringSubmatch(items.PeekItem())
 				if match == nil {
 					break
 				}
@@ -140,100 +170,14 @@ func GenerateOutput(items []string) string {
 				} else {
 					parameters = append(parameters, fmt.Sprintf("%s %s", parName, parType))
 				}
-				i++
+				items.Next()
 			}
-			t.WriteString(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
-
-			// }
-			// subItems := strings.Split(items[i+1], "(")
-			// for i, match := range re.FindStringSubmatch(items[i+1]) {
-			// 	fmt.Println(match, "found at index", i)
-			// }
-			// i++
-			// }
+			output.Add(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
 
 		} else {
 			panic("AHHH")
 		}
-		i++
+		items.Next()
 	}
-	return t.String()
+	return output.String()
 }
-
-// // func generateOutput(items []string) {
-// // 	indentation := ""
-// // 	inType := false
-// // 	nameGiven := false
-
-// // 	var b bytes.Buffer
-// // 	for _, item := range items {
-// // 		if item == "{" {
-// // 			toWrite := item
-// // 			if inType {
-// // 				toWrite = "struct " + item
-// // 			}
-// // 			b.WriteString(fmt.Sprintf("%s%s\n", indentation, toWrite))
-// // 			indentation += "  "
-// // 		} else if item == "}" {
-// // 			b.WriteString(fmt.Sprintf("%s%s\n\n", indentation, item))
-// // 			indentation = indentation[2:]
-// // 			inType = false
-// // 		} else if item == "type" {
-// // 			inType = true
-// // 			b.WriteString(fmt.Sprintf("%s%s ", indentation, item))
-// // 		} else if inType && nameGiven {
-// // 			b.WriteString(fmt.Sprintf("%s%s\n", indentation, item))
-// // 			nameGiven = false
-// // 		} else if inType {
-// // 			nameGiven = true
-// // 			b.WriteString(fmt.Sprintf("%s%s ", indentation, item))
-// // 		} else {
-// // 			b.WriteString(fmt.Sprintf("%s%s\n", indentation, item))
-// // 		}
-
-// // 	}
-// // 	println(b.String())
-// // }
-
-// func readFile(s *bufio.Scanner) {
-// 	identation := 0
-// 	var b bytes.Buffer
-// 	for s.Scan() {
-// 		line := strings.TrimSpace(s.Text())
-// 		if len(line) == 0 {
-// 			continue
-// 		}
-
-// 		if strings.HasSuffix(line, "{") {
-// 			identation++
-// 		}
-
-// 		if strings.HasPrefix(line, "type") {
-// 			name, varType := parseType(line)
-// 			b.WriteString(fmt.Sprintf("type %s %s\n", name, varType))
-// 		} else if line == "}" {
-// 			b.WriteString("}\n")
-// 		} else {
-// 			b.WriteString(fmt.Sprintf("  %s\n", line))
-// 		}
-
-// 		if strings.HasSuffix(line, "}") {
-// 			identation--
-// 			b.WriteString("\n")
-// 		}
-// 	}
-// 	println(b.String())
-// }
-
-// func parseType(line string) (string, string) {
-// 	items := strings.Split(line, " ")
-
-// 	name, varType := items[1], items[2]
-
-// 	if varType == "{" {
-// 		varType = "struct {"
-// 	}
-
-// 	return name, varType
-
-// }

@@ -36,7 +36,6 @@ type Server interface {
 	TestGet() TestResponse
 	TestNothing()
 }
-
 `
 
 func TestMain(t *testing.T) {
