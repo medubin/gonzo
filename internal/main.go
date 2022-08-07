@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/medubin/gonzo/internal/server"
+	"github.com/medubin/gonzo/internal/utils"
 	"github.com/medubin/gonzo/router"
-	// "github.com/medubin/gonzo/internal/server"
-	// "github.com/medubin/gonzo/internal/utils"
 )
 
 func main() {
@@ -22,11 +22,11 @@ func main() {
 	r.Route(http.MethodGet, "/panic", func(w http.ResponseWriter, r *http.Request) {
 		panic("something bad happened!")
 	})
+	r.Route(http.MethodGet, "/task/", utils.Handle(server.ServeIt))
 	http.ListenAndServe(":8080", r)
 
 	// s := server.NewServer()
 	// mux := http.NewServeMux()
-	// mux.HandleFunc("/task/", utils.Handle(server.ServeIt))
 
 	// log.Fatal(http.ListenAndServe("localhost:8080", mux))
 
