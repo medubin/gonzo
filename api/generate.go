@@ -21,7 +21,10 @@ func (i *Items) ValidPosition() bool {
 }
 
 func (i *Items) Item() string {
-	return i.items[i.position]
+	if i.ValidPosition() {
+		return i.items[i.position]
+	}
+	panic("AHHH")
 }
 
 func (i *Items) Next() {
@@ -34,7 +37,10 @@ func (i *Items) NextItem() string {
 }
 
 func (i *Items) PeekItem() string {
-	return i.items[i.position+1]
+	if i.position+1 < len(i.items) {
+		return i.items[i.position+1]
+	}
+	panic("AHH")
 }
 
 func InitItems(items []string) Items {
