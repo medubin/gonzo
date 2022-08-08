@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var re = regexp.MustCompile(`(?mi)^(?P<t>returns|body)\((?P<v>[a-zA-Z]+)\)$`)
+var re = regexp.MustCompile(`(?mi)^(?P<t>body|header|getcookie|returns|setcookie)\((?P<v>[a-zA-Z]+)\)$`)
 
 type Items struct {
 	items    []string
@@ -24,7 +24,7 @@ func (i *Items) Item() string {
 	if i.ValidPosition() {
 		return i.items[i.position]
 	}
-	panic("AHHH")
+	panic("Error: Outside of valid position")
 }
 
 func (i *Items) Next() {
@@ -40,7 +40,7 @@ func (i *Items) PeekItem() string {
 	if i.position+1 < len(i.items) {
 		return i.items[i.position+1]
 	}
-	panic("AHH")
+	panic("Error: Peeked outside of Valid Position")
 }
 
 func InitItems(items []string) Items {
@@ -56,6 +56,17 @@ type Output struct {
 	variables       []string
 	currentVariable string
 	server          []string
+}
+
+type CurrentServer struct {
+	Verb      string
+	Url       string
+	Name      string
+	Body      string
+	Header    string
+	SetCookie string
+	Return    string
+	GetCookie string
 }
 
 func (o *Output) Add(line string) {
@@ -74,9 +85,31 @@ func (o *Output) AddStructField(name string, typeName string) {
 	o.Add(fmt.Sprintf("%s %s\n", name, typeName))
 }
 
-func (o *Output) AddEndpoint(verb string, url string, name string, parameters []string, returns string) {
-	o.Add(fmt.Sprintf("%s(%s) %s\n", name, strings.Join(parameters, ", "), returns))
-	o.server = append(o.server, fmt.Sprintf("mux.HandleFunc(\"%s\", utils.Handle(server.%s))", url, name))
+func (o *Output) AddEndpoint(server CurrentServer) {
+	parameters := []string{}
+	if server.Header != "" {
+		parameters = append(parameters, fmt.Sprintf("header %s", server.Header))
+	}
+	if server.Body != "" {
+		parameters = append(parameters, fmt.Sprintf("body %s", server.Body))
+	}
+	if server.GetCookie != "" {
+		parameters = append(parameters, fmt.Sprintf("cookie %s", server.GetCookie))
+	}
+	returns := []string{}
+	if server.Return != "" {
+		returns = append(returns, server.Return)
+	}
+
+	if server.SetCookie != "" {
+		returns = append(returns, server.SetCookie)
+	}
+
+	// Can always return an error
+	returns = append(returns, "error")
+
+	o.Add(fmt.Sprintf("%s(%s) (%s)\n", server.Name, strings.Join(parameters, ", "), strings.Join(returns, ", ")))
+	o.server = append(o.server, fmt.Sprintf("mux.HandleFunc(\"%s\", utils.Handle(server.%s))", server.Url, server.Name))
 }
 
 func (o *Output) FinishVariable() {
@@ -88,7 +121,7 @@ func (o *Output) FinishVariable() {
 
 func (o *Output) String() string {
 	if o.currentVariable != "" {
-		panic("AAA")
+		panic("Ended run with current variable still full")
 	}
 	variables := strings.Join(o.variables, "\n\n")
 	server := strings.Join(o.server, "\n")
@@ -173,16 +206,15 @@ func GenerateOutput(items Items) string {
 			// Server can have a variable amount of items
 			// The first 3 are HTTP verb (POST, GET, PUT, PATCH, and DELETE), url, and function name
 			// followed by key value pairs in the form of name(type)
-			// current types: body, header, returns
+			// current types: body, setcookie, header, returns, getcookie
 			// example: body(TestBody)
 			// TODO allow for more then body and return
 		} else if output.InServer {
-			verb := item
-			url := items.NextItem()
-			name := items.NextItem()
+			server := CurrentServer{}
+			server.Verb = item
+			server.Url = items.NextItem()
+			server.Name = items.NextItem()
 
-			returns := ""
-			parameters := []string{}
 			for items.ValidPosition() {
 				match := re.FindStringSubmatch(items.PeekItem())
 				if match == nil {
@@ -191,13 +223,21 @@ func GenerateOutput(items Items) string {
 				parName := match[1]
 				parType := match[2]
 				if parName == "returns" {
-					returns = parType
+					server.Return = parType
+				} else if parName == "setcookie" {
+					server.SetCookie = parType
+				} else if parName == "body" {
+					server.Body = parType
+				} else if parName == "header" {
+					server.Header = parName
+				} else if parName == "getcookie" {
+					server.GetCookie = parType
 				} else {
-					parameters = append(parameters, fmt.Sprintf("%s %s", parName, parType))
+					panic(fmt.Sprintf("Invalid type: %s", parName))
 				}
 				items.Next()
 			}
-			output.AddEndpoint(verb, url, name, parameters, returns)
+			output.AddEndpoint(server)
 
 		} else {
 			panic("AHHH")

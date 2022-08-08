@@ -7,38 +7,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const expectdOutput = `mux.HandleFunc("url/to/use", utils.Handle(server.Test))
-mux.HandleFunc("url/to/get", utils.Handle(server.TestGet))
-mux.HandleFunc("url/that/returns/nothing", utils.Handle(server.TestNothing))
+const expectdOutput = `mux.HandleFunc("user/new", utils.Handle(server.Signup))
+mux.HandleFunc("session/new", utils.Handle(server.SignIn))
 
 type UserID string
 
 type User struct {
-	Id   UserID
-	Name string
+	ID    UserID
+	Name  string
+	Email string
 }
 
-type TestRequest struct {
-	Message string
-	Count   int
-	Many    []string
-	User    User
-	Users   []User
+type Session struct {
+	UserID UserID
+	Token  string
 }
 
-type TestHeader struct {
-	ID           string
-	SessionToken string
+type SignupBody struct {
+	User     User
+	Password string
 }
 
-type TestResponse struct {
+type SignupResponse struct {
 	User User
 }
 
+type SignInBody struct {
+	UserID   UserID
+	Password string
+}
+
+type SignInResponse struct {
+	Session Session
+}
+
 type Server interface {
-	Test(body TestRequest) TestResponse
-	TestGet() TestResponse
-	TestNothing()
+	Signup(body SignupBody) (SignupResponse, Session, error)
+	SignIn(body SignInBody) (SignInResponse, Session, error)
 }`
 
 func TestMain(t *testing.T) {

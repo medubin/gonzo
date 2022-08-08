@@ -7,7 +7,7 @@ type User struct {
   Name string
 }
 
-type TaskRequest struct {
+type TestBody struct {
   Message string
   Count int
   Many []string
@@ -16,5 +16,5 @@ type TaskRequest struct {
 }
 
 type Server interface {
-	Test(TaskRequest) User
+	Test(TestBody) User
 }

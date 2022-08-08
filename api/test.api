@@ -1,29 +1,35 @@
 type UserID string
 
 type User {
-  Id UserID
+  ID UserID
   Name string
+  Email string
 }
 
-type TestRequest {
-  Message string
-  Count int
-  Many []string
+type Session {
+  UserID UserID
+  Token string
+}
+
+type SignupBody {
   User User
-  Users []User
+  Password string
 }
 
-type TestHeader {
-  ID string
-  SessionToken string
-}
-
-type TestResponse {
+type SignupResponse {
   User User
+}
+
+type SignInBody {
+  UserID UserID
+  Password string
+}
+
+type SignInResponse {
+  Session Session
 }
 
 Server {
-  POST url/to/use Test body(TestRequest) returns(TestResponse)
-  GET url/to/get TestGet returns(TestResponse)
-  PUT url/that/returns/nothing TestNothing
+  POST user/new Signup body(SignupBody) returns(SignupResponse) setcookie(Session)
+  POST session/new SignIn body(SignInBody) returns(SignInResponse) setcookie(Session)
 }
