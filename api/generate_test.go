@@ -7,11 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const expectdOutput = `package api
+const expectdOutput = `package server
 
 import (
 	"context"
-	"net/http"
+
+	"github.com/medubin/gonzo/router"
 )
 
 type UserID string
@@ -46,8 +47,13 @@ type SignInResponse struct {
 }
 
 type Server interface {
-	Signup(ctx context.Context, body SignupBody, cookie http.CookieJar) (SignupResponse, error)
-	SignIn(ctx context.Context, body SignInBody, cookie http.CookieJar) (SignInResponse, error)
+	Signup(ctx context.Context, body SignupBody, cookie router.Cookies) (*SignupResponse, error)
+	SignIn(ctx context.Context, body SignInBody, cookie router.Cookies) (*SignInResponse, error)
+}
+
+func StartServer(s Server, r *router.Router) {
+	r.Route("POST", "/user/new", router.Handle(s.Signup))
+	r.Route("POST", "/session/new", router.Handle(s.SignIn))
 }
 `
 

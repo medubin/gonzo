@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -38,11 +38,11 @@ type SignInResponse struct {
 }
 
 type Server interface {
-	Signup(ctx context.Context, body SignupBody, cookie router.Cookies) (SignupResponse, error)
-	SignIn(ctx context.Context, body SignInBody, cookie router.Cookies) (SignInResponse, error)
+	Signup(ctx context.Context, body SignupBody, cookie router.Cookies) (*SignupResponse, error)
+	SignIn(ctx context.Context, body SignInBody, cookie router.Cookies) (*SignInResponse, error)
 }
 
 func StartServer(s Server, r *router.Router) {
-	r.Route("POST", "user/new", router.Handle(s.Signup))
-	r.Route("POST", "session/new", router.Handle(s.SignIn))
+	r.Route("POST", "/user/new", router.Handle(s.Signup))
+	r.Route("POST", "/session/new", router.Handle(s.SignIn))
 }

@@ -59,11 +59,11 @@ type Output struct {
 }
 
 type Endpoint struct {
-	Verb      string
-	Url       string
-	Name      string
-	Body      string
-	Return    string
+	Verb   string
+	Url    string
+	Name   string
+	Body   string
+	Return string
 }
 
 type Variable struct {
@@ -76,7 +76,7 @@ func (v *Variable) String() string {
 	variable := fmt.Sprintf("type %s %s\n", v.Name, v.Type)
 	for i, f := range v.Fields {
 		variable += f
-		if i % 2 != 0 {
+		if i%2 != 0 {
 			variable += "\n"
 		} else {
 			variable += " "
@@ -93,15 +93,15 @@ func (v *Variable) String() string {
 
 func (e *Endpoint) String() string {
 	parameters := []string{"ctx context.Context"}
-	
+
 	if e.Body != "" {
 		parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
 	}
 
-	parameters = append(parameters, "cookie http.CookieJar")
+	parameters = append(parameters, "cookie router.Cookies")
 	returns := []string{}
 	if e.Return != "" {
-		returns = append(returns, e.Return)
+		returns = append(returns, "*" + e.Return)
 	}
 
 	// Can always return an error
@@ -151,10 +151,11 @@ func (o *Output) FinishVariable() {
 }
 
 func (o *Output) Header() string {
-	return `package api
+	return `package server
 	import (
 		"context"
-		"net/http"
+
+		"github.com/medubin/gonzo/router"
 	)
 	`
 }
@@ -170,12 +171,15 @@ func (o *Output) String() string {
 	}
 
 	server := "type Server interface {\n"
+	serverInit := "func StartServer(s Server, r *router.Router) {"
 	for _, e := range o.endpoints {
 		server += e.String()
+		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", router.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
 	}
 	server += "}"
+	serverInit += "}"
 
-	return fmt.Sprintf("%s\n\n%s\n\n%s", o.Header(), variables, server)
+	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", o.Header(), variables, server, serverInit)
 }
 
 func GenerateAPI(name string) (string, error) {
@@ -195,7 +199,7 @@ func GenerateAPI(name string) (string, error) {
 }
 
 func WriteToFile(name string, output string) error {
-	return os.WriteFile(name+".go", []byte(output), 0644)
+	return os.WriteFile("../server/" + name + ".go", []byte(output), 0644)
 }
 
 func ParseFile(name string) ([]string, error) {
