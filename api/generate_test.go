@@ -7,8 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const expectdOutput = `mux.HandleFunc("user/new", utils.Handle(server.Signup))
-mux.HandleFunc("session/new", utils.Handle(server.SignIn))
+const expectdOutput = `package api
+
+import (
+	"context"
+	"net/http"
+)
 
 type UserID string
 
@@ -42,20 +46,23 @@ type SignInResponse struct {
 }
 
 type Server interface {
-	Signup(body SignupBody) (SignupResponse, Session, error)
-	SignIn(body SignInBody) (SignInResponse, Session, error)
-}`
+	Signup(ctx context.Context, body SignupBody, cookie http.CookieJar) (SignupResponse, error)
+	SignIn(ctx context.Context, body SignInBody, cookie http.CookieJar) (SignInResponse, error)
+}
+`
 
 func TestMain(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 
-		output, err := api.GenerateAPI("test.api")
+		output, err := api.GenerateAPI("test")
 		println(output)
 		assert.NoError(t, err)
 		assert.Equal(t, expectdOutput, output)
+		_ = api.WriteToFile("test", output)
+
 	})
 	t.Run("Nonexistent file", func(t *testing.T) {
-		output, err := api.GenerateAPI("bleh.api")
+		output, err := api.GenerateAPI("bleh")
 		assert.Error(t, err)
 		assert.Empty(t, output)
 	})

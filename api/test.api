@@ -30,6 +30,6 @@ type SignInResponse {
 }
 
 Server {
-  POST user/new Signup body(SignupBody) returns(SignupResponse) setcookie(Session)
-  POST session/new SignIn body(SignInBody) returns(SignInResponse) setcookie(Session)
+  POST user/new Signup body(SignupBody) returns(SignupResponse)
+  POST session/new SignIn body(SignInBody) returns(SignInResponse)
 }

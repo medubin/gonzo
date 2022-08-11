@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var re = regexp.MustCompile(`(?mi)^(?P<t>body|header|getcookie|returns|setcookie)\((?P<v>[a-zA-Z]+)\)$`)
+var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
 
 type Items struct {
 	items    []string
@@ -53,84 +53,133 @@ func InitItems(items []string) Items {
 type Output struct {
 	InStruct        bool
 	InServer        bool
-	variables       []string
-	currentVariable string
-	server          []string
+	variables       []Variable
+	currentVariable *Variable
+	endpoints       []Endpoint
 }
 
-type CurrentServer struct {
+type Endpoint struct {
 	Verb      string
 	Url       string
 	Name      string
 	Body      string
-	Header    string
-	SetCookie string
 	Return    string
-	GetCookie string
 }
 
-func (o *Output) Add(line string) {
-	o.currentVariable += line
+type Variable struct {
+	Name   string
+	Type   string
+	Fields []string
 }
 
-func (o *Output) AddStruct(name string) {
-	o.Add(fmt.Sprintf("type %s struct {\n", name))
-}
-
-func (o *Output) AddAlias(name string, typeName string) {
-	o.Add(fmt.Sprintf("type %s %s\n", name, typeName))
-}
-
-func (o *Output) AddStructField(name string, typeName string) {
-	o.Add(fmt.Sprintf("%s %s\n", name, typeName))
-}
-
-func (o *Output) AddEndpoint(server CurrentServer) {
-	parameters := []string{}
-	if server.Header != "" {
-		parameters = append(parameters, fmt.Sprintf("header %s", server.Header))
+func (v *Variable) String() string {
+	variable := fmt.Sprintf("type %s %s\n", v.Name, v.Type)
+	for i, f := range v.Fields {
+		variable += f
+		if i % 2 != 0 {
+			variable += "\n"
+		} else {
+			variable += " "
+		}
 	}
-	if server.Body != "" {
-		parameters = append(parameters, fmt.Sprintf("body %s", server.Body))
+	if len(v.Fields) > 0 {
+		variable += "}\n\n"
+	} else {
+		variable += "\n\n"
 	}
-	if server.GetCookie != "" {
-		parameters = append(parameters, fmt.Sprintf("cookie %s", server.GetCookie))
+	return variable
+
+}
+
+func (e *Endpoint) String() string {
+	parameters := []string{"ctx context.Context"}
+	
+	if e.Body != "" {
+		parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
 	}
+
+	parameters = append(parameters, "cookie http.CookieJar")
 	returns := []string{}
-	if server.Return != "" {
-		returns = append(returns, server.Return)
-	}
-
-	if server.SetCookie != "" {
-		returns = append(returns, server.SetCookie)
+	if e.Return != "" {
+		returns = append(returns, e.Return)
 	}
 
 	// Can always return an error
 	returns = append(returns, "error")
+	// return fmt.Sprintf("r.Route(\"%s\", \"%s\", router.Handle(server.%s))", e.Verb, e.Url, e.Name)
+	return fmt.Sprintf("%s(%s) (%s)\n", e.Name, strings.Join(parameters, ", "), strings.Join(returns, ", "))
+}
 
-	o.Add(fmt.Sprintf("%s(%s) (%s)\n", server.Name, strings.Join(parameters, ", "), strings.Join(returns, ", ")))
-	o.server = append(o.server, fmt.Sprintf("mux.HandleFunc(\"%s\", utils.Handle(server.%s))", server.Url, server.Name))
+func (o *Output) AddStruct(name string) {
+	if o.currentVariable != nil {
+		panic("Current Variable not empty")
+	}
+	o.currentVariable = &Variable{
+		Name: name,
+		Type: "struct {",
+	}
+}
+
+func (o *Output) AddAlias(name string, typeName string) {
+	if o.currentVariable != nil {
+		panic("Current Variable not empty")
+	}
+	o.currentVariable = &Variable{
+		Name: name,
+		Type: typeName,
+	}
+}
+
+func (o *Output) AddStructField(name string, typeName string) {
+	if o.currentVariable == nil {
+		panic(fmt.Sprintf("Current Variable empty. Tried adding %s %s", name, typeName))
+	}
+	o.currentVariable.Fields = append(o.currentVariable.Fields, name, typeName)
+}
+
+func (o *Output) AddEndpoint(e Endpoint) {
+	o.endpoints = append(o.endpoints, e)
 }
 
 func (o *Output) FinishVariable() {
 	o.InStruct = false
 	o.InServer = false
-	o.variables = append(o.variables, o.currentVariable)
-	o.currentVariable = ""
+	if o.currentVariable != nil {
+		o.variables = append(o.variables, *o.currentVariable)
+		o.currentVariable = nil
+	}
+}
+
+func (o *Output) Header() string {
+	return `package api
+	import (
+		"context"
+		"net/http"
+	)
+	`
 }
 
 func (o *Output) String() string {
-	if o.currentVariable != "" {
+	if o.currentVariable != nil {
 		panic("Ended run with current variable still full")
 	}
-	variables := strings.Join(o.variables, "\n\n")
-	server := strings.Join(o.server, "\n")
 
-	return fmt.Sprintf("%s\n\n%s", server, variables)
+	variables := ""
+	for _, v := range o.variables {
+		variables += v.String()
+	}
+
+	server := "type Server interface {\n"
+	for _, e := range o.endpoints {
+		server += e.String()
+	}
+	server += "}"
+
+	return fmt.Sprintf("%s\n\n%s\n\n%s", o.Header(), variables, server)
 }
 
 func GenerateAPI(name string) (string, error) {
-	i, err := ParseFile(name)
+	i, err := ParseFile(name + ".api")
 	if err != nil {
 		return "", err
 	}
@@ -141,8 +190,12 @@ func GenerateAPI(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(formattedOutput), nil
 
+	return string(formattedOutput), nil
+}
+
+func WriteToFile(name string, output string) error {
+	return os.WriteFile(name+".go", []byte(output), 0644)
 }
 
 func ParseFile(name string) ([]string, error) {
@@ -180,7 +233,6 @@ func GenerateOutput(items Items) string {
 		item := items.Item()
 
 		if item == "}" {
-			output.Add("}")
 			output.FinishVariable()
 
 			// Lines that start with "type" should always have 3 items
@@ -197,10 +249,10 @@ func GenerateOutput(items Items) string {
 			// fields in structs should have 2 items
 		} else if output.InStruct {
 			typeName := items.NextItem()
+
 			output.AddStructField(item, typeName)
 			// Server setup contains 2 items
 		} else if item == "Server" {
-			output.Add("type Server interface {\n")
 			output.InServer = true
 			items.Next()
 			// Server can have a variable amount of items
@@ -210,10 +262,10 @@ func GenerateOutput(items Items) string {
 			// example: body(TestBody)
 			// TODO allow for more then body and return
 		} else if output.InServer {
-			server := CurrentServer{}
-			server.Verb = item
-			server.Url = items.NextItem()
-			server.Name = items.NextItem()
+			e := Endpoint{}
+			e.Verb = item
+			e.Url = items.NextItem()
+			e.Name = items.NextItem()
 
 			for items.ValidPosition() {
 				match := re.FindStringSubmatch(items.PeekItem())
@@ -223,21 +275,15 @@ func GenerateOutput(items Items) string {
 				parName := match[1]
 				parType := match[2]
 				if parName == "returns" {
-					server.Return = parType
-				} else if parName == "setcookie" {
-					server.SetCookie = parType
+					e.Return = parType
 				} else if parName == "body" {
-					server.Body = parType
-				} else if parName == "header" {
-					server.Header = parName
-				} else if parName == "getcookie" {
-					server.GetCookie = parType
+					e.Body = parType
 				} else {
 					panic(fmt.Sprintf("Invalid type: %s", parName))
 				}
 				items.Next()
 			}
-			output.AddEndpoint(server)
+			output.AddEndpoint(e)
 
 		} else {
 			panic("AHHH")
