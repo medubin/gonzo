@@ -32,7 +32,6 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Uh oh!", http.StatusInternalServerError)
 		}
 	}()
-	println(len(rtr.routes))
 	
 	for _, e := range rtr.routes {
 		params := e.Match(r)
