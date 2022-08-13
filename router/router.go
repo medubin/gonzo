@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 type Router struct {
@@ -12,11 +13,13 @@ type Router struct {
 }
 
 func (rtr *Router) Route(method, path string, handlerFunc http.HandlerFunc) {
+	path = strings.TrimRight(path, "/")
+
 	// NOTE: ^ means start of string and $ means end. Without these,
 	//   we'll still match if the path has content before or after
 	//   the expression (/foo/bar/baz would match the "/bar" route).
-	exactPath := regexp.MustCompile("^" + path + "$")
-	
+	exactPath := regexp.MustCompile("^" + path + "/?$")
+
 	e := RouteEntry{
 		Method:      method,
 		Path:        exactPath,
@@ -32,7 +35,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Uh oh!", http.StatusInternalServerError)
 		}
 	}()
-	
+
 	for _, e := range rtr.routes {
 		params := e.Match(r)
 		if params == nil {
