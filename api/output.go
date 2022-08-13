@@ -72,7 +72,9 @@ func (o *Output) Header() string {
 	import (
 		"context"
 
-		"github.com/medubin/gonzo/router"
+		"github.com/medubin/gonzo/utils/cookies"
+		"github.com/medubin/gonzo/utils/router"
+		"github.com/medubin/gonzo/utils/handle"
 	)
 	`
 }
@@ -91,7 +93,7 @@ func (o *Output) String() string {
 	serverInit := "func StartServer(s Server, r *router.Router) {"
 	for _, e := range o.endpoints {
 		server += e.String()
-		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", router.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
+		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
 	}
 	server += "}"
 	serverInit += "}"
@@ -125,7 +127,7 @@ func (e *Endpoint) String() string {
 		parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
 	}
 
-	parameters = append(parameters, "cookie router.Cookies")
+	parameters = append(parameters, "cookie cookies.Cookies")
 	returns := []string{}
 	if e.Return != "" {
 		returns = append(returns, "*"+e.Return)

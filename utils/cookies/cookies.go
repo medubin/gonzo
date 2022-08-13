@@ -1,4 +1,4 @@
-package router
+package cookies
 
 import (
 	"net/http"
@@ -7,6 +7,10 @@ import (
 type Cookies struct {
 	r *http.Request
 	w http.ResponseWriter
+}
+
+func New(r *http.Request, w http.ResponseWriter) Cookies {
+	return Cookies{r, w}
 }
 
 func (c *Cookies) Get(name string) (*http.Cookie, error) {

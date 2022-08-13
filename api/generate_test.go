@@ -12,7 +12,9 @@ const expectdOutput = `package server
 import (
 	"context"
 
-	"github.com/medubin/gonzo/router"
+	"github.com/medubin/gonzo/utils/cookies"
+	"github.com/medubin/gonzo/utils/handle"
+	"github.com/medubin/gonzo/utils/router"
 )
 
 type UserID string
@@ -47,13 +49,13 @@ type SignInResponse struct {
 }
 
 type Server interface {
-	Signup(ctx context.Context, body SignupBody, cookie router.Cookies) (*SignupResponse, error)
-	SignIn(ctx context.Context, body SignInBody, cookie router.Cookies) (*SignInResponse, error)
+	Signup(ctx context.Context, body SignupBody, cookie cookies.Cookies) (*SignupResponse, error)
+	SignIn(ctx context.Context, body SignInBody, cookie cookies.Cookies) (*SignInResponse, error)
 }
 
 func StartServer(s Server, r *router.Router) {
-	r.Route("POST", "/user/new", router.Handle(s.Signup))
-	r.Route("POST", "/session/new", router.Handle(s.SignIn))
+	r.Route("POST", "/user/new", handle.Handle(s.Signup))
+	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
 }
 `
 

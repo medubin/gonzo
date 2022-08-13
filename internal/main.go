@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/medubin/gonzo/router"
+	"github.com/medubin/gonzo/utils/router"
 	"github.com/medubin/gonzo/server"
 )
 
