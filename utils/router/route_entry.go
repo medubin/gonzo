@@ -21,6 +21,9 @@ func (ent *RouteEntry) Match(r *http.Request) map[string]string {
 	params := make(map[string]string)
 	groupNames := ent.Path.SubexpNames()
 	for i, group := range match {
+		if groupNames[i] == "" {
+			continue
+		}
 		params[groupNames[i]] = group
 	}
 

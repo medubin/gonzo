@@ -95,9 +95,8 @@ func GenerateOutput(items Items) string {
 			// Server can have a variable amount of items
 			// The first 3 are HTTP verb (POST, GET, PUT, PATCH, and DELETE), url, and function name
 			// followed by key value pairs in the form of name(type)
-			// current types: body,, returns
+			// current types: body, returns
 			// example: body(TestBody)
-			// TODO allow for more then body and return
 		} else if output.InServer {
 			e := Endpoint{}
 			e.Verb = item

@@ -1,6 +1,8 @@
 package url
 
 import (
+	"context"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -17,7 +19,7 @@ func ConvertPathToRegex(path string) *regexp.Regexp {
 	// NOTE: ^ means start of string and $ means end. Without these,
 	//   we'll still match if the path has content before or after
 	//   the expression (/foo/bar/baz would match the "/bar" route).
-	return  regexp.MustCompile("^" + path + "/?$")
+	return regexp.MustCompile("^" + path + "/?$")
 }
 
 func GetKeys(path string) []string {
@@ -26,8 +28,8 @@ func GetKeys(path string) []string {
 	// keysRegex := regexp.MustCompile(`{([a-zA-Z0-9_]+)}`)
 
 	// return keysRegex.FindStringSubmatch(path)
-	allMatches :=  keysRegex.FindAllStringSubmatch(path, -1)
-	
+	allMatches := keysRegex.FindAllStringSubmatch(path, -1)
+
 	matches := make([]string, len(allMatches))
 
 	for i, match := range allMatches {
@@ -37,10 +39,15 @@ func GetKeys(path string) []string {
 	return matches
 }
 
-type URL struct{
-	params map[string]string
-}
+func GetTypedParamsFromContext[Params any](ctx context.Context) Params {
+	var params Params
 
-func (u *URL) Get(param string) string{
-	return u.params[param]
+	if ctx.Value("params") == nil {
+		return params
+	}
+
+	for key, value := range ctx.Value("params").(map[string]string) {
+		reflect.ValueOf(&params).Elem().FieldByName(key).SetString(value)
+	}
+	return params
 }

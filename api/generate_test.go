@@ -64,9 +64,9 @@ type GetUserUrl struct {
 }
 
 type Server interface {
-	Signup(ctx context.Context, body SignupBody, cookie cookies.Cookies) (*SignupResponse, error)
-	SignIn(ctx context.Context, body SignInBody, cookie cookies.Cookies) (*SignInResponse, error)
-	GetUser(ctx context.Context, cookie cookies.Cookies) (*GetUserResponse, error)
+	Signup(ctx context.Context, body SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
+	SignIn(ctx context.Context, body SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
+	GetUser(ctx context.Context, body interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
 }
 
 func StartServer(s Server, r *router.Router) {

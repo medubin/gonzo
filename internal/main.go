@@ -3,8 +3,9 @@ package main
 import (
 	"net/http"
 
-	"github.com/medubin/gonzo/utils/router"
 	"github.com/medubin/gonzo/server"
+	"github.com/medubin/gonzo/utils/handle"
+	"github.com/medubin/gonzo/utils/router"
 )
 
 func main() {
@@ -22,6 +23,8 @@ func main() {
 	// r.Route(http.MethodGet, `/hello/(?P<Message>\w+)`, func(w http.ResponseWriter, r *http.Request) {
 	// 	w.Write([]byte("Hello " + router.URLParam(r, "Message")))
 	// })
+
+	r.Route("POST", `/hello/(?P<Message>\w+)`, handle.Handle(s.Signup))
 
 	// r.Route(http.MethodGet, "/panic", func(w http.ResponseWriter, r *http.Request) {
 	// 	panic("something bad happened!")

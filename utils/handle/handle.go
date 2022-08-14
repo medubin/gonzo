@@ -6,12 +6,14 @@ import (
 	"net/http"
 
 	"github.com/medubin/gonzo/utils/cookies"
+	"github.com/medubin/gonzo/utils/url"
 )
 
-func Handle[Body any, response any](handler func(ctx context.Context, b Body, c cookies.Cookies) (response, error)) func(http.ResponseWriter, *http.Request) {
+func Handle[Body any, response any, URL any](handler func(ctx context.Context, b Body, c cookies.Cookies, u url.URL[URL]) (response, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var body Body
+		ctx := r.Context()
 
+		var body Body
 		err := json.NewDecoder(r.Body).Decode(&body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -20,7 +22,12 @@ func Handle[Body any, response any](handler func(ctx context.Context, b Body, c 
 
 		cookies := cookies.New(r, w)
 
-		resp, err := handler(r.Context(), body, cookies)
+		Url := url.URL[URL]{
+			Values: url.Values(r.URL.Query()),
+			Params: url.GetTypedParamsFromContext[URL](ctx),
+		}
+
+		resp, err := handler(ctx, body, cookies, Url)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

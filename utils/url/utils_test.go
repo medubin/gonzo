@@ -1,6 +1,7 @@
 package url_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
@@ -20,4 +21,28 @@ func TestGetKeys(t *testing.T) {
 	assert.Equal(t, []string{"Message"}, url.GetKeys("/hello/{Message:[a-z]+}/"))
 	assert.Equal(t, []string{"Message", "Test"}, url.GetKeys("/hello/{Message:[a-z]+}/test/{Test}/"))
 	assert.Equal(t, []string{}, url.GetKeys("/hello/test/woot"))
+}
+
+func TestTestGetKeys(t *testing.T) {
+	type X struct {
+		A     string
+		B     string
+		C     string
+		Empty string
+	}
+	params := map[string]string{
+		"A": "A1",
+		"B": "B2",
+		"C": "C3",
+	}
+	ctx := context.WithValue(context.Background(), "params", params)
+
+	actual := url.GetTypedParamsFromContext[X](ctx)
+
+	println(actual.A)
+
+	assert.Equal(t, params["A"], actual.A)
+	assert.Equal(t, params["B"], actual.B)
+	assert.Equal(t, params["C"], actual.C)
+	assert.Equal(t, "", actual.Empty)
 }

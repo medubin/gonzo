@@ -141,9 +141,12 @@ func (e *Endpoint) String() string {
 
 	if e.Body != "" {
 		parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
+	} else {
+		parameters = append(parameters, fmt.Sprintf("body %s", "interface{}"))
 	}
 
 	parameters = append(parameters, "cookie cookies.Cookies")
+	parameters = append(parameters, fmt.Sprintf("url url.URL[%sUrl]", e.Name))
 	returns := []string{}
 	if e.Return != "" {
 		returns = append(returns, "*"+e.Return)
