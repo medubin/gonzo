@@ -29,7 +29,12 @@ type SignInResponse {
   Session Session
 }
 
+type GetUserResponse {
+  User User
+}
+
 Server {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)
   POST /session/new SignIn body(SignInBody) returns(SignInResponse)
+  GET /user/{UserID} GetUser returns(GetUserResponse)
 }

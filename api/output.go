@@ -3,6 +3,8 @@ package api
 import (
 	"fmt"
 	"strings"
+
+	"github.com/medubin/gonzo/utils/url"
 )
 
 type Output struct {
@@ -56,6 +58,19 @@ func (o *Output) AddStructField(name string, typeName string) {
 
 func (o *Output) AddEndpoint(e Endpoint) {
 	o.endpoints = append(o.endpoints, e)
+
+	matches := url.GetKeys(e.Url)
+	fields := make([]string, len(matches) * 2)
+	for i, match := range matches {
+		fields[i * 2] = match
+		fields[i * 2 + 1] = "string"
+	}
+
+	o.variables = append(o.variables, Variable{
+		Name: e.Name + "Url",
+		Type: "struct {",
+		Fields: fields,
+	})
 }
 
 func (o *Output) FinishVariable() {
@@ -112,7 +127,7 @@ func (v *Variable) String() string {
 			variable += " "
 		}
 	}
-	if len(v.Fields) > 0 {
+	if v.Type == "struct {" {
 		variable += "}\n\n"
 	} else {
 		variable += "\n\n"
