@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"regexp"
-	"strings"
+
+	"github.com/medubin/gonzo/utils/url"
 )
 
 type Router struct {
@@ -13,12 +13,8 @@ type Router struct {
 }
 
 func (rtr *Router) Route(method, path string, handlerFunc http.HandlerFunc) {
-	path = strings.TrimRight(path, "/")
 
-	// NOTE: ^ means start of string and $ means end. Without these,
-	//   we'll still match if the path has content before or after
-	//   the expression (/foo/bar/baz would match the "/bar" route).
-	exactPath := regexp.MustCompile("^" + path + "/?$")
+	exactPath := url.ConvertPathToRegex(path)
 
 	e := RouteEntry{
 		Method:      method,
@@ -37,6 +33,9 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for _, e := range rtr.routes {
+		if e.Method != r.Method {
+			continue
+		}
 		params := e.Match(r)
 		if params == nil {
 			continue // No match found

@@ -73,8 +73,9 @@ func (o *Output) Header() string {
 		"context"
 
 		"github.com/medubin/gonzo/utils/cookies"
-		"github.com/medubin/gonzo/utils/router"
 		"github.com/medubin/gonzo/utils/handle"
+		"github.com/medubin/gonzo/utils/router"
+		"github.com/medubin/gonzo/utils/url"
 	)
 	`
 }
