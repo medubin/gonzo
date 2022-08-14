@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+type ParamKey = struct{}
+
 func ConvertPathToRegex(path string) *regexp.Regexp {
 	path = strings.TrimRight(path, "/")
 	// First convert all parameters that are not given an explicit match type. Give it \w+
@@ -42,11 +44,11 @@ func GetKeys(path string) []string {
 func GetTypedParamsFromContext[Params any](ctx context.Context) Params {
 	var params Params
 
-	if ctx.Value("params") == nil {
+	if ctx.Value(ParamKey{}) == nil {
 		return params
 	}
 
-	for key, value := range ctx.Value("params").(map[string]string) {
+	for key, value := range ctx.Value(ParamKey{}).(map[string]string) {
 		reflect.ValueOf(&params).Elem().FieldByName(key).SetString(value)
 	}
 	return params

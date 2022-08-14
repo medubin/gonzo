@@ -42,7 +42,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create new request with params stored in context
-		ctx := context.WithValue(r.Context(), "params", params)
+		ctx := context.WithValue(r.Context(), url.ParamKey{}, params)
 		e.HandlerFunc.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}

@@ -35,11 +35,9 @@ func TestTestGetKeys(t *testing.T) {
 		"B": "B2",
 		"C": "C3",
 	}
-	ctx := context.WithValue(context.Background(), "params", params)
+	ctx := context.WithValue(context.Background(), url.ParamKey{}, params)
 
 	actual := url.GetTypedParamsFromContext[X](ctx)
-
-	println(actual.A)
 
 	assert.Equal(t, params["A"], actual.A)
 	assert.Equal(t, params["B"], actual.B)
