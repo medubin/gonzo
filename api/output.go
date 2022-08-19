@@ -32,16 +32,21 @@ func outputHeader() string {
 func outputStructs(structs []*Struct) string {
 	output := ""
 	for _, s := range structs {
-		output += fmt.Sprintf("type %s %s\n", s.Name, s.Type)
-		for i, f := range s.Fields {
-			output += f
-			if i%2 != 0 {
-				output += "\n"
+		structForm := fmt.Sprintf("type %s %s\n", s.Name, s.Type)
+		structFunc := ""
+		name := ""
+		for _, f := range s.Fields {
+			if name == "" {
+				name = f
 			} else {
-				output += " "
+				structForm += fmt.Sprintf("%s %s\n", name, f)
+				structFunc += fmt.Sprintf("func (s *%s) Get%s() %s {\n  return s.%s\n}\n\n", s.Name, name, f, name)
+				name = ""
 			}
 		}
-		output += "}\n\n"
+		structForm += "}\n\n"
+		output += structForm
+		output += structFunc
 	}
 	return output
 }

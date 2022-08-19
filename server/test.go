@@ -17,9 +17,29 @@ type User struct {
 	Email string
 }
 
+func (s *User) GetID() UserID {
+	return s.ID
+}
+
+func (s *User) GetName() string {
+	return s.Name
+}
+
+func (s *User) GetEmail() string {
+	return s.Email
+}
+
 type Session struct {
 	UserID UserID
 	Token  string
+}
+
+func (s *Session) GetUserID() UserID {
+	return s.UserID
+}
+
+func (s *Session) GetToken() string {
+	return s.Token
 }
 
 type SignupBody struct {
@@ -27,8 +47,20 @@ type SignupBody struct {
 	Password string
 }
 
+func (s *SignupBody) GetUser() User {
+	return s.User
+}
+
+func (s *SignupBody) GetPassword() string {
+	return s.Password
+}
+
 type SignupResponse struct {
 	User User
+}
+
+func (s *SignupResponse) GetUser() User {
+	return s.User
 }
 
 type SignInBody struct {
@@ -36,12 +68,28 @@ type SignInBody struct {
 	Password string
 }
 
+func (s *SignInBody) GetUserID() UserID {
+	return s.UserID
+}
+
+func (s *SignInBody) GetPassword() string {
+	return s.Password
+}
+
 type SignInResponse struct {
 	Session Session
 }
 
+func (s *SignInResponse) GetSession() Session {
+	return s.Session
+}
+
 type GetUserResponse struct {
 	User User
+}
+
+func (s *GetUserResponse) GetUser() User {
+	return s.User
 }
 
 type SignupUrl struct {
@@ -52,6 +100,10 @@ type SignInUrl struct {
 
 type GetUserUrl struct {
 	UserID string
+}
+
+func (s *GetUserUrl) GetUserID() string {
+	return s.UserID
 }
 
 type Server interface {
