@@ -3,31 +3,20 @@ package api
 import (
 	"fmt"
 	"strings"
+
 )
 
 func Output(d Data) string {
-	head := header()
-
+	header := outputHeader()
 	variables := outputVariables(d.Variables)
+	structs := outputStructs(d.Structs)
+	server := outputServer(d.Endpoints)
+	serverStart := outputServerStart(d.Endpoints)
 
-	structs := ""
-	for _, v := range d.Structs {
-		structs += outputStruct(v)
-	}
-
-	server := "type Server interface {\n"
-	serverInit := "func StartServer(s Server, r *router.Router) {"
-	for _, e := range d.Endpoints {
-		server += endpoint(e)
-		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
-	}
-	server += "}"
-	serverInit += "}"
-
-	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", head, variables,  structs, server, serverInit)
+	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", header, variables, structs, server, serverStart)
 }
 
-func header() string {
+func outputHeader() string {
 	return `package server
 	import (
 		"context"
@@ -39,22 +28,21 @@ func header() string {
 	)
 	`
 }
-func outputStruct(s *Struct) string {
-	variable := fmt.Sprintf("type %s %s\n", s.Name, s.Type)
-	for i, f := range s.Fields {
-		variable += f
-		if i%2 != 0 {
-			variable += "\n"
-		} else {
-			variable += " "
+func outputStructs(structs []*Struct) string {
+	output := ""
+	for _, s := range structs {
+		output += fmt.Sprintf("type %s %s\n", s.Name, s.Type)
+		for i, f := range s.Fields {
+			output += f
+			if i%2 != 0 {
+				output += "\n"
+			} else {
+				output += " "
+			}
 		}
+		output += "}\n\n"
 	}
-	if s.Type == "struct {" {
-		variable += "}\n\n"
-	} else {
-		variable += "\n\n"
-	}
-	return variable
+	return output
 }
 
 func outputVariables(vs []Variable) string {
@@ -65,24 +53,37 @@ func outputVariables(vs []Variable) string {
 	return output
 }
 
-func endpoint(e Endpoint) string {
-	parameters := []string{"ctx context.Context"}
+func outputServer(endpoints []Endpoint) string {
+	server := "type Server interface {\n"
+	for _, e := range endpoints {
+		parameters := []string{"ctx context.Context"}
 
-	if e.Body != "" {
-		parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
-	} else {
-		parameters = append(parameters, fmt.Sprintf("body %s", "interface{}"))
+		if e.Body != "" {
+			parameters = append(parameters, fmt.Sprintf("body %s", e.Body))
+		} else {
+			parameters = append(parameters, fmt.Sprintf("body %s", "interface{}"))
+		}
+
+		parameters = append(parameters, "cookie cookies.Cookies")
+		parameters = append(parameters, fmt.Sprintf("url url.URL[%sUrl]", e.Name))
+		returns := []string{}
+		if e.Return != "" {
+			returns = append(returns, "*"+e.Return)
+		}
+
+		// Can always return an error
+		returns = append(returns, "error")
+		server += fmt.Sprintf("%s(%s) (%s)\n", e.Name, strings.Join(parameters, ", "), strings.Join(returns, ", "))
 	}
 
-	parameters = append(parameters, "cookie cookies.Cookies")
-	parameters = append(parameters, fmt.Sprintf("url url.URL[%sUrl]", e.Name))
-	returns := []string{}
-	if e.Return != "" {
-		returns = append(returns, "*"+e.Return)
+	return server + "}"
+}
+
+func outputServerStart(endpoints []Endpoint) string {
+	serverInit := "func StartServer(s Server, r *router.Router) {"
+	for _, e := range endpoints {
+		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
 	}
 
-	// Can always return an error
-	returns = append(returns, "error")
-	// return fmt.Sprintf("r.Route(\"%s\", \"%s\", router.Handle(server.%s))", e.Verb, e.Url, e.Name)
-	return fmt.Sprintf("%s(%s) (%s)\n", e.Name, strings.Join(parameters, ", "), strings.Join(returns, ", "))
+	return serverInit + "}"
 }
