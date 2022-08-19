@@ -64,40 +64,39 @@ func itemize(s *bufio.Scanner) ([]string, error) {
 }
 
 func GenerateOutput(items Items) string {
-	output := Output{}
+	data := Data{}
 
 	for items.ValidPosition() {
 		item := items.Item()
 
 		if item == "}" {
-			output.FinishVariable()
+			data.FinishVariable()
 
 			// Lines that start with "type" should always have 3 items
 		} else if item == "type" {
 			name := items.NextItem()
 			typeName := items.NextItem()
 			if typeName == "{" {
-				output.InStruct = true
-				output.AddStruct(name)
+				data.InStruct = true
+				data.AddStruct(name)
 			} else {
-				output.AddAlias(name, typeName)
-				output.FinishVariable()
+				data.AddVariable(name, typeName)
 			}
 			// fields in structs should have 2 items
-		} else if output.InStruct {
+		} else if data.InStruct {
 			typeName := items.NextItem()
 
-			output.AddStructField(item, typeName)
+			data.AddStructField(item, typeName)
 			// Server setup contains 2 items
 		} else if item == "Server" {
-			output.InServer = true
+			data.InServer = true
 			items.Next()
 			// Server can have a variable amount of items
 			// The first 3 are HTTP verb (POST, GET, PUT, PATCH, and DELETE), url, and function name
 			// followed by key value pairs in the form of name(type)
 			// current types: body, returns
 			// example: body(TestBody)
-		} else if output.InServer {
+		} else if data.InServer {
 			e := Endpoint{}
 			e.Verb = item
 			e.Url = items.NextItem()
@@ -119,12 +118,12 @@ func GenerateOutput(items Items) string {
 				}
 				items.Next()
 			}
-			output.AddEndpoint(e)
+			data.AddEndpoint(e)
 
 		} else {
 			panic("AHHH")
 		}
 		items.Next()
 	}
-	return output.String()
+	return Output(data)
 }

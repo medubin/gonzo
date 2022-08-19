@@ -3,86 +3,31 @@ package api
 import (
 	"fmt"
 	"strings"
-
-	"github.com/medubin/gonzo/utils/url"
 )
 
-type Output struct {
-	InStruct        bool
-	InServer        bool
-	variables       []Variable
-	currentVariable *Variable
-	endpoints       []Endpoint
-}
+func Output(d Data) string {
+	head := header()
 
-type Endpoint struct {
-	Verb   string
-	Url    string
-	Name   string
-	Body   string
-	Return string
-}
+	variables := outputVariables(d.Variables)
 
-type Variable struct {
-	Name   string
-	Type   string
-	Fields []string
-}
-
-func (o *Output) AddStruct(name string) {
-	if o.currentVariable != nil {
-		panic("Current Variable not empty")
-	}
-	o.currentVariable = &Variable{
-		Name: name,
-		Type: "struct {",
-	}
-}
-
-func (o *Output) AddAlias(name string, typeName string) {
-	if o.currentVariable != nil {
-		panic("Current Variable not empty")
-	}
-	o.currentVariable = &Variable{
-		Name: name,
-		Type: typeName,
-	}
-}
-
-func (o *Output) AddStructField(name string, typeName string) {
-	if o.currentVariable == nil {
-		panic(fmt.Sprintf("Current Variable empty. Tried adding %s %s", name, typeName))
-	}
-	o.currentVariable.Fields = append(o.currentVariable.Fields, name, typeName)
-}
-
-func (o *Output) AddEndpoint(e Endpoint) {
-	o.endpoints = append(o.endpoints, e)
-
-	matches := url.GetKeys(e.Url)
-	fields := make([]string, len(matches) * 2)
-	for i, match := range matches {
-		fields[i * 2] = match
-		fields[i * 2 + 1] = "string"
+	structs := ""
+	for _, v := range d.Structs {
+		structs += outputStruct(v)
 	}
 
-	o.variables = append(o.variables, Variable{
-		Name: e.Name + "Url",
-		Type: "struct {",
-		Fields: fields,
-	})
-}
-
-func (o *Output) FinishVariable() {
-	o.InStruct = false
-	o.InServer = false
-	if o.currentVariable != nil {
-		o.variables = append(o.variables, *o.currentVariable)
-		o.currentVariable = nil
+	server := "type Server interface {\n"
+	serverInit := "func StartServer(s Server, r *router.Router) {"
+	for _, e := range d.Endpoints {
+		server += endpoint(e)
+		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
 	}
+	server += "}"
+	serverInit += "}"
+
+	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", head, variables,  structs, server, serverInit)
 }
 
-func (o *Output) Header() string {
+func header() string {
 	return `package server
 	import (
 		"context"
@@ -94,32 +39,9 @@ func (o *Output) Header() string {
 	)
 	`
 }
-
-func (o *Output) String() string {
-	if o.currentVariable != nil {
-		panic("Ended run with current variable still full")
-	}
-
-	variables := ""
-	for _, v := range o.variables {
-		variables += v.String()
-	}
-
-	server := "type Server interface {\n"
-	serverInit := "func StartServer(s Server, r *router.Router) {"
-	for _, e := range o.endpoints {
-		server += e.String()
-		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
-	}
-	server += "}"
-	serverInit += "}"
-
-	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", o.Header(), variables, server, serverInit)
-}
-
-func (v *Variable) String() string {
-	variable := fmt.Sprintf("type %s %s\n", v.Name, v.Type)
-	for i, f := range v.Fields {
+func outputStruct(s *Struct) string {
+	variable := fmt.Sprintf("type %s %s\n", s.Name, s.Type)
+	for i, f := range s.Fields {
 		variable += f
 		if i%2 != 0 {
 			variable += "\n"
@@ -127,16 +49,23 @@ func (v *Variable) String() string {
 			variable += " "
 		}
 	}
-	if v.Type == "struct {" {
+	if s.Type == "struct {" {
 		variable += "}\n\n"
 	} else {
 		variable += "\n\n"
 	}
 	return variable
-
 }
 
-func (e *Endpoint) String() string {
+func outputVariables(vs []Variable) string {
+	output := ""
+	for _, v := range vs {
+		output += fmt.Sprintf("type %s %s\n\n\n", v.Name, v.Type)
+	}
+	return output
+}
+
+func endpoint(e Endpoint) string {
 	parameters := []string{"ctx context.Context"}
 
 	if e.Body != "" {
