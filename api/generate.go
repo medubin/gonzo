@@ -97,7 +97,7 @@ func GenerateOutput(items Items) string {
 			// current types: body, returns
 			// example: body(TestBody)
 		} else if data.InServer {
-			e := Endpoint{}
+			e := &Endpoint{}
 			e.Verb = item
 			e.Url = items.NextItem()
 			e.Name = items.NextItem()

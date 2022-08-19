@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"strings"
-
 )
 
 func Output(d Data) string {
@@ -13,7 +12,9 @@ func Output(d Data) string {
 	server := outputServer(d.Endpoints)
 	serverStart := outputServerStart(d.Endpoints)
 
-	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s\n\n%s", header, variables, structs, server, serverStart)
+	return strings.Join([]string{
+		header, variables, structs, server, serverStart,
+	}, "\n\n")
 }
 
 func outputHeader() string {
@@ -45,7 +46,7 @@ func outputStructs(structs []*Struct) string {
 	return output
 }
 
-func outputVariables(vs []Variable) string {
+func outputVariables(vs []*Variable) string {
 	output := ""
 	for _, v := range vs {
 		output += fmt.Sprintf("type %s %s\n\n\n", v.Name, v.Type)
@@ -53,7 +54,7 @@ func outputVariables(vs []Variable) string {
 	return output
 }
 
-func outputServer(endpoints []Endpoint) string {
+func outputServer(endpoints []*Endpoint) string {
 	server := "type Server interface {\n"
 	for _, e := range endpoints {
 		parameters := []string{"ctx context.Context"}
@@ -79,7 +80,7 @@ func outputServer(endpoints []Endpoint) string {
 	return server + "}"
 }
 
-func outputServerStart(endpoints []Endpoint) string {
+func outputServerStart(endpoints []*Endpoint) string {
 	serverInit := "func StartServer(s Server, r *router.Router) {"
 	for _, e := range endpoints {
 		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)

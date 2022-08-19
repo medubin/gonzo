@@ -8,8 +8,8 @@ type Data struct {
 	InStruct  bool
 	InServer  bool
 	Structs   []*Struct
-	Endpoints []Endpoint
-	Variables []Variable
+	Endpoints []*Endpoint
+	Variables []*Variable
 }
 
 type Endpoint struct {
@@ -39,7 +39,7 @@ func (o *Data) AddStruct(name string) {
 }
 
 func (o *Data) AddVariable(name string, typeName string) {
-	o.Variables = append(o.Variables, Variable{
+	o.Variables = append(o.Variables, &Variable{
 		Name: name,
 		Type: typeName,
 	})
@@ -50,7 +50,7 @@ func (o *Data) AddStructField(name string, typeName string) {
 	lastStruct.Fields = append(lastStruct.Fields, name, typeName)
 }
 
-func (o *Data) AddEndpoint(e Endpoint) {
+func (o *Data) AddEndpoint(e *Endpoint) {
 	o.Endpoints = append(o.Endpoints, e)
 
 	matches := url.GetKeys(e.Url)
