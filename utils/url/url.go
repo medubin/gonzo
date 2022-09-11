@@ -7,6 +7,13 @@ type URL[params any] struct {
 
 type Values map[string][]string
 
+func (v Values) GetAll(key string) []string {
+	if v == nil {
+		return []string{}
+	}
+	return v[key]
+}
+
 func (v Values) Get(key string) string {
 	if v == nil {
 		return ""

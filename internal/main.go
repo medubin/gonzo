@@ -11,7 +11,7 @@ import (
 func main() {
 
 	r := &router.Router{}
-	s := server.S{}
+	s := &server.ServerImpl{}
 
 	server.StartServer(s, r)
 	// have SignIn(ctx context.Context, body server.SignInBody, cookie router.Cookies) (*server.SignInResponse, error)

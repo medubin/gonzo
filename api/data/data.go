@@ -1,4 +1,4 @@
-package api
+package data
 
 import (
 	"github.com/medubin/gonzo/utils/url"

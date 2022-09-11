@@ -1,70 +1,64 @@
 package api
 
 import (
-	"bufio"
 	"fmt"
 	"go/format"
-	"os"
 	"regexp"
-	"strings"
+
+	datum "github.com/medubin/gonzo/api/data"
+	"github.com/medubin/gonzo/api/fileio"
+	"github.com/medubin/gonzo/api/output"
+	"github.com/medubin/gonzo/api/utils"
 )
 
 var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
 
-func GenerateAPI(name string) (string, error) {
-	i, err := ParseFile(name + ".api")
-	if err != nil {
-		return "", err
-	}
-	items := InitItems(i)
-	output := GenerateOutput(items)
-
-	formattedOutput, err := format.Source([]byte(output))
-	if err != nil {
-		return "", err
-	}
-
-	return string(formattedOutput), nil
-}
-
-func WriteToFile(name string, output string) error {
-	return os.WriteFile("../server/"+name+".go", []byte(output), 0644)
-}
-
-func ParseFile(name string) ([]string, error) {
-	file, err := os.Open(name)
+func GenerateData(name string) (*datum.Data, error) {
+	i, err := fileio.ParseFile(name + ".api")
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	items := InitItems(i)
+	data := convertItemsToData(items)
 
-	scanner := bufio.NewScanner(file)
-	return itemize(scanner)
+	return &data, nil
 }
 
-func itemize(s *bufio.Scanner) ([]string, error) {
-	var items []string
-	for s.Scan() {
-		line := strings.TrimSpace(s.Text())
-		if len(line) == 0 {
-			continue
-		}
-		subItems := strings.Split(line, " ")
-		for _, i := range subItems {
-			if i != "" {
-				items = append(items, i)
-			}
-		}
+func GenerateTypes(data *datum.Data) (string, error) {
+	server := output.Types(data)
+	formattedOutput, err := format.Source([]byte(server))
+	if err != nil {
+		return "", err
+	}
+	return string(formattedOutput), nil
+}
 
-		if err := s.Err(); err != nil {
+func GenerateEndpoints(data *datum.Data) (map[string]string, error) {
+	endpoints := make(map[string]string)
+	for _, e := range data.Endpoints {
+		endpoint := output.Endpoint(e)
+		formattedEndpoint, err := format.Source([]byte(endpoint))
+		if err != nil {
 			return nil, err
 		}
+		println(e.Name)
+		endpoints[utils.ToSnakeCase(e.Name)] = string(formattedEndpoint)
 	}
-	return items, nil
+
+	return endpoints, nil
 }
 
-func GenerateOutput(items Items) string {
-	data := Data{}
+func GenerateServer() (string, error) {
+	server := output.Server()
+	formattedServer, err := format.Source([]byte(server))
+	if err != nil {
+		return "", err
+	}
+	return string(formattedServer), nil
+}
+
+func convertItemsToData(items Items) datum.Data {
+	data := datum.Data{}
 
 	for items.ValidPosition() {
 		item := items.Item()
@@ -97,7 +91,7 @@ func GenerateOutput(items Items) string {
 			// current types: body, returns
 			// example: body(TestBody)
 		} else if data.InServer {
-			e := &Endpoint{}
+			e := &datum.Endpoint{}
 			e.Verb = item
 			e.Url = items.NextItem()
 			e.Name = items.NextItem()
@@ -125,5 +119,5 @@ func GenerateOutput(items Items) string {
 		}
 		items.Next()
 	}
-	return Output(data)
+	return data
 }

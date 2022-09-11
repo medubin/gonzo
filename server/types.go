@@ -92,6 +92,22 @@ func (s *GetUserResponse) GetUser() User {
 	return s.User
 }
 
+type GetUsersBody struct {
+	UserIDs []UserID
+}
+
+func (s *GetUsersBody) GetUserIDs() []UserID {
+	return s.UserIDs
+}
+
+type GetUsersResponse struct {
+	Users map[UserID]User
+}
+
+func (s *GetUsersResponse) GetUsers() map[UserID]User {
+	return s.Users
+}
+
 type SignupUrl struct {
 }
 
@@ -106,14 +122,19 @@ func (s *GetUserUrl) GetUserID() string {
 	return s.UserID
 }
 
+type GetUsersUrl struct {
+}
+
 type Server interface {
-	Signup(ctx context.Context, body SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
-	SignIn(ctx context.Context, body SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
-	GetUser(ctx context.Context, body interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
+	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
+	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
+	GetUser(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
+	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error)
 }
 
 func StartServer(s Server, r *router.Router) {
 	r.Route("POST", "/user/new", handle.Handle(s.Signup))
 	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
 	r.Route("GET", "/user/{UserID}", handle.Handle(s.GetUser))
+	r.Route("GET", "/users/", handle.Handle(s.GetUsers))
 }
