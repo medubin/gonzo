@@ -10,33 +10,6 @@ import (
 	"github.com/medubin/gonzo/api/fileio"
 )
 
-// type Color string
-
-// const (
-// 	ColorBlack  Color = "\u001b[30m"
-// 	ColorRed    Color = "\u001b[31m"
-// 	ColorGreen        = "\u001b[32m"
-// 	ColorYellow       = "\u001b[33m"
-// 	ColorBlue         = "\u001b[34m"
-// 	ColorReset        = "\u001b[0m"
-// )
-
-// func colorize(color Color, message string) {
-// 	fmt.Println(string(color), message, string(ColorReset))
-// }
-
-// func main() {
-// 	useColor := flag.Bool("color", false, "display colorized output")
-// 	flag.Parse()
-
-// 	if *useColor {
-// 		colorize(ColorBlue, "Hello, DigitalOcean!")
-// 		return
-// 	}
-// 	fmt.Println("Hello, DigitalOcean!")
-// 	fmt.Println(flag.Arg(0))
-// }
-
 type Runner interface {
 	Init([]string) error
 	Run() error
@@ -110,7 +83,7 @@ func (g *GenerateCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	
+
 	err = fileio.WriteToFile(g.output, "types", output)
 	if err != nil {
 		return err

@@ -41,18 +41,9 @@ type GetUsersResponse {
   Users map[UserID]User
 }
 
-type GetUsersBodyx {
-  UserIDs []UserID
-}
-
-type GetUsersResponsex {
-  Users map[UserID]User
-}
-
 Server {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)
   POST /session/new SignIn body(SignInBody) returns(SignInResponse)
   GET /user/{UserID} GetUser returns(GetUserResponse)
   GET /users/ GetUsers body(GetUsersBody) returns(GetUsersResponse)
-  GET /usersx/ GetUsersx body(GetUsersBodyx) returns(GetUsersResponsex)
 }

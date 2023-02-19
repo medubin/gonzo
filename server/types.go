@@ -108,22 +108,6 @@ func (s *GetUsersResponse) GetUsers() map[UserID]User {
 	return s.Users
 }
 
-type GetUsersBodyx struct {
-	UserIDs []UserID
-}
-
-func (s *GetUsersBodyx) GetUserIDs() []UserID {
-	return s.UserIDs
-}
-
-type GetUsersResponsex struct {
-	Users map[UserID]User
-}
-
-func (s *GetUsersResponsex) GetUsers() map[UserID]User {
-	return s.Users
-}
-
 type SignupUrl struct {
 }
 
@@ -141,15 +125,11 @@ func (s *GetUserUrl) GetUserID() string {
 type GetUsersUrl struct {
 }
 
-type GetUsersxUrl struct {
-}
-
 type Server interface {
 	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
 	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
 	GetUser(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
 	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error)
-	GetUsersx(ctx context.Context, body *GetUsersBodyx, cookie cookies.Cookies, url url.URL[GetUsersxUrl]) (*GetUsersResponsex, error)
 }
 
 func StartServer(s Server, r *router.Router) {
@@ -157,5 +137,4 @@ func StartServer(s Server, r *router.Router) {
 	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
 	r.Route("GET", "/user/{UserID}", handle.Handle(s.GetUser))
 	r.Route("GET", "/users/", handle.Handle(s.GetUsers))
-	r.Route("GET", "/usersx/", handle.Handle(s.GetUsersx))
 }

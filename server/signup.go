@@ -9,5 +9,6 @@ import (
 )
 
 func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error) {
+	println("hi")
 	return nil, errors.New("Not Implemented")
 }
