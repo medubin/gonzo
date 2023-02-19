@@ -13,11 +13,18 @@ import (
 
 var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
 
-func GenerateData(name string) (*datum.Data, error) {
+func ReadFileGenerateData(name string) (*datum.Data, error) {
 	i, err := fileio.ParseFile(name + ".api")
 	if err != nil {
 		return nil, err
 	}
+	items := InitItems(i)
+	data := convertItemsToData(items)
+
+	return &data, nil
+}
+
+func GenerateData(i []string) (*datum.Data, error) {
 	items := InitItems(i)
 	data := convertItemsToData(items)
 

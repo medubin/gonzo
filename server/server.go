@@ -1,3 +1,4 @@
 package server
 
-type ServerImpl struct{}
+type ServerImpl struct {
+}

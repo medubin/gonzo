@@ -118,6 +118,14 @@ func (s *GetUsersResponse) GetUsers() map[UserID]User {
 	return s.Users
 }
 
+type GetUsersResponsex struct {
+	Users map[UserID]User
+}
+
+func (s *GetUsersResponsex) GetUsers() map[UserID]User {
+	return s.Users
+}
+
 type SignupUrl struct {
 }
 
@@ -152,30 +160,30 @@ func StartServer(s Server, r *router.Router) {
 
 func TestMain(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		data, err := api.GenerateData("test")
+		data, err := api.ReadFileGenerateData("test")
 		assert.NoError(t, err)
 
 		output, err := api.GenerateTypes(data)
 		assert.NoError(t, err)
 		println(output)
 		assert.Equal(t, expectdOutput, output)
-		_ = fileio.WriteToFile("types", output)
+		_ = fileio.WriteToFile("types", "../server", output)
 
 		endpoints, err := api.GenerateEndpoints(data)
 
 		assert.NoError(t, err)
-		err = fileio.WriteEndpoints(endpoints)
+		err = fileio.WriteEndpoints("../server", endpoints)
 		assert.NoError(t, err)
 
 		server, err := api.GenerateServer()
 		assert.NoError(t, err)
-		err = fileio.SafeWriteToFile("server", server)
+		err = fileio.SafeWriteToFile("../server", "server", server)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Failure", func(t *testing.T) {
 		t.Run("Nonexistent file", func(t *testing.T) {
-			output, err := api.GenerateData("bleh")
+			output, err := api.ReadFileGenerateData("bleh")
 			assert.Error(t, err)
 			assert.Empty(t, output)
 		})

@@ -5,20 +5,20 @@ import (
 	"os"
 )
 
-func WriteToFile(name string, output string) error {
-	return os.WriteFile("../server/"+name+".go", []byte(output), 0644)
+func WriteToFile(directory string, name string, output string) error {
+	return os.WriteFile(directory + "/" + name+".go", []byte(output), 0644)
 }
 
-func SafeWriteToFile(name string, output string) error {
-	if fileExists(name) {
+func SafeWriteToFile(directory string, name string, output string) error {
+	if fileExists(directory, name) {
 		return nil
 	}
-	return os.WriteFile("../server/"+name+".go", []byte(output), 0644)
+	return os.WriteFile(directory + "/" + name+".go", []byte(output), 0644)
 }
 
-func WriteEndpoints(endpoints map[string]string) error {
+func WriteEndpoints(directory string, endpoints map[string]string) error {
 	for name, endpoint := range endpoints {
-		err := SafeWriteToFile(name, endpoint)
+		err := SafeWriteToFile(directory, name, endpoint)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ func WriteEndpoints(endpoints map[string]string) error {
 	return nil
 }
 
-func fileExists(name string) bool {
-	_, err := os.Stat("../server/" + name + ".go")
+func fileExists(directory string, name string) bool {
+	_, err := os.Stat(directory + "/" + name + ".go")
 	return !errors.Is(err, os.ErrNotExist)
 }
