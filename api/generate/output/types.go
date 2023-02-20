@@ -41,10 +41,10 @@ func outputStructs(structs []*data.Struct) string {
 			if name == "" {
 				name = f
 			} else {
-				structForm += fmt.Sprintf("%s %s\n", name, f)
+				structForm += fmt.Sprintf("%s *%s\n", name, f)
 				structFunc += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", s.Name, name, f)
-				structFunc += fmt.Sprintf("if (s == nil) {\n return nil\n}\n")
-				structFunc += fmt.Sprintf("return &s.%s\n}\n\n", name)
+				structFunc += "if (s == nil) {\n return nil\n}\n"
+				structFunc += fmt.Sprintf("return s.%s\n}\n\n", name)
 				name = ""
 			}
 		}
@@ -58,7 +58,7 @@ func outputStructs(structs []*data.Struct) string {
 func outputVariables(vs []*data.Variable) string {
 	output := ""
 	for _, v := range vs {
-		output += fmt.Sprintf("type %s %s\n\n\n", v.Name, v.Type)
+		output += fmt.Sprintf("type %s *%s\n\n\n", v.Name, v.Type)
 	}
 	return output
 }

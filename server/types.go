@@ -9,145 +9,145 @@ import (
 	"github.com/medubin/gonzo/api/utils/url"
 )
 
-type UserID string
+type UserID *int32
 
 type User struct {
-	ID    UserID
-	Name  string
-	Email string
+	ID    *UserID
+	Name  *string
+	Email *string
 }
 
 func (s *User) GetID() *UserID {
 	if s == nil {
 		return nil
 	}
-	return &s.ID
+	return s.ID
 }
 
 func (s *User) GetName() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.Name
+	return s.Name
 }
 
 func (s *User) GetEmail() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.Email
+	return s.Email
 }
 
 type Session struct {
-	UserID UserID
-	Token  string
+	UserID *UserID
+	Token  *string
 }
 
 func (s *Session) GetUserID() *UserID {
 	if s == nil {
 		return nil
 	}
-	return &s.UserID
+	return s.UserID
 }
 
 func (s *Session) GetToken() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.Token
+	return s.Token
 }
 
 type SignupBody struct {
-	User     User
-	Password string
+	User     *User
+	Password *string
 }
 
 func (s *SignupBody) GetUser() *User {
 	if s == nil {
 		return nil
 	}
-	return &s.User
+	return s.User
 }
 
 func (s *SignupBody) GetPassword() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.Password
+	return s.Password
 }
 
 type SignupResponse struct {
-	User User
+	User *User
 }
 
 func (s *SignupResponse) GetUser() *User {
 	if s == nil {
 		return nil
 	}
-	return &s.User
+	return s.User
 }
 
 type SignInBody struct {
-	UserID   UserID
-	Password string
+	UserID   *UserID
+	Password *string
 }
 
 func (s *SignInBody) GetUserID() *UserID {
 	if s == nil {
 		return nil
 	}
-	return &s.UserID
+	return s.UserID
 }
 
 func (s *SignInBody) GetPassword() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.Password
+	return s.Password
 }
 
 type SignInResponse struct {
-	Session Session
+	Session *Session
 }
 
 func (s *SignInResponse) GetSession() *Session {
 	if s == nil {
 		return nil
 	}
-	return &s.Session
+	return s.Session
 }
 
 type GetUserResponse struct {
-	User User
+	User *User
 }
 
 func (s *GetUserResponse) GetUser() *User {
 	if s == nil {
 		return nil
 	}
-	return &s.User
+	return s.User
 }
 
 type GetUsersBody struct {
-	UserIDs []UserID
+	UserIDs *[]UserID
 }
 
 func (s *GetUsersBody) GetUserIDs() *[]UserID {
 	if s == nil {
 		return nil
 	}
-	return &s.UserIDs
+	return s.UserIDs
 }
 
 type GetUsersResponse struct {
-	Users map[UserID]User
+	Users *map[UserID]User
 }
 
 func (s *GetUsersResponse) GetUsers() *map[UserID]User {
 	if s == nil {
 		return nil
 	}
-	return &s.Users
+	return s.Users
 }
 
 type SignupUrl struct {
@@ -157,14 +157,14 @@ type SignInUrl struct {
 }
 
 type GetUserUrl struct {
-	UserID string
+	UserID *string
 }
 
 func (s *GetUserUrl) GetUserID() *string {
 	if s == nil {
 		return nil
 	}
-	return &s.UserID
+	return s.UserID
 }
 
 type GetUsersUrl struct {

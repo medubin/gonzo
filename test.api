@@ -1,4 +1,4 @@
-type UserID string
+type UserID int32
 
 type User {
   ID UserID
