@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/medubin/gonzo/api/utils/handle"
+	"github.com/medubin/gonzo/api/utils/router"
 	"github.com/medubin/gonzo/server"
-	"github.com/medubin/gonzo/utils/handle"
-	"github.com/medubin/gonzo/utils/router"
 )
 
 func main() {

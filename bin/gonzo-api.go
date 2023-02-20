@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/medubin/gonzo/api"
-	"github.com/medubin/gonzo/api/fileio"
+	"github.com/medubin/gonzo/api/generate"
+	"github.com/medubin/gonzo/api/generate/fileio"
 )
 
 type Runner interface {

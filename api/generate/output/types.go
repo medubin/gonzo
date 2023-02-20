@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/medubin/gonzo/api/data"
+	"github.com/medubin/gonzo/api/generate/data"
 )
 
 func Types(d *data.Data) string {
@@ -24,10 +24,10 @@ func outputHeader() string {
 	import (
 		"context"
 
-		"github.com/medubin/gonzo/utils/cookies"
-		"github.com/medubin/gonzo/utils/handle"
-		"github.com/medubin/gonzo/utils/router"
-		"github.com/medubin/gonzo/utils/url"
+		"github.com/medubin/gonzo/api/utils/cookies"
+		"github.com/medubin/gonzo/api/utils/handle"
+		"github.com/medubin/gonzo/api/utils/router"
+		"github.com/medubin/gonzo/api/utils/url"
 	)
 	`
 }

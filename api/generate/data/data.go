@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/medubin/gonzo/utils/url"
+	"github.com/medubin/gonzo/api/utils/url"
 )
 
 type Data struct {

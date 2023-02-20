@@ -3,7 +3,7 @@ package output
 import (
 	"fmt"
 
-	"github.com/medubin/gonzo/api/data"
+	"github.com/medubin/gonzo/api/generate/data"
 )
 
 func Endpoint(e *data.Endpoint) string {
@@ -14,12 +14,12 @@ func Endpoint(e *data.Endpoint) string {
 		"context"
 		"errors"
 
-		"github.com/medubin/gonzo/utils/cookies"
-		"github.com/medubin/gonzo/utils/url"
+		"github.com/medubin/gonzo/api/utils/cookies"
+		"github.com/medubin/gonzo/api/utils/url"
 	)
 	
 func (s *ServerImpl) %s {
-	return nil, errors.New("Not Implemented")
+	return nil, errors.New("not implemented")
 }
 	`, endpoint)
 }

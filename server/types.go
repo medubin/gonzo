@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 
-	"github.com/medubin/gonzo/utils/cookies"
-	"github.com/medubin/gonzo/utils/handle"
-	"github.com/medubin/gonzo/utils/router"
-	"github.com/medubin/gonzo/utils/url"
+	"github.com/medubin/gonzo/api/utils/cookies"
+	"github.com/medubin/gonzo/api/utils/handle"
+	"github.com/medubin/gonzo/api/utils/router"
+	"github.com/medubin/gonzo/api/utils/url"
 )
 
 type UserID string

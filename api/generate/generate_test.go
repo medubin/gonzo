@@ -3,8 +3,8 @@ package api_test
 import (
 	"testing"
 
-	"github.com/medubin/gonzo/api"
-	"github.com/medubin/gonzo/api/fileio"
+	"github.com/medubin/gonzo/api/generate"
+	"github.com/medubin/gonzo/api/generate/fileio"
 	"github.com/stretchr/testify/assert"
 )
 

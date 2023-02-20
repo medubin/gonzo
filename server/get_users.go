@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/medubin/gonzo/utils/cookies"
-	"github.com/medubin/gonzo/utils/url"
+	"github.com/medubin/gonzo/api/utils/cookies"
+	"github.com/medubin/gonzo/api/utils/url"
 )
 
 func (s *ServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error) {

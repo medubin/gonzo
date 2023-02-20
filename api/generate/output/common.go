@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/medubin/gonzo/api/data"
+	"github.com/medubin/gonzo/api/generate/data"
 )
 
 func generateEndpoint(e *data.Endpoint) string {

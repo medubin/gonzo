@@ -5,10 +5,10 @@ import (
 	"go/format"
 	"regexp"
 
-	datum "github.com/medubin/gonzo/api/data"
-	"github.com/medubin/gonzo/api/fileio"
-	"github.com/medubin/gonzo/api/output"
-	"github.com/medubin/gonzo/api/utils"
+	datum "github.com/medubin/gonzo/api/generate/data"
+	"github.com/medubin/gonzo/api/generate/fileio"
+	"github.com/medubin/gonzo/api/generate/output"
+	"github.com/medubin/gonzo/api/generate/utils"
 )
 
 var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
