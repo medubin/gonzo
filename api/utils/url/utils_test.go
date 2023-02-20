@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/medubin/gonzo/utils/url"
+	"github.com/medubin/gonzo/api/utils/url"
 	"github.com/stretchr/testify/assert"
 )
 

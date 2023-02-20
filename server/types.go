@@ -17,16 +17,25 @@ type User struct {
 	Email string
 }
 
-func (s *User) GetID() UserID {
-	return s.ID
+func (s *User) GetID() *UserID {
+	if s == nil {
+		return nil
+	}
+	return &s.ID
 }
 
-func (s *User) GetName() string {
-	return s.Name
+func (s *User) GetName() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.Name
 }
 
-func (s *User) GetEmail() string {
-	return s.Email
+func (s *User) GetEmail() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.Email
 }
 
 type Session struct {
@@ -34,12 +43,18 @@ type Session struct {
 	Token  string
 }
 
-func (s *Session) GetUserID() UserID {
-	return s.UserID
+func (s *Session) GetUserID() *UserID {
+	if s == nil {
+		return nil
+	}
+	return &s.UserID
 }
 
-func (s *Session) GetToken() string {
-	return s.Token
+func (s *Session) GetToken() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.Token
 }
 
 type SignupBody struct {
@@ -47,20 +62,29 @@ type SignupBody struct {
 	Password string
 }
 
-func (s *SignupBody) GetUser() User {
-	return s.User
+func (s *SignupBody) GetUser() *User {
+	if s == nil {
+		return nil
+	}
+	return &s.User
 }
 
-func (s *SignupBody) GetPassword() string {
-	return s.Password
+func (s *SignupBody) GetPassword() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.Password
 }
 
 type SignupResponse struct {
 	User User
 }
 
-func (s *SignupResponse) GetUser() User {
-	return s.User
+func (s *SignupResponse) GetUser() *User {
+	if s == nil {
+		return nil
+	}
+	return &s.User
 }
 
 type SignInBody struct {
@@ -68,44 +92,62 @@ type SignInBody struct {
 	Password string
 }
 
-func (s *SignInBody) GetUserID() UserID {
-	return s.UserID
+func (s *SignInBody) GetUserID() *UserID {
+	if s == nil {
+		return nil
+	}
+	return &s.UserID
 }
 
-func (s *SignInBody) GetPassword() string {
-	return s.Password
+func (s *SignInBody) GetPassword() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.Password
 }
 
 type SignInResponse struct {
 	Session Session
 }
 
-func (s *SignInResponse) GetSession() Session {
-	return s.Session
+func (s *SignInResponse) GetSession() *Session {
+	if s == nil {
+		return nil
+	}
+	return &s.Session
 }
 
 type GetUserResponse struct {
 	User User
 }
 
-func (s *GetUserResponse) GetUser() User {
-	return s.User
+func (s *GetUserResponse) GetUser() *User {
+	if s == nil {
+		return nil
+	}
+	return &s.User
 }
 
 type GetUsersBody struct {
 	UserIDs []UserID
 }
 
-func (s *GetUsersBody) GetUserIDs() []UserID {
-	return s.UserIDs
+func (s *GetUsersBody) GetUserIDs() *[]UserID {
+	if s == nil {
+		return nil
+	}
+	return &s.UserIDs
 }
 
 type GetUsersResponse struct {
 	Users map[UserID]User
 }
 
-func (s *GetUsersResponse) GetUsers() map[UserID]User {
-	return s.Users
+func (s *GetUsersResponse) GetUsers() *map[UserID]User {
+	if s == nil {
+		return nil
+	}
+	return &s.Users
 }
 
 type SignupUrl struct {
@@ -118,8 +160,11 @@ type GetUserUrl struct {
 	UserID string
 }
 
-func (s *GetUserUrl) GetUserID() string {
-	return s.UserID
+func (s *GetUserUrl) GetUserID() *string {
+	if s == nil {
+		return nil
+	}
+	return &s.UserID
 }
 
 type GetUsersUrl struct {

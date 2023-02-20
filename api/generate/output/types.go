@@ -42,7 +42,9 @@ func outputStructs(structs []*data.Struct) string {
 				name = f
 			} else {
 				structForm += fmt.Sprintf("%s %s\n", name, f)
-				structFunc += fmt.Sprintf("func (s *%s) Get%s() %s {\n  return s.%s\n}\n\n", s.Name, name, f, name)
+				structFunc += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", s.Name, name, f)
+				structFunc += fmt.Sprintf("if (s == nil) {\n return nil\n}\n")
+				structFunc += fmt.Sprintf("return &s.%s\n}\n\n", name)
 				name = ""
 			}
 		}
