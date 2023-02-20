@@ -1,41 +1,37 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/medubin/gonzo/api/utils/handle"
+	"database/sql"
+
+	_ "github.com/lib/pq"
 	"github.com/medubin/gonzo/api/utils/router"
+	"github.com/medubin/gonzo/db/queries"
 	"github.com/medubin/gonzo/server"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
 
+}
+
+func run() error {
+	db, err := sql.Open("postgres", "user=postgres dbname=gonzo sslmode=disable")
+	if err != nil {
+		return err
+	}
+
+	queries := queries.New(db)
 	r := &router.Router{}
-	s := &server.ServerImpl{}
+	s := &server.ServerImpl{
+		Queries: *queries,
+	}
 
 	server.StartServer(s, r)
-	// have SignIn(ctx context.Context, body server.SignInBody, cookie router.Cookies) (*server.SignInResponse, error)
-	// want SignIn(ctx context.Context, body api.SignInBody, cookie router.Cookies) (api.SignInResponse, error)
-	// r.Route(http.MethodGet, "/", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Write([]byte("The Best Router!"))
-	// })
-
-	// r.Route(http.MethodGet, `/hello/(?P<Message>\w+)`, func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Write([]byte("Hello " + router.URLParam(r, "Message")))
-	// })
-
-	r.Route("POST", `/hello/(?P<Message>\w+)`, handle.Handle(s.Signup))
-
-	// r.Route(http.MethodGet, "/panic", func(w http.ResponseWriter, r *http.Request) {
-	// 	panic("something bad happened!")
-	// })
-	// r.Route(http.MethodGet, "/task/", router.Handle(server.ServeIt))
 	http.ListenAndServe(":8080", r)
-
-	// s := server.NewServer()
-	// mux := http.NewServeMux()
-
-	// log.Fatal(http.ListenAndServe("localhost:8080", mux))
-
-	// http.ListenAndServe(":8080", nil)
+	return nil
 }
