@@ -7,5 +7,11 @@ generate-api:
 db-migration:
 	go run db/db-migrations.go
 
+db-migration-down:
+	migrate -database postgres://postgres:postgres@localhost:5432/gonzo?sslmode=disable -path db/migrations down
+
 new-db-migration:
-	migrate create -ext sql -dir db/migrations -seq 
+	migrate create -ext sql -dir db/migrations -seq ${name}
+
+generate-sqlc:
+	cd db && sqlc generate

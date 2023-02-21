@@ -4,11 +4,21 @@
 
 package queries
 
-import ()
+import (
+	"time"
+)
+
+type Session struct {
+	ID        int32
+	UserID    int32
+	Token     string
+	CreatedAt time.Time
+}
 
 type User struct {
-	ID       int32
-	Username string
-	Password string
-	Email    string
+	ID        int32
+	Username  string
+	Password  string
+	Email     string
+	CreatedAt time.Time
 }

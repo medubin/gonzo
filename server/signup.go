@@ -3,45 +3,72 @@ package server
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/medubin/gonzo/api/utils/cookies"
 	"github.com/medubin/gonzo/api/utils/url"
 	"github.com/medubin/gonzo/db/queries"
+	"github.com/medubin/gonzo/internal/services/auth"
 )
 
 func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error) {
 	if body == nil {
-		return nil, errors.New("must add body")
+		return nil, errors.New("missing body")
 	}
 	user := body.GetUser()
 	password := body.GetPassword()
 	if user.GetEmail() == nil {
-		return nil, errors.New("must add email")
-	}
-	if user.GetName() == nil {
-		return nil, errors.New("must add name")
-	}
-	if password == nil {
-		return nil, errors.New("must add password")
+		return nil, errors.New("missing email")
 	}
 
-	res, err := s.Queries.CreateUser(ctx, queries.CreateUserParams{
+	if user.GetName() == nil {
+		return nil, errors.New("missing name")
+	}
+
+	if password == nil {
+		return nil, errors.New("missing password")
+	}
+
+	password_hash, err := auth.HashPassword(*password)
+	if err != nil {
+		return nil, err
+	}
+
+	newUser, err := s.Queries.CreateUser(ctx, queries.CreateUserParams{
 		Username: *user.GetName(),
 		Email:    *user.GetEmail(),
-		Password: *password,
+		Password: password_hash,
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	id := UserID(&res.ID)
+	token, err := auth.GenerateToken()
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := s.Queries.CreateSession(ctx, queries.CreateSessionParams{
+		UserID: newUser.ID,
+		Token:  token,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	id := UserID(&newUser.ID)
+
+	cookie.Set(&http.Cookie{
+		Name:  "session_token",
+		Value: session.Token,
+	})
 
 	return &SignupResponse{
 		User: &User{
 			ID:    &id,
-			Name:  &res.Username,
-			Email: &res.Email,
+			Name:  &newUser.Username,
+			Email: &newUser.Email,
 		},
 	}, nil
 }
