@@ -1,15 +1,22 @@
 package data
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/medubin/gonzo/api/utils/url"
 )
 
+var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
+
 type Data struct {
-	InStruct  bool
-	InServer  bool
-	Structs   []*Struct
-	Endpoints []*Endpoint
-	Variables []*Variable
+	Servers   []Server
+	Variables []Variable
+}
+
+type Server struct {
+	Name      string
+	Endpoints []Endpoint
 }
 
 type Endpoint struct {
@@ -20,54 +27,117 @@ type Endpoint struct {
 	Return string
 }
 
-type Struct struct {
+type Variable struct {
 	Name   string
 	Type   string
-	Fields []string
+	Fields []Field
 }
 
-type Variable struct {
+type Field struct {
 	Name string
 	Type string
 }
 
-func (o *Data) AddStruct(name string) {
-	o.Structs = append(o.Structs, &Struct{
-		Name: name,
-		Type: "struct {",
-	})
+func ConvertUnitToData(units []Unit) (*Data, error) {
+	data := Data{}
+
+	for _, unit := range units {
+		switch unit.Class {
+		case ClassType:
+			data.Variables = append(data.Variables, convertUnitToVariable(unit))
+		case ClassServer:
+			server, err := convertUnitToServer(unit)
+			if err != nil {
+				return nil, err
+			}
+			data.Servers = append(data.Servers, *server)
+			data.Variables = append(data.Variables, convertURLsToVariables(*server)...)
+		default:
+			return nil, fmt.Errorf("type is incorrect: %s", unit.Class)
+		}
+	}
+	return &data, nil
 }
 
-func (o *Data) AddVariable(name string, typeName string) {
-	o.Variables = append(o.Variables, &Variable{
-		Name: name,
-		Type: typeName,
-	})
+func convertUnitToVariable(unit Unit) Variable {
+	variable := Variable{}
+	for idx, line := range unit.Lines {
+		if idx == 0 {
+			variable.Name = line[1]
+			variable.Type = line[2]
+		} else if line[0] != "}" {
+			variable.Fields = append(variable.Fields, Field{
+				Name: line[0],
+				Type: line[1],
+			})
+		}
+	}
+	return variable
 }
 
-func (o *Data) AddStructField(name string, typeName string) {
-	lastStruct := o.Structs[len(o.Structs)-1]
-	lastStruct.Fields = append(lastStruct.Fields, name, typeName)
-}
-
-func (o *Data) AddEndpoint(e *Endpoint) {
-	o.Endpoints = append(o.Endpoints, e)
-
-	matches := url.GetKeys(e.Url)
-	fields := make([]string, len(matches)*2)
-	for i, match := range matches {
-		fields[i*2] = match
-		fields[i*2+1] = "string"
+func convertUnitToServer(unit Unit) (*Server, error) {
+	server := Server{}
+	for idx, line := range unit.Lines {
+		if idx == 0 {
+			server.Name = line[1]
+		} else if line[0] != "}" {
+			endpoint, err := createEndpoint(line)
+			if err != nil {
+				return nil, err
+			}
+			server.Endpoints = append(server.Endpoints, *endpoint)
+		}
 	}
 
-	o.Structs = append(o.Structs, &Struct{
-		Name:   e.Name + "Url",
-		Type:   "struct {",
-		Fields: fields,
-	})
+	return &server, nil
 }
 
-func (o *Data) FinishVariable() {
-	o.InStruct = false
-	o.InServer = false
+func createEndpoint(line []string) (*Endpoint, error) {
+	endpoint := Endpoint{
+		Verb: line[0],
+		Url:  line[1],
+		Name: line[2],
+	}
+
+	for _, line := range line[3:] {
+		match := re.FindStringSubmatch(line)
+		if match == nil {
+			continue
+		}
+		parName := match[1]
+		parType := match[2]
+		if parName == "returns" {
+			endpoint.Return = parType
+		} else if parName == "body" {
+			endpoint.Body = parType
+		} else {
+			return nil, fmt.Errorf("invalid type: %s", parName)
+		}
+	}
+
+	return &endpoint, nil
+}
+
+func convertURLsToVariables(server Server) []Variable {
+	variables := make([]Variable, len(server.Endpoints))
+	for i, endpoint := range server.Endpoints {
+		variables[i] = convertURLToVariable(endpoint)
+	}
+	return variables
+}
+
+func convertURLToVariable(endpoint Endpoint) Variable {
+	matches := url.GetKeys(endpoint.Url)
+	fields := make([]Field, len(matches))
+	for i, match := range matches {
+		fields[i] = Field{
+			Name: match,
+			Type: "string",
+		}
+	}
+	return Variable{
+		Name:   endpoint.Name + "Url",
+		Type:   "{",
+		Fields: fields,
+	}
 }

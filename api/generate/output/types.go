@@ -10,12 +10,11 @@ import (
 func Types(d *data.Data) string {
 	header := outputHeader()
 	variables := outputVariables(d.Variables)
-	structs := outputStructs(d.Structs)
-	server := outputServer(d.Endpoints)
-	serverStart := outputServerStart(d.Endpoints)
+	server := outputServers(d.Servers)
+	serverStart := outputServerStarts(d.Servers)
 
 	return strings.Join([]string{
-		header, variables, structs, server, serverStart,
+		header, variables, server, serverStart,
 	}, "\n\n")
 }
 
@@ -31,43 +30,63 @@ func outputHeader() string {
 	)
 	`
 }
-func outputStructs(structs []*data.Struct) string {
-	output := ""
-	for _, s := range structs {
-		structForm := fmt.Sprintf("type %s %s\n", s.Name, s.Type)
-		structFunc := ""
-		name := ""
-		for _, f := range s.Fields {
-			if name == "" {
-				name = f
-			} else {
-				structForm += fmt.Sprintf("%s *%s\n", name, f)
-				structFunc += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", s.Name, name, f)
-				structFunc += "if (s == nil) {\n return nil\n}\n"
-				structFunc += fmt.Sprintf("return s.%s\n}\n\n", name)
-				name = ""
-			}
-		}
-		structForm += "}\n\n"
-		output += structForm
-		output += structFunc
-	}
-	return output
-}
 
-func outputVariables(vs []*data.Variable) string {
+func outputVariables(vs []data.Variable) string {
 	output := ""
 	for _, v := range vs {
-		output += fmt.Sprintf("type %s *%s\n\n\n", v.Name, v.Type)
+		output += outputVariable(v)
 	}
 	return output
 }
 
-func outputServer(endpoints []*data.Endpoint) string {
+func outputServers(ss []data.Server) string {
+	output := ""
+	for _, s := range ss {
+		output += outputServer(s)
+	}
+	return output
+}
+
+func outputServerStarts(ss []data.Server) string {
+	output := ""
+	for _, s := range ss {
+		output += outputServerStart(s)
+	}
+	return output
+}
+
+func outputVariable(v data.Variable) string {
+	variableOutput := ""
+	functionOutput := ""
+	isStruct := v.Type == "{"
+
+	vType := v.Type
+	if isStruct {
+		vType = "struct {"
+	} else {
+		vType = "*" + vType
+	}
+
+	variableOutput += fmt.Sprintf("type %s %s\n", v.Name, vType)
+
+	for _, field := range v.Fields {
+		variableOutput += fmt.Sprintf("%s *%s\n", field.Name, field.Type)
+		functionOutput += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", v.Name, field.Name, field.Type)
+		functionOutput += "if (s == nil) {\n return nil\n}\n"
+		functionOutput += fmt.Sprintf("return s.%s\n}\n\n", field.Name)
+	}
+	if isStruct {
+		variableOutput += "}\n"
+	}
+	return variableOutput + "\n\n" + functionOutput
+
+}
+
+func outputServer(s data.Server) string {
 	server := "type Server interface {\n"
 
 	endpointList := []string{}
-	for _, e := range endpoints {
+	for _, e := range s.Endpoints {
 		endpointList = append(endpointList, generateEndpoint(e))
 	}
 
@@ -75,11 +94,11 @@ func outputServer(endpoints []*data.Endpoint) string {
 	return server + "}"
 }
 
-func outputServerStart(endpoints []*data.Endpoint) string {
+func outputServerStart(server data.Server) string {
 	serverInit := "func StartServer(s Server, r *router.Router) {"
-	for _, e := range endpoints {
+	for _, e := range server.Endpoints {
 		serverInit += fmt.Sprintf("r.Route(\"%s\", \"%s\", handle.Handle(s.%s))\n", e.Verb, e.Url, e.Name)
 	}
 
-	return serverInit + "}"
+	return serverInit + "}\n\n"
 }

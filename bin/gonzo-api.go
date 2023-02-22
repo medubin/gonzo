@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/medubin/gonzo/api/generate"
+	api "github.com/medubin/gonzo/api/generate"
 	"github.com/medubin/gonzo/api/generate/fileio"
 )
 
@@ -29,7 +29,7 @@ func root(args []string) error {
 	}
 
 	cmds := []Runner{
-		NewGreetCommand(),
+		NewGreetGenerateCommand(),
 	}
 
 	subcommand := os.Args[1]
@@ -44,7 +44,7 @@ func root(args []string) error {
 	return fmt.Errorf("Unknown subcommand: %s", subcommand)
 }
 
-func NewGreetCommand() *GenerateCommand {
+func NewGreetGenerateCommand() *GenerateCommand {
 	gc := &GenerateCommand{
 		fs: flag.NewFlagSet("generate", flag.ContinueOnError),
 	}
@@ -57,7 +57,7 @@ func NewGreetCommand() *GenerateCommand {
 type GenerateCommand struct {
 	fs *flag.FlagSet
 
-	input string
+	input  string
 	output string
 }
 
@@ -70,15 +70,16 @@ func (g *GenerateCommand) Init(args []string) error {
 }
 
 func (g *GenerateCommand) Run() error {
-	i, err := fileio.ParseFile(g.input + ".api")
+	lines, err := fileio.ParseFile(g.input + ".api")
 	if err != nil {
 		return err
 	}
 
-	data, err := api.GenerateData(i)
+	data, err := api.GenerateData(lines)
 	if err != nil {
 		return err
 	}
+
 	output, err := api.GenerateTypes(data)
 	if err != nil {
 		return err
@@ -108,6 +109,6 @@ func (g *GenerateCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }

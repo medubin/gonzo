@@ -41,7 +41,7 @@ type GetUsersResponse {
   Users map[UserID]User
 }
 
-Server {
+server GonzoServer {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)
   POST /session/new SignIn body(SignInBody) returns(SignInResponse)
   GET /user/{UserID} GetUser returns(GetUserResponse)

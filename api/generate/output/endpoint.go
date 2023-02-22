@@ -6,7 +6,7 @@ import (
 	"github.com/medubin/gonzo/api/generate/data"
 )
 
-func Endpoint(e *data.Endpoint) string {
+func Endpoint(e data.Endpoint) string {
 	endpoint := generateEndpoint(e)
 
 	return fmt.Sprintf(`package server

@@ -34,18 +34,18 @@ type GetUserResponse {
 }
 
 type GetUsersBody {
-  UserIDs []UserID
+  UserIDs [UserID]
 }
 
 type GetUsersResponse {
-  Users map[UserID]User
+  Users [UserID]User
 }
 
 type GetUsersResponsex {
-  Users map[UserID]User
+  Users [UserID]User
 }
 
-Server {
+server GonzoServer {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)
   POST /session/new SignIn body(SignInBody) returns(SignInResponse)
   GET /user/{UserID} GetUser returns(GetUserResponse)

@@ -7,7 +7,7 @@ import (
 	"github.com/medubin/gonzo/api/generate/data"
 )
 
-func generateEndpoint(e *data.Endpoint) string {
+func generateEndpoint(e data.Endpoint) string {
 	parameters := []string{"ctx context.Context"}
 
 	if e.Body != "" {

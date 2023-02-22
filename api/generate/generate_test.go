@@ -160,8 +160,14 @@ func StartServer(s Server, r *router.Router) {
 
 func TestMain(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		data, err := api.ReadFileGenerateData("test")
+
+		lines, err := fileio.ParseFile("test.api")
 		assert.NoError(t, err)
+
+	
+		data, err := api.GenerateData(lines)
+		assert.NoError(t, err)
+
 
 		output, err := api.GenerateTypes(data)
 		assert.NoError(t, err)
@@ -183,9 +189,9 @@ func TestMain(t *testing.T) {
 
 	t.Run("Failure", func(t *testing.T) {
 		t.Run("Nonexistent file", func(t *testing.T) {
-			output, err := api.ReadFileGenerateData("bleh")
+			lines, err := fileio.ParseFile("bleh.api")
 			assert.Error(t, err)
-			assert.Empty(t, output)
+			assert.Empty(t, lines)
 		})
 	})
 }
