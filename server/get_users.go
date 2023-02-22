@@ -9,5 +9,5 @@ import (
 )
 
 func (s *ServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error) {
-	return nil, errors.New("Not Implemented")
+	return nil, errors.New("not implemented")
 }
