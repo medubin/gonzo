@@ -7,7 +7,7 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	"github.com/medubin/gonzo/api/utils/router"
+	"github.com/medubin/gonzo/api/src/router"
 	"github.com/medubin/gonzo/db/queries"
 	"github.com/medubin/gonzo/server"
 )
