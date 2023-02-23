@@ -1,4 +1,4 @@
-type UserID string
+type UserID int32
 
 type User {
   ID UserID
@@ -34,15 +34,11 @@ type GetUserResponse {
 }
 
 type GetUsersBody {
-  UserIDs [UserID]
+  UserIDs []UserID
 }
 
 type GetUsersResponse {
-  Users [UserID]User
-}
-
-type GetUsersResponsex {
-  Users [UserID]User
+  Users map[UserID]User
 }
 
 server GonzoServer {

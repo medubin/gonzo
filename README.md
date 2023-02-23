@@ -12,7 +12,7 @@
 - [x] remove line removal
 - [x] add generated to files
 - [] add file splitting
-- [] prevent duplicate types
+- [x] prevent duplicate types
 - [] simplify server parameters
 - [] add options
 

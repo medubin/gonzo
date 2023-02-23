@@ -5,8 +5,8 @@ import (
 
 	"github.com/medubin/gonzo/api/generate/data"
 	"github.com/medubin/gonzo/api/generate/output"
-
 	"github.com/medubin/gonzo/api/generate/utils"
+	"github.com/medubin/gonzo/api/generate/validation"
 )
 
 func GenerateData(lines []string) (*data.Data, error) {
@@ -16,6 +16,11 @@ func GenerateData(lines []string) (*data.Data, error) {
 	}
 
 	data, err := data.ConvertUnitToData(*units)
+	if err != nil {
+		return nil, err
+	}
+
+	err = validation.CheckDuplicates(*data)
 	if err != nil {
 		return nil, err
 	}
