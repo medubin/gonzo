@@ -14,8 +14,8 @@ func Endpoint(e data.Endpoint) string {
 		"context"
 		"errors"
 
-		"github.com/medubin/gonzo/api/utils/cookies"
-		"github.com/medubin/gonzo/api/utils/url"
+		"github.com/medubin/gonzo/api/src/cookies"
+		"github.com/medubin/gonzo/api/src/url"
 	)
 	
 func (s *ServerImpl) %s {

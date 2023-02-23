@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/medubin/gonzo/api/utils/url"
+	"github.com/medubin/gonzo/api/generate/utils"
 )
 
 var re = regexp.MustCompile(`(?mi)^(?P<t>body|returns)\((?P<v>[a-zA-Z]+)\)$`)
@@ -127,7 +127,7 @@ func convertURLsToVariables(server Server) []Variable {
 }
 
 func convertURLToVariable(endpoint Endpoint) Variable {
-	matches := url.GetKeys(endpoint.Url)
+	matches := utils.GetKeys(endpoint.Url)
 	fields := make([]Field, len(matches))
 	for i, match := range matches {
 		fields[i] = Field{

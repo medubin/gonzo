@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/medubin/gonzo/api/utils/cookies"
-	"github.com/medubin/gonzo/api/utils/url"
+	"github.com/medubin/gonzo/api/src/cookies"
+	"github.com/medubin/gonzo/api/src/url"
 )
 
 func Handle[Body any, response any, URL any](handler func(ctx context.Context, b *Body, c cookies.Cookies, u url.URL[URL]) (response, error)) func(http.ResponseWriter, *http.Request) {

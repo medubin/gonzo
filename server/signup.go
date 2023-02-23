@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/medubin/gonzo/api/utils/cookies"
-	"github.com/medubin/gonzo/api/utils/url"
+	"github.com/medubin/gonzo/api/src/cookies"
+	"github.com/medubin/gonzo/api/src/url"
 	"github.com/medubin/gonzo/db/queries"
 	"github.com/medubin/gonzo/internal/services/auth"
 )

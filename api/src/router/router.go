@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/medubin/gonzo/api/utils/url"
+	"github.com/medubin/gonzo/api/src/url"
 )
 
 type Router struct {
