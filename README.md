@@ -9,8 +9,8 @@
 - [] nested routes
 - [] add required type with check
 - [] export to typescript
-- [] remove line removal
-- [] add generated to files
+- [x] remove line removal
+- [x] add generated to files
 - [] add file splitting
 - [] prevent duplicate types
 - [] simplify server parameters
