@@ -12,14 +12,14 @@ func Endpoint(e data.Endpoint) string {
 	return fmt.Sprintf(`package server
 	import (
 		"context"
-		"errors"
 
 		"github.com/medubin/gonzo/api/src/cookies"
 		"github.com/medubin/gonzo/api/src/url"
+		"github.com/medubin/gonzo/api/src/gerrors"
 	)
 	
 func (s *ServerImpl) %s {
-	return nil, errors.New("not implemented")
+	return nil, gerrors.UnimplementedError("%s")
 }
-	`, endpoint)
+	`, endpoint, e.Name)
 }

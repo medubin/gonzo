@@ -2,9 +2,11 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
 )
 
@@ -27,8 +29,8 @@ func (rtr *Router) Route(method, path string, handlerFunc http.HandlerFunc) {
 func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("ERROR:", r) // Log the error
-			http.Error(w, "Uh oh!", http.StatusInternalServerError)
+			log.Println("panic: ", r) // Log the error
+			gerrors.JSONError(w, fmt.Errorf("panic: %v", r))
 		}
 	}()
 
@@ -47,5 +49,5 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.NotFound(w, r)
+	gerrors.JSONError(w, gerrors.BadRouteError(fmt.Sprintf("%s: %s", r.Method, r.URL.Path)))
 }

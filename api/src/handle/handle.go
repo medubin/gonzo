@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/medubin/gonzo/api/src/cookies"
+	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
 )
 
@@ -17,7 +18,8 @@ func Handle[Body any, response any, URL any](handler func(ctx context.Context, b
 		err := json.NewDecoder(r.Body).Decode(&body)
 
 		if err != nil && err != io.EOF {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			gerr := gerrors.MalformedError(err.Error())
+			gerrors.JSONError(w, gerr)
 			return
 		}
 
@@ -30,13 +32,13 @@ func Handle[Body any, response any, URL any](handler func(ctx context.Context, b
 
 		resp, err := handler(ctx, body, cookies, Url)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			gerrors.JSONError(w, err)
 			return
 		}
 
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			gerrors.JSONError(w, err)
 			return
 		}
 	}

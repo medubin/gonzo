@@ -26,12 +26,6 @@ func GenerateData(lines []string) (*data.Data, error) {
 	}
 
 	return data, nil
-
-	// parse file into lines
-	// split line sections into functional units
-	// make sure there are no duplicates
-	// process each functional unit
-	// write to file
 }
 
 func GenerateTypes(data *data.Data) (string, error) {
