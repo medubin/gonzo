@@ -8,6 +8,7 @@ import (
 	"github.com/medubin/gonzo/api/src/url"
 )
 
+// /user/{UserID}
 func (s *ServerImpl) GetUser(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error) {
 	return nil, gerrors.UnimplementedError("GetUser")
 }

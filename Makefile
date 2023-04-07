@@ -2,7 +2,7 @@ run:
 	go run internal/main.go
 
 generate-api:
-	go run bin/gonzo-api.go generate --input test --output server
+	go run bin/gonzo-api.go generate --input server --output server
 
 db-migration:
 	go run db/db-migrations.go

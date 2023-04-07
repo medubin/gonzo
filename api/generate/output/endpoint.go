@@ -18,8 +18,9 @@ func Endpoint(e data.Endpoint) string {
 		"github.com/medubin/gonzo/api/src/gerrors"
 	)
 	
+// %s
 func (s *ServerImpl) %s {
 	return nil, gerrors.UnimplementedError("%s")
 }
-	`, endpoint, e.Name)
+	`, e.Url, endpoint, e.Name)
 }
