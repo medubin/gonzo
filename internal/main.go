@@ -20,6 +20,7 @@ func main() {
 }
 
 func run() error {
+	println("Starting server")
 	db, err := sql.Open("postgres", "user=postgres dbname=gonzo sslmode=disable")
 	if err != nil {
 		return err
@@ -32,6 +33,6 @@ func run() error {
 	}
 
 	server.StartServer(s, r)
-	http.ListenAndServe(":8080", r)
-	return nil
+	err = http.ListenAndServe(":8080", r)
+	return err
 }
