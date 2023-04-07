@@ -151,10 +151,27 @@ func (s *GetUsersResponse) GetUsers() *map[UserID]User {
 	return s.Users
 }
 
+type SignOutBody struct {
+	Session *Session
+}
+
+func (s *SignOutBody) GetSession() *Session {
+	if s == nil {
+		return nil
+	}
+	return s.Session
+}
+
+type SignOutResponse struct {
+}
+
 type SignupUrl struct {
 }
 
 type SignInUrl struct {
+}
+
+type SignOutUrl struct {
 }
 
 type GetUserUrl struct {
@@ -174,6 +191,7 @@ type GetUsersUrl struct {
 type Server interface {
 	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
 	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
+	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[SignOutUrl]) (*SignOutResponse, error)
 	GetUser(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
 	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error)
 }
@@ -181,6 +199,7 @@ type Server interface {
 func StartServer(s Server, r *router.Router) {
 	r.Route("POST", "/user/new", handle.Handle(s.Signup))
 	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
+	r.Route("DELETE", "/session", handle.Handle(s.SignOut))
 	r.Route("GET", "/user/{UserID}", handle.Handle(s.GetUser))
 	r.Route("GET", "/users/", handle.Handle(s.GetUsers))
 }

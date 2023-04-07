@@ -5,3 +5,7 @@ INSERT INTO sessions (
   $1, $2
 )
 RETURNING *;
+
+-- name: DeleteSession :exec
+DELETE FROM sessions
+WHERE token = $1 and user_id = $2;

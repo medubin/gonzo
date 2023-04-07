@@ -13,6 +13,7 @@ const (
 	Unauthenticated ErrorCode = "unauthenticated"
 	Unimplemented   ErrorCode = "unimplemented"
 	Internal        ErrorCode = "internal"
+	MissingArgument ErrorCode = "missing_argument"
 
 	BadRoute  ErrorCode = "bad_route"
 	Malformed ErrorCode = "malformed"
@@ -24,6 +25,10 @@ func newError(code ErrorCode, message string, statusCode int) GonzoError {
 
 func InvalidArgumentError(msg string) GonzoError {
 	return newError(InvalidArgument, msg, http.StatusBadRequest)
+}
+
+func MissingArgumentError(msg string) GonzoError {
+	return newError(MissingArgument, msg, http.StatusBadRequest)
 }
 
 func NotFoundError(msg string) GonzoError {

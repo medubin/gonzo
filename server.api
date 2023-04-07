@@ -41,9 +41,20 @@ type GetUsersResponse {
   Users map[UserID]User
 }
 
+type SignOutBody {
+  Session Session
+}
+
+
+type SignOutResponse {
+}
+
+
 server GonzoServer {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)
   POST /session/new SignIn body(SignInBody) returns(SignInResponse)
+  DELETE /session SignOut body(SignOutBody) returns(SignOutResponse)
+
   GET /user/{UserID} GetUser returns(GetUserResponse)
   GET /users/ GetUsers body(GetUsersBody) returns(GetUsersResponse)
 }

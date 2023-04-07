@@ -34,3 +34,18 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 	)
 	return i, err
 }
+
+const deleteSession = `-- name: DeleteSession :exec
+DELETE FROM sessions
+WHERE token = $1 and user_id = $2
+`
+
+type DeleteSessionParams struct {
+	Token  string
+	UserID int32
+}
+
+func (q *Queries) DeleteSession(ctx context.Context, arg DeleteSessionParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSession, arg.Token, arg.UserID)
+	return err
+}

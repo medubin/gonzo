@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/medubin/gonzo/api/src/cookies"
+	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
 	"github.com/medubin/gonzo/db/queries"
 	"github.com/medubin/gonzo/internal/services/auth"
@@ -13,15 +13,15 @@ import (
 
 func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error) {
 	if body == nil {
-		return nil, errors.New("missing body")
+		return nil, gerrors.MissingArgumentError("body")
 	}
 	if body.GetPassword() == nil {
-		return nil, errors.New("missing password")
+		return nil, gerrors.MissingArgumentError("password")
 	}
 
 	userID := body.GetUserID()
 	if userID == nil {
-		return nil, errors.New("missing user id")
+		return nil, gerrors.MissingArgumentError("user id")
 	}
 
 	user, err := s.Queries.GetUser(ctx, **userID)
@@ -32,7 +32,7 @@ func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookie
 	isSamePass := auth.CheckPasswordHash(*body.GetPassword(), user.Password)
 
 	if !isSamePass {
-		return nil, errors.New("password incorrect")
+		return nil, gerrors.InvalidArgumentError("password incorrect")
 	}
 
 	token, err := auth.GenerateToken()
@@ -59,5 +59,4 @@ func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookie
 			Token:  &token,
 		},
 	}, nil
-
 }
