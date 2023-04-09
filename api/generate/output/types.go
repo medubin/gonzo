@@ -71,8 +71,14 @@ func outputVariable(v data.Variable) string {
 	variableOutput += fmt.Sprintf("type %s %s\n", v.Name, vType)
 
 	for _, field := range v.Fields {
-		variableOutput += fmt.Sprintf("%s *%s\n", field.Name, field.Type)
-		functionOutput += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", v.Name, field.Name, field.Type)
+		fieldType := field.Type
+		if field.Repeated {
+			fieldType = "[]" + fieldType
+		} else if field.MapValue != "" {
+			fieldType = "map[" + fieldType + "]" + field.MapValue
+		}
+		variableOutput += fmt.Sprintf("%s *%s\n", field.Name, fieldType)
+		functionOutput += fmt.Sprintf("func (s *%s) Get%s() *%s {\n ", v.Name, field.Name, fieldType)
 		functionOutput += "if (s == nil) {\n return nil\n}\n"
 		functionOutput += fmt.Sprintf("return s.%s\n}\n\n", field.Name)
 	}

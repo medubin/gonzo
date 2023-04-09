@@ -22,6 +22,7 @@
 - [] use templates
 - [] flip the typing so that golang complains about the incorrect endpoint function instead of complaining in main
 - [] upcase first letter for the getter function
+- [] handle nested maps and arrays
 
 ## frontend
 - [] react

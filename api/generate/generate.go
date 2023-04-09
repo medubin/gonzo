@@ -25,6 +25,11 @@ func GenerateData(lines []string) (*data.Data, error) {
 		return nil, err
 	}
 
+	err = validation.CheckTypes(*data)
+	if err != nil {
+		return nil, err
+	}
+
 	return data, nil
 }
 

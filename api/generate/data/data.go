@@ -34,8 +34,10 @@ type Variable struct {
 }
 
 type Field struct {
-	Name string
-	Type string
+	Name     string
+	Type     string
+	Repeated bool
+	MapValue string
 }
 
 func ConvertUnitToData(units []Unit) (*Data, error) {
@@ -83,8 +85,9 @@ func convertUnitToVariable(unit Unit) (Variable, error) {
 				}
 
 				variable.Fields = append(variable.Fields, Field{
-					Name: line[0],
-					Type: "[]" + line[2],
+					Name:     line[0],
+					Type:     line[2],
+					Repeated: true,
 				})
 			} else if len(line) == 4 {
 				// should only be a map
@@ -92,8 +95,9 @@ func convertUnitToVariable(unit Unit) (Variable, error) {
 					return variable, fmt.Errorf("unknown type %s", line[1])
 				}
 				variable.Fields = append(variable.Fields, Field{
-					Name: line[0],
-					Type: "map[" + line[2] + "]" + line[3],
+					Name:     line[0],
+					Type:     line[2],
+					MapValue: line[3],
 				})
 
 			}
