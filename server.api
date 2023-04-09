@@ -34,11 +34,11 @@ type GetUserResponse {
 }
 
 type GetUsersBody {
-  UserIDs []UserID
+   UserIDs repeated UserID
 }
 
 type GetUsersResponse {
-  Users map[UserID]User
+  Users map UserID User
 }
 
 type SignOutBody {
@@ -48,7 +48,6 @@ type SignOutBody {
 
 type SignOutResponse {
 }
-
 
 server GonzoServer {
   POST /user/new Signup body(SignupBody) returns(SignupResponse)

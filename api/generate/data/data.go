@@ -44,7 +44,11 @@ func ConvertUnitToData(units []Unit) (*Data, error) {
 	for _, unit := range units {
 		switch unit.Class {
 		case ClassType:
-			data.Variables = append(data.Variables, convertUnitToVariable(unit))
+			variable, err := convertUnitToVariable(unit)
+			if err != nil {
+				return nil, err
+			}
+			data.Variables = append(data.Variables, variable)
 		case ClassServer:
 			server, err := convertUnitToServer(unit)
 			if err != nil {
@@ -59,20 +63,43 @@ func ConvertUnitToData(units []Unit) (*Data, error) {
 	return &data, nil
 }
 
-func convertUnitToVariable(unit Unit) Variable {
+func convertUnitToVariable(unit Unit) (Variable, error) {
 	variable := Variable{}
 	for idx, line := range unit.Lines {
 		if idx == 0 {
 			variable.Name = line[1]
 			variable.Type = line[2]
 		} else if line[0] != "}" {
-			variable.Fields = append(variable.Fields, Field{
-				Name: line[0],
-				Type: line[1],
-			})
+			if len(line) == 2 {
+				// 3 items is a simple variable
+				variable.Fields = append(variable.Fields, Field{
+					Name: line[0],
+					Type: line[1],
+				})
+			} else if len(line) == 3 {
+				// should only be an array
+				if line[1] != "repeated" {
+					return variable, fmt.Errorf("unknown type %s", line[1])
+				}
+
+				variable.Fields = append(variable.Fields, Field{
+					Name: line[0],
+					Type: "[]" + line[2],
+				})
+			} else if len(line) == 4 {
+				// should only be a map
+				if line[1] != "map" {
+					return variable, fmt.Errorf("unknown type %s", line[1])
+				}
+				variable.Fields = append(variable.Fields, Field{
+					Name: line[0],
+					Type: "map[" + line[2] + "]" + line[3],
+				})
+
+			}
 		}
 	}
-	return variable
+	return variable, nil
 }
 
 func convertUnitToServer(unit Unit) (*Server, error) {
