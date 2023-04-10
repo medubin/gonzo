@@ -41,7 +41,7 @@ func (g gerr) MarshalJSON() ([]byte, error) {
 }
 
 func (e gerr) Error() string {
-	return fmt.Sprintf("%s: %s ", e.code, e.msg)
+	return fmt.Sprintf("%s: %s", e.code, e.msg)
 }
 
 func (e gerr) Code() ErrorCode {
