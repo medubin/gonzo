@@ -9,8 +9,5 @@ import (
 )
 
 func (s *ServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error) {
-	b := *body.UserIDs
-	println(b[2])
-
 	return nil, gerrors.UnimplementedError("GetUsers")
 }
