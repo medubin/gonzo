@@ -6,14 +6,25 @@ import (
 )
 
 func WriteToFile(directory string, name string, output string) error {
-	return os.WriteFile(directory + "/" + name+".go", []byte(output), 0644)
+	_ = os.Mkdir(directory, os.ModePerm)
+
+	file, err := os.Create(directory + "/" + name + ".go")
+	if err != nil {
+		return err
+	}
+	_, err = file.WriteString(output)
+	return err
+
+	// return os.WriteFile(directory+"/"+name+".go", []byte(output), 0644)
 }
 
 func SafeWriteToFile(directory string, name string, output string) error {
+	_ = os.Mkdir(directory, os.ModePerm)
+
 	if fileExists(directory, name) {
 		return nil
 	}
-	return os.WriteFile(directory + "/" + name+".go", []byte(output), 0644)
+	return os.WriteFile(directory+"/"+name+".go", []byte(output), 0644)
 }
 
 func WriteEndpoints(directory string, endpoints map[string]string) error {

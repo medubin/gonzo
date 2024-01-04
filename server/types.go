@@ -10,7 +10,7 @@ import (
 	"github.com/medubin/gonzo/api/src/url"
 )
 
-type UserID *int32
+type UserID int32
 
 type User struct {
 	ID    *UserID
@@ -18,44 +18,9 @@ type User struct {
 	Email *string
 }
 
-func (s *User) GetID() *UserID {
-	if s == nil {
-		return nil
-	}
-	return s.ID
-}
-
-func (s *User) GetName() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Name
-}
-
-func (s *User) GetEmail() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Email
-}
-
 type Session struct {
 	UserID *UserID
 	Token  *string
-}
-
-func (s *Session) GetUserID() *UserID {
-	if s == nil {
-		return nil
-	}
-	return s.UserID
-}
-
-func (s *Session) GetToken() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Token
 }
 
 type SignupBody struct {
@@ -63,29 +28,8 @@ type SignupBody struct {
 	Password *string
 }
 
-func (s *SignupBody) GetUser() *User {
-	if s == nil {
-		return nil
-	}
-	return s.User
-}
-
-func (s *SignupBody) GetPassword() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Password
-}
-
 type SignupResponse struct {
 	User *User
-}
-
-func (s *SignupResponse) GetUser() *User {
-	if s == nil {
-		return nil
-	}
-	return s.User
 }
 
 type SignInBody struct {
@@ -93,73 +37,24 @@ type SignInBody struct {
 	Password *string
 }
 
-func (s *SignInBody) GetUserID() *UserID {
-	if s == nil {
-		return nil
-	}
-	return s.UserID
-}
-
-func (s *SignInBody) GetPassword() *string {
-	if s == nil {
-		return nil
-	}
-	return s.Password
-}
-
 type SignInResponse struct {
 	Session *Session
-}
-
-func (s *SignInResponse) GetSession() *Session {
-	if s == nil {
-		return nil
-	}
-	return s.Session
 }
 
 type GetUserResponse struct {
 	User *User
 }
 
-func (s *GetUserResponse) GetUser() *User {
-	if s == nil {
-		return nil
-	}
-	return s.User
-}
-
 type GetUsersBody struct {
-	UserIDs *[]UserID
-}
-
-func (s *GetUsersBody) GetUserIDs() *[]UserID {
-	if s == nil {
-		return nil
-	}
-	return s.UserIDs
+	UserIDs []UserID
 }
 
 type GetUsersResponse struct {
-	Users *map[UserID]User
-}
-
-func (s *GetUsersResponse) GetUsers() *map[UserID]User {
-	if s == nil {
-		return nil
-	}
-	return s.Users
+	Users map[UserID]User
 }
 
 type SignOutBody struct {
 	Session *Session
-}
-
-func (s *SignOutBody) GetSession() *Session {
-	if s == nil {
-		return nil
-	}
-	return s.Session
 }
 
 type SignOutResponse struct {
@@ -178,17 +73,10 @@ type GetUserUrl struct {
 	UserID *string
 }
 
-func (s *GetUserUrl) GetUserID() *string {
-	if s == nil {
-		return nil
-	}
-	return s.UserID
-}
-
 type GetUsersUrl struct {
 }
 
-type Server interface {
+type GonzoServer interface {
 	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error)
 	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error)
 	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[SignOutUrl]) (*SignOutResponse, error)
@@ -196,7 +84,7 @@ type Server interface {
 	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[GetUsersUrl]) (*GetUsersResponse, error)
 }
 
-func StartServer(s Server, r *router.Router) {
+func StartGonzoServer(s GonzoServer, r *router.Router) {
 	r.Route("POST", "/user/new", handle.Handle(s.Signup))
 	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
 	r.Route("DELETE", "/session", handle.Handle(s.SignOut))

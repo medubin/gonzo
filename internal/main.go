@@ -32,7 +32,7 @@ func run() error {
 		Queries: *queries,
 	}
 
-	server.StartServer(s, r)
+	server.StartGonzoServer(s, r)
 	err = http.ListenAndServe(":8080", r)
 	return err
 }

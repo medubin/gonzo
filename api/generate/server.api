@@ -1,6 +1,14 @@
-type UserID int32
+// this is a comment
 
-type User {
+/* 
+this is a multiline comment
+*/
+
+type UserID int32//this is also a comment
+
+type Users repeated(UserId)
+
+type User{
   ID UserID
   Name string
   Email string
@@ -35,6 +43,7 @@ type GetUserResponse {
 
 type GetUsersBody {
    UserIDs repeated(UserID)
+    test string
 }
 
 type GetUsersResponse {
@@ -49,10 +58,10 @@ type SignOutResponse {
 }
 
 server GonzoServer {
-  Signup POST /user/new  body(SignupBody) returns(SignupResponse)
-  SignIn POST /session/new  body(SignInBody) returns(SignInResponse)
+  Signup POST /user/new body(SignupBody) returns(SignupResponse)
+  SignIn POST /session/new body(SignInBody) returns(SignInResponse)
   SignOut DELETE /session  body(SignOutBody) returns(SignOutResponse)
 
-  GetUser GET /user/<UserID> returns(GetUserResponse)
-  GetUsers GET /users/ body(GetUsersBody) returns(GetUsersResponse)
+  GetUser GET /user/<UserID>  returns(GetUserResponse)
+  GetUsers GET /users  body(GetUsersBody) returns(GetUsersResponse)
 }

@@ -1,6 +1,10 @@
-type UserID int32
+# this is a comment
 
-type User {
+type UserID int32#this is also a comment
+
+type Users repeated(UserId)
+
+type User{
   ID UserID
   Name string
   Email string

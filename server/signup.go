@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/http"
+  "errors"
 
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/url"
@@ -11,17 +11,18 @@ import (
 	"github.com/medubin/gonzo/internal/services/auth"
 )
 
+// POST /user/new
 func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error) {
 	if body == nil {
 		return nil, errors.New("missing body")
 	}
-	user := body.GetUser()
-	password := body.GetPassword()
-	if user.GetEmail() == nil {
+	user := body.User
+	password := body.Password
+	if user.Email == nil {
 		return nil, errors.New("missing email")
 	}
 
-	if user.GetName() == nil {
+	if user.Name == nil {
 		return nil, errors.New("missing name")
 	}
 
@@ -35,8 +36,8 @@ func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookie
 	}
 
 	newUser, err := s.Queries.CreateUser(ctx, queries.CreateUserParams{
-		Username: *user.GetName(),
-		Email:    *user.GetEmail(),
+		Username: *user.Name,
+		Email:    *user.Email,
 		Password: password_hash,
 	})
 
@@ -57,7 +58,7 @@ func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookie
 		return nil, err
 	}
 
-	id := UserID(&newUser.ID)
+	id := UserID(newUser.ID)
 
 	cookie.Set(&http.Cookie{
 		Name:  "session_token",

@@ -25,11 +25,11 @@ func main() {
 
 func root(args []string) error {
 	if len(args) < 1 {
-		return errors.New("You must pass a sub-command")
+		return errors.New("you must pass a sub-command")
 	}
 
 	cmds := []Runner{
-		NewGreetGenerateCommand(),
+		NewGenerateCommand(),
 	}
 
 	subcommand := os.Args[1]
@@ -41,10 +41,10 @@ func root(args []string) error {
 		}
 	}
 
-	return fmt.Errorf("Unknown subcommand: %s", subcommand)
+	return fmt.Errorf("unknown subcommand: %s", subcommand)
 }
 
-func NewGreetGenerateCommand() *GenerateCommand {
+func NewGenerateCommand() *GenerateCommand {
 	gc := &GenerateCommand{
 		fs: flag.NewFlagSet("generate", flag.ContinueOnError),
 	}
@@ -75,22 +75,12 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	data, err := api.GenerateData(lines)
+	types, endpoints, err := api.Generate(lines)
 	if err != nil {
 		return err
 	}
 
-	output, err := api.GenerateTypes(data)
-	if err != nil {
-		return err
-	}
-
-	err = fileio.WriteToFile(g.output, "types", output)
-	if err != nil {
-		return err
-	}
-
-	endpoints, err := api.GenerateEndpoints(data)
+	err = fileio.WriteToFile(g.output, "types", types)
 	if err != nil {
 		return err
 	}
@@ -100,11 +90,10 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	server, err := api.GenerateServer()
-	if err != nil {
-		return err
-	}
+	server := `package server
 
+type ServerImpl struct{}
+`
 	err = fileio.SafeWriteToFile(g.output, "server", server)
 	if err != nil {
 		return err

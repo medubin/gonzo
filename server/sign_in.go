@@ -11,25 +11,26 @@ import (
 	"github.com/medubin/gonzo/internal/services/auth"
 )
 
+// POST /session/new
 func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error) {
 	if body == nil {
 		return nil, gerrors.MissingArgumentError("body")
 	}
-	if body.GetPassword() == nil {
+	if body.Password == nil {
 		return nil, gerrors.MissingArgumentError("password")
 	}
 
-	userID := body.GetUserID()
+	userID := body.UserID
 	if userID == nil {
 		return nil, gerrors.MissingArgumentError("user id")
 	}
 
-	user, err := s.Queries.GetUser(ctx, **userID)
+	user, err := s.Queries.GetUser(ctx, int32(*userID))
 	if err != nil {
 		return nil, err
 	}
 
-	isSamePass := auth.CheckPasswordHash(*body.GetPassword(), user.Password)
+	isSamePass := auth.CheckPasswordHash(*body.Password, user.Password)
 
 	if !isSamePass {
 		return nil, gerrors.InvalidArgumentError("password incorrect")
