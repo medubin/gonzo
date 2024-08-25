@@ -8,6 +8,7 @@ import (
 
 	api "github.com/medubin/gonzo/api/generate"
 	"github.com/medubin/gonzo/api/generate/fileio"
+	"github.com/medubin/gonzo/api/generate/utils"
 )
 
 type Runner interface {
@@ -50,6 +51,8 @@ func NewGenerateCommand() *GenerateCommand {
 	}
 	gc.fs.StringVar(&gc.input, "input", "", "input file. Should end in .api")
 	gc.fs.StringVar(&gc.output, "output", "", "output directory")
+	gc.fs.StringVar(&gc.stack, "stack", "server", "server or client. Defaults to server")
+	gc.fs.StringVar(&gc.language, "languge", "go", "language, can be go or typescript")
 
 	return gc
 }
@@ -59,6 +62,9 @@ type GenerateCommand struct {
 
 	input  string
 	output string
+
+	stack    string
+	language string
 }
 
 func (g *GenerateCommand) Name() string {
@@ -70,12 +76,16 @@ func (g *GenerateCommand) Init(args []string) error {
 }
 
 func (g *GenerateCommand) Run() error {
+	if !utils.IsLanguageStackAllowed(g.language, g.stack) {
+		return errors.New("unsupported language stack combination")
+	}
+
 	lines, err := fileio.ParseFile(g.input + ".api")
 	if err != nil {
 		return err
 	}
 
-	types, endpoints, err := api.Generate(lines)
+	types, endpoints, err := api.Generate(lines, g.stack)
 	if err != nil {
 		return err
 	}
@@ -90,13 +100,16 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	server := `package server
+	if g.stack == "server" {
+
+		server := `package server
 
 type ServerImpl struct{}
 `
-	err = fileio.SafeWriteToFile(g.output, "server", server)
-	if err != nil {
-		return err
+		err = fileio.SafeWriteToFile(g.output, "server", server)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
