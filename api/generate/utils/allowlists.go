@@ -4,7 +4,7 @@ func IsLanguageStackAllowed(language string, stack string) bool {
 	switch stack {
 	case "server":
 		switch language {
-		case "golang":
+		case "go":
 			return true
 		}
 	case "client":

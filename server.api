@@ -49,9 +49,9 @@ type SignOutResponse {
 }
 
 server GonzoServer {
-  Signup POST /user/new  body(SignupBody) returns(SignupResponse)
-  SignIn POST /session/new  body(SignInBody) returns(SignInResponse)
-  SignOut DELETE /session  body(SignOutBody) returns(SignOutResponse)
+  Signup POST /user/new body(SignupBody) returns(SignupResponse)
+  SignIn POST /session/new body(SignInBody) returns(SignInResponse)
+  SignOut DELETE /session body(SignOutBody) returns(SignOutResponse)
 
   GetUser GET /user/<UserID> returns(GetUserResponse)
   GetUsers GET /users/ body(GetUsersBody) returns(GetUsersResponse)

@@ -8,9 +8,11 @@ require (
 	github.com/cubicdaiya/gonp v1.0.4 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/golang-migrate/migrate v3.5.4+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.15.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/gzuidhof/tygo v0.2.15 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
@@ -32,9 +34,13 @@ require (
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

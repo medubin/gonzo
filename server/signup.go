@@ -18,6 +18,10 @@ func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookie
 	}
 	user := body.User
 	password := body.Password
+  if user == nil {
+    return nil, errors.New("missing user")
+  }
+
 	if user.Email == nil {
 		return nil, errors.New("missing email")
 	}
