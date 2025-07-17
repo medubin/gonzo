@@ -1,6 +1,8 @@
 package lex
 
 import (
+	"strings"
+
 	cr "github.com/medubin/gonzo/api/generate/character_reader"
 )
 
@@ -27,11 +29,17 @@ func (l *Lexer) Lex() error {
 }
 
 func (l *Lexer) Peek() *Token {
+	if l.position >= len(l.Tokens) {
+		return nil
+	}
 	return &l.Tokens[l.position]
 }
 
 func (l *Lexer) Next() *Token {
-	head := l.Peek()
+	if l.position >= len(l.Tokens) {
+		return nil
+	}
+	head := &l.Tokens[l.position]
 	l.position++
 	return head
 }
@@ -44,29 +52,43 @@ func (l *Lexer) Reset() {
 	l.position = 0
 }
 
+var singleCharTokens = map[byte]Type{
+	'\t': TAB,
+	' ':  SPACE,
+	'\n': NEWLINE,
+	'\r': NEWLINE,
+	';':  NEWLINE,
+	':':  COLON,
+	'=':  ASSIGN,
+	'@':  SIGN,
+	'(':  LP,
+	'[':  LSB,
+	']':  RSB,
+	'+':  PLUS,
+	'-':  MINUS,
+	'*':  TIMES,
+	'%':  MOD,
+	'^':  POW,
+	'>':  GT,
+	'<':  LT,
+	'!':  EXCL,
+	'?':  QM,
+	',':  COMMA,
+	'#':  HASH,
+	'.':  DOT,
+}
+
 func (l *Lexer) nextToken() Token {
 	char := l.c.Peek()
+
+	if tokenType, ok := singleCharTokens[char]; ok {
+		if tokenType == NEWLINE {
+			l.states.PushOrPopTokenType(NEWLINE)
+		}
+		return NewToken(l.c.Next(), tokenType, l.states.Get())
+	}
+
 	switch char {
-	case '\t':
-		return NewToken(l.c.Next(), TAB, l.states.Get())
-	case ' ':
-		return NewToken(l.c.Next(), SPACE, l.states.Get())
-	case '\n':
-		l.states.PushOrPopTokenType(NEWLINE)
-		return NewToken(l.c.Next(), NEWLINE, l.states.Get())
-	case '\r':
-		l.states.PushOrPopTokenType(NEWLINE)
-		return NewToken(l.c.Next(), NEWLINE, l.states.Get())
-	case ';':
-		return NewToken(l.c.Next(), NEWLINE, l.states.Get())
-	case ':':
-		return NewToken(l.c.Next(), COLON, l.states.Get())
-	case '=':
-		return NewToken(l.c.Next(), ASSIGN, l.states.Get())
-	case '@':
-		return NewToken(l.c.Next(), SIGN, l.states.Get())
-	case '(':
-		return NewToken(l.c.Next(), LP, l.states.Get())
 	case ')':
 		prevState := l.states.Get()
 		l.states.PushOrPopTokenType(RP)
@@ -78,66 +100,31 @@ func (l *Lexer) nextToken() Token {
 		prevState := l.states.Get()
 		l.states.PushOrPopTokenType(RCB)
 		return NewToken(l.c.Next(), RCB, prevState)
-	case '[':
-		return NewToken(l.c.Next(), LSB, l.states.Get())
-	case ']':
-		return NewToken(l.c.Next(), RSB, l.states.Get())
-	case '+':
-		return NewToken(l.c.Next(), PLUS, l.states.Get())
-	case '-':
-		return NewToken(l.c.Next(), MINUS, l.states.Get())
-	case '*':
-		return NewToken(l.c.Next(), TIMES, l.states.Get())
-	case '%':
-		return NewToken(l.c.Next(), MOD, l.states.Get())
-	case '^':
-		return NewToken(l.c.Next(), POW, l.states.Get())
-	case '>':
-		return NewToken(l.c.Next(), GT, l.states.Get())
-	case '<':
-		return NewToken(l.c.Next(), LT, l.states.Get())
-	case '!':
-		return NewToken(l.c.Next(), EXCL, l.states.Get())
-	case '?':
-		return NewToken(l.c.Next(), QM, l.states.Get())
-	case ',':
-		return NewToken(l.c.Next(), COMMA, l.states.Get())
-	case '#':
-		return NewToken(l.c.Next(), HASH, l.states.Get())
-	case '.':
-		return NewToken(l.c.Next(), DOT, l.states.Get())
 	case '/':
-		chars := l.c.PeekN(2)
-		if chars[1] == '/' {
+		if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '/' {
 			return l.lexSingleLineComment()
-		} else if chars[1] == '*' {
+		} else if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '*' {
 			return l.lexMultiLineComment()
-		} else {
-			return NewToken(l.c.Next(), FS, l.states.Get())
 		}
+		return NewToken(l.c.Next(), FS, l.states.Get())
 	case '"':
 		return l.lexString()
 	default:
-		if isLetter(l.c.Peek()) {
-			s := l.lexIdent()
-			tokenType := LookupKeywords(s)
-
+		if isLetter(char) {
+			ident := l.lexIdent()
+			tokenType := LookupKeywords(ident)
 			l.states.PushOrPopTokenType(tokenType)
-
-			return NewToken(s, tokenType, l.states.Get())
-		} else if isDigit(l.c.Peek()) {
+			return NewToken(ident, tokenType, l.states.Get())
+		} else if isDigit(char) {
 			s, isDouble := l.lexNumber()
+			tokenType := Type(INTEGER)
 			if isDouble {
-				return NewToken(s, DOUBLE, l.states.Get())
-			} else {
-				return NewToken(s, INTEGER, l.states.Get())
+				tokenType = Type(DOUBLE)
 			}
-		} else {
-			return NewToken(l.c.Next(), ILLEGAL, l.states.Get())
+			return NewToken(s, tokenType, l.states.Get())
 		}
+		return NewToken(l.c.Next(), ILLEGAL, l.states.Get())
 	}
-	// This code should always remain unreachable
-	// panic(fmt.Sprintf("Illegal character? %s", string(char)))
 }
 
 func isNewline(r byte) bool {
@@ -145,7 +132,7 @@ func isNewline(r byte) bool {
 }
 
 func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '_'
 }
 
 func isDigit(ch byte) bool {
@@ -153,61 +140,67 @@ func isDigit(ch byte) bool {
 }
 
 func (l *Lexer) lexSingleLineComment() Token {
-	s := ""
+	var sb strings.Builder
 	for !l.c.IsEOF() {
 		if isNewline(l.c.Peek()) {
-			return NewToken(s, SINGLE_LINE_COMMENT, l.states.Get())
+			return NewToken(sb.String(), SINGLE_LINE_COMMENT, l.states.Get())
 		}
-		s += string(l.c.Next())
+		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(s, ILLEGAL, l.states.Get())
+	return NewToken(sb.String(), ILLEGAL, l.states.Get())
 }
 
 func (l *Lexer) lexMultiLineComment() Token {
-	s := ""
+	var sb strings.Builder
 	for !l.c.IsEOF() {
 		nextTwo := l.c.PeekN(2)
-		if nextTwo[0] == '*' && nextTwo[1] == '/' {
-			s += string(l.c.NextN(2))
-			return NewToken(s, MULTI_LINE_COMMENT, l.states.Get())
+		if len(nextTwo) > 1 && nextTwo[0] == '*' && nextTwo[1] == '/' {
+			sb.Write(l.c.NextN(2))
+			return NewToken(sb.String(), MULTI_LINE_COMMENT, l.states.Get())
 		}
-		s += string(l.c.Next())
+		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(s, ILLEGAL, l.states.Get())
+	return NewToken(sb.String(), ILLEGAL, l.states.Get())
 }
 
 func (l *Lexer) lexString() Token {
-	s := ""
+	var sb strings.Builder
 	for !l.c.IsEOF() {
 		if l.c.Peek() == '"' {
-			s += string(l.c.Next())
-			return NewToken(s, STRING, l.states.Get())
+			sb.WriteByte(l.c.Next())
+			return NewToken(sb.String(), STRING, l.states.Get())
 		}
-		s += string(l.c.Next())
+		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(s, ILLEGAL, l.states.Get())
+	return NewToken(sb.String(), ILLEGAL, l.states.Get())
 }
 
-// lexNumber - reads and returns a number.
 func (l *Lexer) lexNumber() (string, bool) {
-	s := ""
+	var sb strings.Builder
 	seenDot := false
-	for isDigit(l.c.Peek()) || (!seenDot && l.c.Peek() == '.') {
-		if l.c.Peek() == '.' {
+	for !l.c.IsEOF() {
+		peek := l.c.Peek()
+		if peek == '.' && !seenDot {
 			seenDot = true
+			sb.WriteByte(l.c.Next())
+		} else if isDigit(peek) {
+			sb.WriteByte(l.c.Next())
+		} else {
+			break
 		}
-		s += string(l.c.Next())
 	}
-	return s, seenDot
+	return sb.String(), seenDot
 }
 
-// An identifier is a sequence of letters (upper and lowercase) digits and underscores.
-// it can't start with a digit
 func (l *Lexer) lexIdent() string {
-	s := ""
-	for isLetter(l.c.Peek()) || isDigit(l.c.Peek()) {
-		s += string(l.c.Next())
+	var sb strings.Builder
+	for !l.c.IsEOF() {
+		peek := l.c.Peek()
+		if isLetter(peek) || isDigit(peek) {
+			sb.WriteByte(l.c.Next())
+		} else {
+			break
+		}
 	}
-
-	return s
+	return sb.String()
 }

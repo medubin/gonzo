@@ -32,7 +32,10 @@ func GetTypedParamsFromContext[Params any](ctx context.Context) Params {
 	}
 
 	for key, value := range ctx.Value(ParamKey{}).(map[string]string) {
-		reflect.ValueOf(&params).Elem().FieldByName(key).Set(reflect.ValueOf(&value))
+		field := reflect.ValueOf(&params).Elem().FieldByName(key)
+		if field.IsValid() {
+			field.Set(reflect.ValueOf(value))
+		}
 	}
 	return params
 }
