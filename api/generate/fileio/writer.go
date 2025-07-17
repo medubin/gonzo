@@ -3,14 +3,17 @@ package fileio
 import (
 	"errors"
 	"os"
-
-	"github.com/medubin/gonzo/api/generate/utils"
 )
 
 func WriteToFile(directory string, name string, output string, isTypescript bool) error {
 	_ = os.Mkdir(directory, os.ModePerm)
 
-	file, err := os.Create(directory + "/" + name + ".go")
+	var extension = ".go"
+	if isTypescript {
+		extension = ".ts"
+	}
+
+	file, err := os.Create(directory + "/" + name + extension)
 	if err != nil {
 		return err
 	}
@@ -19,13 +22,7 @@ func WriteToFile(directory string, name string, output string, isTypescript bool
 		return err
 	}
 
-	if isTypescript {
-		err := utils.ConvertToTypescript(directory + "/" + name + ".go")
-		return err
-	}
-	return err
-
-	// return os.WriteFile(directory+"/"+name+".go", []byte(output), 0644)
+	return nil
 }
 
 func SafeWriteToFile(directory string, name string, output string) error {

@@ -2,14 +2,17 @@ package lex
 
 // keywords - maps string keywords to their corresponding Type.
 var keywords = map[string]Type{
-	"type":   TYPE,
-	"server": SERVER,
+	"type":     TYPE,
+	"server":   SERVER,
 	"repeated": REPEATED,
-	"map": MAP,
-	"returns": RETURNS,
-	"body": BODY,
-	"true": BOOLEAN,
-	"false": BOOLEAN,
+	"map":      MAP,
+	"returns":  RETURNS,
+	"body":     BODY,
+	"true":     BOOLEAN,
+	"false":    BOOLEAN,
+	"POST":     POST,
+	"GET":      GET,
+	"DELETE":   DELETE,
 }
 
 func LookupKeywords(ident string) Type {
@@ -74,6 +77,10 @@ const (
 	MAP      Type = "MAP"
 	RETURNS  Type = "RETURNS"
 	BODY     Type = "BODY"
+	POST     Type = "POST"
+	GET      Type = "GET"
+	DELETE   Type = "DELETE"
+	URL      Type = "URL"
 
 	/*
 		Comments

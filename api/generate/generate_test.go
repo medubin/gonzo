@@ -10,7 +10,7 @@ import (
 
 func TestGenerate(t *testing.T) {
 	file, _ := fileio.ParseFile("server.api")
-	types, endpoints, err := generate.Generate(file, "server")
+	types, endpoints, err := generate.Generate(file, "server", "go")
 	assert.NoError(t, err)
 	assert.NotNil(t, types)
 	assert.NotNil(t, endpoints)

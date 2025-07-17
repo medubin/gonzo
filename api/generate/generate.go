@@ -3,10 +3,11 @@ package generatev2
 import (
 	cr "github.com/medubin/gonzo/api/generate/character_reader"
 	lex "github.com/medubin/gonzo/api/generate/lexer"
-	parser "github.com/medubin/gonzo/api/generate/parser/simple_golang_server"
+	golang_parser "github.com/medubin/gonzo/api/generate/parser/simple_golang_server"
+	ts_parser "github.com/medubin/gonzo/api/generate/parser/typescript_client"
 )
 
-func Generate(file []byte, stack string) (string, map[string]string, error) {
+func Generate(file []byte, stack string, language string) (string, map[string]string, error) {
 
 	// Struct around the []byes reads the characters and provides positional information
 	c := cr.NewCharacterReader(file)
@@ -14,14 +15,18 @@ func Generate(file []byte, stack string) (string, map[string]string, error) {
 	l := lex.NewLexer(c)
 	l.Lex()
 
-	isClient := false
-	if stack == "client" {
-		isClient = true
+	if stack == "client" && language == "typescript" {
+		p := ts_parser.NewParser(l)
+		types, err := p.Parse()
+		if err != nil {
+			return "", nil, err
+		}
+		return types, nil, nil
 	}
 
-	p := parser.NewParser(l)
-	types, endpoints, err := p.Parse(parser.ParseOptions{
-		SkipServer: isClient,
+	p := golang_parser.NewParser(l)
+	types, endpoints, err := p.Parse(golang_parser.ParseOptions{
+		SkipServer: stack == "client",
 	})
 
 	if err != nil {

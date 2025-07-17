@@ -85,12 +85,21 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	types, endpoints, err := api.Generate(lines, g.stack)
+	if g.stack == "client" {
+		types, _, err := api.Generate(lines, g.stack, g.language)
+		if err != nil {
+			return err
+		}
+		return fileio.WriteToFile(g.output, "types", types, true)
+	}
+
+	// Server-side generation
+	types, endpoints, err := api.Generate(lines, g.stack, g.language)
 	if err != nil {
 		return err
 	}
 
-	err = fileio.WriteToFile(g.output, "types", types, g.language == "typescript")
+	err = fileio.WriteToFile(g.output, "types", types, false)
 	if err != nil {
 		return err
 	}
@@ -100,16 +109,13 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	if g.stack == "server" {
-
-		server := `package server
+	server := `package server
 
 type ServerImpl struct{}
 `
-		err = fileio.SafeWriteToFile(g.output, "server", server)
-		if err != nil {
-			return err
-		}
+	err = fileio.SafeWriteToFile(g.output, "server", server)
+	if err != nil {
+		return err
 	}
 
 	return nil

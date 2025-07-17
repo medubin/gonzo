@@ -106,6 +106,9 @@ func (l *Lexer) nextToken() Token {
 		} else if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '*' {
 			return l.lexMultiLineComment()
 		}
+		if l.states.Get() == STATE_SERVER {
+			return l.lexUrl()
+		}
 		return NewTokenFromByte(l.c.Next(), FS, l.states.Get())
 	case '"':
 		return l.lexString()
@@ -190,6 +193,18 @@ func (l *Lexer) lexNumber() (string, bool) {
 		}
 	}
 	return sb.String(), seenDot
+}
+
+func (l *Lexer) lexUrl() Token {
+	var sb strings.Builder
+	for !l.c.IsEOF() {
+		peek := l.c.Peek()
+		if peek == ' ' || isNewline(peek) {
+			break
+		}
+		sb.WriteByte(l.c.Next())
+	}
+	return NewTokenFromString(sb.String(), URL, l.states.Get())
 }
 
 func (l *Lexer) lexIdent() string {

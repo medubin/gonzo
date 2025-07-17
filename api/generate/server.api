@@ -6,7 +6,7 @@ this is a multiline comment
 
 type UserID int32//this is also a comment
 
-type Users repeated(UserId)
+type Users repeated(UserID)
 
 type User{
   ID UserID
