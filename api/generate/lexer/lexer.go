@@ -85,28 +85,28 @@ func (l *Lexer) nextToken() Token {
 		if tokenType == NEWLINE {
 			l.states.PushOrPopTokenType(NEWLINE)
 		}
-		return NewToken(l.c.Next(), tokenType, l.states.Get())
+		return NewTokenFromByte(l.c.Next(), tokenType, l.states.Get())
 	}
 
 	switch char {
 	case ')':
 		prevState := l.states.Get()
 		l.states.PushOrPopTokenType(RP)
-		return NewToken(l.c.Next(), RP, prevState)
+		return NewTokenFromByte(l.c.Next(), RP, prevState)
 	case '{':
 		l.states.PushOrPopTokenType(LCB)
-		return NewToken(l.c.Next(), LCB, l.states.Get())
+		return NewTokenFromByte(l.c.Next(), LCB, l.states.Get())
 	case '}':
 		prevState := l.states.Get()
 		l.states.PushOrPopTokenType(RCB)
-		return NewToken(l.c.Next(), RCB, prevState)
+		return NewTokenFromByte(l.c.Next(), RCB, prevState)
 	case '/':
 		if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '/' {
 			return l.lexSingleLineComment()
 		} else if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '*' {
 			return l.lexMultiLineComment()
 		}
-		return NewToken(l.c.Next(), FS, l.states.Get())
+		return NewTokenFromByte(l.c.Next(), FS, l.states.Get())
 	case '"':
 		return l.lexString()
 	default:
@@ -114,16 +114,16 @@ func (l *Lexer) nextToken() Token {
 			ident := l.lexIdent()
 			tokenType := LookupKeywords(ident)
 			l.states.PushOrPopTokenType(tokenType)
-			return NewToken(ident, tokenType, l.states.Get())
+			return NewTokenFromString(ident, tokenType, l.states.Get())
 		} else if isDigit(char) {
 			s, isDouble := l.lexNumber()
 			tokenType := Type(INTEGER)
 			if isDouble {
 				tokenType = Type(DOUBLE)
 			}
-			return NewToken(s, tokenType, l.states.Get())
+			return NewTokenFromString(s, tokenType, l.states.Get())
 		}
-		return NewToken(l.c.Next(), ILLEGAL, l.states.Get())
+		return NewTokenFromByte(l.c.Next(), ILLEGAL, l.states.Get())
 	}
 }
 
@@ -143,11 +143,11 @@ func (l *Lexer) lexSingleLineComment() Token {
 	var sb strings.Builder
 	for !l.c.IsEOF() {
 		if isNewline(l.c.Peek()) {
-			return NewToken(sb.String(), SINGLE_LINE_COMMENT, l.states.Get())
+			return NewTokenFromString(sb.String(), SINGLE_LINE_COMMENT, l.states.Get())
 		}
 		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(sb.String(), ILLEGAL, l.states.Get())
+	return NewTokenFromString(sb.String(), ILLEGAL, l.states.Get())
 }
 
 func (l *Lexer) lexMultiLineComment() Token {
@@ -156,11 +156,11 @@ func (l *Lexer) lexMultiLineComment() Token {
 		nextTwo := l.c.PeekN(2)
 		if len(nextTwo) > 1 && nextTwo[0] == '*' && nextTwo[1] == '/' {
 			sb.Write(l.c.NextN(2))
-			return NewToken(sb.String(), MULTI_LINE_COMMENT, l.states.Get())
+			return NewTokenFromString(sb.String(), MULTI_LINE_COMMENT, l.states.Get())
 		}
 		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(sb.String(), ILLEGAL, l.states.Get())
+	return NewTokenFromString(sb.String(), ILLEGAL, l.states.Get())
 }
 
 func (l *Lexer) lexString() Token {
@@ -168,11 +168,11 @@ func (l *Lexer) lexString() Token {
 	for !l.c.IsEOF() {
 		if l.c.Peek() == '"' {
 			sb.WriteByte(l.c.Next())
-			return NewToken(sb.String(), STRING, l.states.Get())
+			return NewTokenFromString(sb.String(), STRING, l.states.Get())
 		}
 		sb.WriteByte(l.c.Next())
 	}
-	return NewToken(sb.String(), ILLEGAL, l.states.Get())
+	return NewTokenFromString(sb.String(), ILLEGAL, l.states.Get())
 }
 
 func (l *Lexer) lexNumber() (string, bool) {

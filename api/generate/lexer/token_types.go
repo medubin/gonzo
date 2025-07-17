@@ -25,66 +25,65 @@ const (
 	/*
 		Special Types
 	*/
-	EOF     = "EOF"
-	ILLEGAL = "ILLEGAL"
-	NEWLINE = "NEWLINE"
+	EOF     Type = "EOF"
+	ILLEGAL Type = "ILLEGAL"
+	NEWLINE Type = "NEWLINE"
 
 	/*
 		Identifiers & Literals
 	*/
-	IDENT   = "IDENT"
-	STRING  = "STRING"
-	INTEGER = "INTEGER"
-	DOUBLE  = "DOUBLE"
-	BOOLEAN = "BOOLEAN"
+	IDENT   Type = "IDENT"
+	STRING  Type = "STRING"
+	INTEGER Type = "INTEGER"
+	DOUBLE  Type = "DOUBLE"
+	BOOLEAN Type = "BOOLEAN"
 
 	/*
 		Symbols
 	*/
-	COMMA  = "COMMA"
-	LCB    = "LCB"
-	RCB    = "RCB"
-	LP     = "LP"
-	RP     = "RP"
-	ASSIGN = "ASSIGN"
-	SIGN   = "SIGN"
-	COLON  = "COLON"
-	HASH   = "HASH"
-	QM     = "QM"
-	DOT    = "DOT"
-	LSB    = "LSB"
-	RSB    = "RSB"
-	EXCL   = "EXCL"
-	PLUS   = "PLUS"
-	MINUS  = "MINUS"
-	TIMES  = "TIMES"
-	DIVIDE = "DIVIDE"
-	MOD    = "MOD"
-	POW    = "POW"
-	GT     = "GT"
-	LT     = "LT"
-	FS     = "FS"
+	COMMA  Type = "COMMA"
+	LCB    Type = "LCB"
+	RCB    Type = "RCB"
+	LP     Type = "LP"
+	RP     Type = "RP"
+	ASSIGN Type = "ASSIGN"
+	SIGN   Type = "SIGN"
+	COLON  Type = "COLON"
+	HASH   Type = "HASH"
+	QM     Type = "QM"
+	DOT    Type = "DOT"
+	LSB    Type = "LSB"
+	RSB    Type = "RSB"
+	EXCL   Type = "EXCL"
+	PLUS   Type = "PLUS"
+	MINUS  Type = "MINUS"
+	TIMES  Type = "TIMES"
+	DIVIDE Type = "DIVIDE"
+	MOD    Type = "MOD"
+	POW    Type = "POW"
+	GT     Type = "GT"
+	LT     Type = "LT"
+	FS     Type = "FS"
 
 	/*
 		Keywords
 	*/
-	TYPE   = "TYPE"
-	SERVER = "SERVER"
-	REPEATED = "REPEATED"
-	MAP = "MAP"
-	RETURNS = "RETURNS"
-	BODY = "BODY"
-
+	TYPE     Type = "TYPE"
+	SERVER   Type = "SERVER"
+	REPEATED Type = "REPEATED"
+	MAP      Type = "MAP"
+	RETURNS  Type = "RETURNS"
+	BODY     Type = "BODY"
 
 	/*
 		Comments
 	*/
-	SINGLE_LINE_COMMENT = "SINGLE_LINE_COMMENT"
-	MULTI_LINE_COMMENT  = "MULTI_LINE_COMMENT"
+	SINGLE_LINE_COMMENT Type = "SINGLE_LINE_COMMENT"
+	MULTI_LINE_COMMENT  Type = "MULTI_LINE_COMMENT"
 
 	/*
 		Whitespace
 	*/
-	SPACE = "SPACE"
-	TAB   = "TAB"
+	SPACE Type = "SPACE"
+	TAB   Type = "TAB"
 )

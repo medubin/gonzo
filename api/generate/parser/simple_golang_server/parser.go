@@ -54,7 +54,7 @@ import (
 		case lex.STATE_NONE:
 			// we can add filtering here for illegal top levels tokens
 			text += token.Chars
-		case lex.REPEATED:
+		case lex.STATE_REPEATED:
 			switch token.Type {
 			case lex.LP:
 				text += "[]"
@@ -64,7 +64,7 @@ import (
 			default:
 				text += token.Chars
 			}
-		case lex.MAP:
+		case lex.STATE_MAP:
 			switch token.Type {
 			case lex.LP:
 				text += "["
