@@ -88,6 +88,6 @@ func StartGonzoServer(s GonzoServer, r *router.Router) {
 	r.Route("POST", "/user/new", handle.Handle(s.Signup))
 	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
 	r.Route("DELETE", "/session", handle.Handle(s.SignOut))
-	r.Route("GET", "/user/{UserID}", handle.Handle(s.GetUser))
+	r.Route("GET", "/user/<UserID>", handle.Handle(s.GetUser))
 	r.Route("GET", "/users/", handle.Handle(s.GetUsers))
 }

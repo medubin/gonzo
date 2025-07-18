@@ -80,6 +80,8 @@ const (
 	POST     Type = "POST"
 	GET      Type = "GET"
 	DELETE   Type = "DELETE"
+	PATCH    Type = "PATCH"
+	PUT      Type = "PUT"
 	URL      Type = "URL"
 
 	/*

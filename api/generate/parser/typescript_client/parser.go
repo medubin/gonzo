@@ -51,14 +51,14 @@ func (p *Parser) skipWhitespace() {
 }
 
 var typeMappings = map[string]string{
-	"string": "string",
-	"int":    "number",
-	"int32":  "number",
-	"int64":  "number",
-	"float":  "number",
-	"float32":"number",
-	"float64":"number",
-	"bool":   "boolean",
+	"string":  "string",
+	"int":     "number",
+	"int32":   "number",
+	"int64":   "number",
+	"float":   "number",
+	"float32": "number",
+	"float64": "number",
+	"bool":    "boolean",
 }
 
 func (p *Parser) mapType(goType string) string {
@@ -75,7 +75,7 @@ func (p *Parser) Parse() (string, error) {
 		if p.isEOF() {
 			break
 		}
-		
+
 		token := p.peek()
 		switch token.Type {
 		case lex.TYPE:
@@ -120,7 +120,7 @@ func (p *Parser) parseInterface(name string) string {
 
 		fieldNameToken := p.next()
 		fieldName := fieldNameToken.Chars
-		
+
 		p.skipWhitespace()
 		fieldType := p.parseFieldType()
 		sb.WriteString(fmt.Sprintf("  %s: %s;\n", fieldName, fieldType))
@@ -169,11 +169,11 @@ func (p *Parser) parseServerDeclaration() string {
 	serverName := p.next().Chars
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("// API client for %s\n", serverName))
-	
-    p.skipWhitespace()
-    if p.peek() != nil && p.peek().Type == lex.LCB {
-	    p.next()
-    }
+
+	p.skipWhitespace()
+	if p.peek() != nil && p.peek().Type == lex.LCB {
+		p.next()
+	}
 
 	for !p.isEOF() && p.peek().Type != lex.RCB {
 		p.skipWhitespace()
@@ -182,9 +182,9 @@ func (p *Parser) parseServerDeclaration() string {
 		}
 		sb.WriteString(p.parseEndpoint())
 	}
-    if p.peek() != nil && p.peek().Type == lex.RCB {
-	    p.next()
-    }
+	if p.peek() != nil && p.peek().Type == lex.RCB {
+		p.next()
+	}
 	return sb.String()
 }
 
@@ -204,7 +204,7 @@ func (p *Parser) parseEndpoint() string {
 		if p.isEOF() || p.peek().Type == lex.NEWLINE || p.peek().Type == lex.RCB {
 			break
 		}
-		
+
 		keywordToken := p.peek()
 		if keywordToken.Type == lex.BODY {
 			p.next() // consume 'body'

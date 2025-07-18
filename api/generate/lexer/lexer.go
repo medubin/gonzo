@@ -106,10 +106,7 @@ func (l *Lexer) nextToken() Token {
 		} else if len(l.c.PeekN(2)) > 1 && l.c.PeekN(2)[1] == '*' {
 			return l.lexMultiLineComment()
 		}
-		if l.states.Get() == STATE_SERVER {
-			return l.lexUrl()
-		}
-		return NewTokenFromByte(l.c.Next(), FS, l.states.Get())
+		return l.lexUrl()
 	case '"':
 		return l.lexString()
 	default:

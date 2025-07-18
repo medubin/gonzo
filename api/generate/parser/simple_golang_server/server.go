@@ -26,19 +26,11 @@ type endpoint struct {
 
 func (s *server) ParseServer(token *lex.Token) {
 	switch token.Type {
-	case lex.FS:
-		s.currentEndpoint.URL += token.Chars
 	case lex.NEWLINE:
 		if s.currentEndpoint.Name != "" {
 			s.Endpoints = append(s.Endpoints, s.currentEndpoint)
 			s.currentEndpoint = endpoint{}
 		}
-	case lex.LT:
-		s.currentEndpoint.URL += "{"
-		s.isInURLVariable = true
-	case lex.GT:
-		s.currentEndpoint.URL += "}"
-		s.isInURLVariable = false
 	case lex.IDENT:
 		// first ident should be server name
 		if s.Name == "" {
@@ -47,10 +39,23 @@ func (s *server) ParseServer(token *lex.Token) {
 			s.currentEndpoint.Name = token.Chars
 		} else if s.currentEndpoint.Verb == "" {
 			s.currentEndpoint.Verb = token.Chars
-		} else {
-			s.currentEndpoint.URL += token.Chars
-			if s.isInURLVariable {
-				s.currentEndpoint.URLVariables = append(s.currentEndpoint.URLVariables, token.Chars)
+		}
+	case lex.GET, lex.POST, lex.PUT, lex.DELETE, lex.PATCH: // Add cases for HTTP verbs
+		s.currentEndpoint.Verb = token.Chars
+	case lex.URL:
+		s.currentEndpoint.URL = token.Chars
+		// Extract URL variables
+		var pathParam string
+		inPathParam := false
+		for _, char := range token.Chars {
+			if char == '<' {
+				inPathParam = true
+			} else if char == '>' {
+				inPathParam = false
+				s.currentEndpoint.URLVariables = append(s.currentEndpoint.URLVariables, pathParam)
+				pathParam = ""
+			} else if inPathParam {
+				pathParam += string(char)
 			}
 		}
 	}
