@@ -130,16 +130,16 @@
           "match": "^\\s*(required)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+(repeated\\([^)]+\\)|map\\([^)]+\\)|[A-Za-z_][A-Za-z0-9_]*)\\s*$",
           "captures": {
             "1": {"name": "keyword.other.required.api"},
-            "2": {"name": "constant.numeric.integer"},
-            "3": {"name": "string.quoted.double"}
+            "2": {"name": "variable.other.field.api"},
+            "3": {"name": "storage.type.api"}
           }
         },
         {
           "name": "meta.field.optional.api",
           "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+(repeated\\([^)]+\\)|map\\([^)]+\\)|[A-Za-z_][A-Za-z0-9_]*)\\s*$",
           "captures": {
-            "1": {"name": "constant.numeric.integer"},
-            "2": {"name": "string.quoted.double"}
+            "1": {"name": "variable.other.field.api"},
+            "2": {"name": "storage.type.api"}
           }
         }
       ]
@@ -152,7 +152,7 @@
           "match": "\\b(repeated)\\(([^)]+)\\)",
           "captures": {
             "1": {"name": "keyword.other.repeated.api"},
-            "2": {"name": "string.quoted.double"}
+            "2": {"name": "storage.type.api"}
           }
         },
         {
@@ -160,8 +160,8 @@
           "match": "\\b(map)\\(([^:]+):\\s*([^)]+)\\)",
           "captures": {
             "1": {"name": "keyword.other.map.api"},
-            "2": {"name": "string.quoted.double"},
-            "3": {"name": "string.quoted.double"}
+            "2": {"name": "storage.type.api"},
+            "3": {"name": "storage.type.api"}
           }
         }
       ]
@@ -170,11 +170,11 @@
     "field-type-references": {
       "patterns": [
         {
-          "name": "constant.numeric.integer",
+          "name": "storage.type.primitive.api",
           "match": "\\b(string|int32|int64|float32|float64|bool)\\b"
         },
         {
-          "name": "string.quoted.double",
+          "name": "storage.type.custom.api",
           "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
         }
       ]
@@ -211,11 +211,11 @@
           "patterns": [
             {
               "name": "variable.parameter.url.api",
-              "begin": "<",
+              "begin": "\\{",
               "beginCaptures": {
                 "0": {"name": "punctuation.definition.url-parameter.begin.api"}
               },
-              "end": ">",
+              "end": "\\}",
               "endCaptures": {
                 "0": {"name": "punctuation.definition.url-parameter.end.api"}
               },
@@ -231,7 +231,7 @@
             },
             {
               "name": "string.unquoted.url.api",
-              "match": "[^<\\s]+"
+              "match": "[^{\\s]+"
             }
           ]
         }
