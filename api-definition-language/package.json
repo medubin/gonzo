@@ -1,0 +1,33 @@
+{
+  "name": "api-definition-language",
+  "displayName": "API Definition Language",
+  "description": "Syntax highlighting and language support for .api files",
+  "version": "0.1.0",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Programming Languages"],
+  "keywords": ["api", "rest", "server", "endpoint"],
+  "contributes": {
+    "languages": [{
+      "id": "api",
+      "aliases": ["API Definition", "api"],
+      "extensions": [".api"],
+      "configuration": "./language-configuration.json",
+      "icon": {
+        "light": "./icons/api-light.svg",
+        "dark": "./icons/api-dark.svg"
+      }
+    }],
+    "grammars": [{
+      "language": "api",
+      "scopeName": "source.api",
+      "path": "./syntaxes/api.tmLanguage.json"
+    }]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/api-definition-language-vscode"
+  }
+}

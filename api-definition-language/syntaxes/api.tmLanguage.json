@@ -1,0 +1,385 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "API Definition Language",
+  "scopeName": "source.api",
+  "patterns": [
+    {"include": "#comments"},
+    {"include": "#server-definition"},
+    {"include": "#type-definition"},
+    {"include": "#enum-definition"},
+    {"include": "#keywords"},
+    {"include": "#strings"},
+    {"include": "#numbers"},
+    {"include": "#operators"}
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.api",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.api",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "patterns": [
+            {
+              "name": "comment.block.documentation.api",
+              "match": "\\*\\*.*$"
+            }
+          ]
+        }
+      ]
+    },
+
+    "server-definition": {
+      "patterns": [
+        {
+          "name": "meta.server.api",
+          "begin": "\\b(server)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\{)",
+          "beginCaptures": {
+            "1": {"name": "keyword.control.server.api"},
+            "2": {"name": "entity.name.type.server.api"},
+            "3": {"name": "punctuation.definition.block.begin.api"}
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {"name": "punctuation.definition.block.end.api"}
+          },
+          "patterns": [
+            {"include": "#comments"},
+            {"include": "#endpoint-definition"}
+          ]
+        }
+      ]
+    },
+
+    "type-definition": {
+      "patterns": [
+        {
+          "name": "meta.type.api",
+          "begin": "\\b(type)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\{)",
+          "beginCaptures": {
+            "1": {"name": "keyword.control.type.api"},
+            "2": {"name": "entity.name.type.api"},
+            "3": {"name": "punctuation.definition.block.begin.api"}
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {"name": "punctuation.definition.block.end.api"}
+          },
+          "patterns": [
+            {"include": "#comments"},
+            {"include": "#struct-fields"}
+          ]
+        },
+        {
+          "name": "meta.type.simple.api",
+          "match": "\\b(type)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+(repeated\\(|map\\(|[A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {"name": "keyword.control.type.api"},
+            "2": {"name": "entity.name.type.api"},
+            "3": {"name": "storage.type.api"}
+          }
+        }
+      ]
+    },
+
+    "enum-definition": {
+      "patterns": [
+        {
+          "name": "meta.enum.api",
+          "begin": "\\b(enum)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\{)",
+          "beginCaptures": {
+            "1": {"name": "keyword.control.enum.api"},
+            "2": {"name": "entity.name.type.enum.api"},
+            "3": {"name": "storage.type.api"},
+            "4": {"name": "punctuation.definition.block.begin.api"}
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": {"name": "punctuation.definition.block.end.api"}
+          },
+          "patterns": [
+            {"include": "#comments"},
+            {"include": "#enum-values"}
+          ]
+        }
+      ]
+    },
+
+    "enum-values": {
+      "patterns": [
+        {
+          "name": "meta.enum.value.api",
+          "match": "\\b([A-Z_][A-Z0-9_]*)\\s*(=)\\s*(\"[^\"]*\"|'[^']*'|[^\\s]+)",
+          "captures": {
+            "1": {"name": "constant.other.enum.api"},
+            "2": {"name": "keyword.operator.assignment.api"},
+            "3": {"name": "string.quoted.api"}
+          }
+        }
+      ]
+    },
+
+    "struct-fields": {
+      "patterns": [
+        {
+          "name": "meta.field.required.api",
+          "match": "^\\s*(required)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+(repeated\\([^)]+\\)|map\\([^)]+\\)|[A-Za-z_][A-Za-z0-9_]*)\\s*$",
+          "captures": {
+            "1": {"name": "keyword.other.required.api"},
+            "2": {"name": "constant.numeric.integer"},
+            "3": {"name": "string.quoted.double"}
+          }
+        },
+        {
+          "name": "meta.field.optional.api",
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+(repeated\\([^)]+\\)|map\\([^)]+\\)|[A-Za-z_][A-Za-z0-9_]*)\\s*$",
+          "captures": {
+            "1": {"name": "constant.numeric.integer"},
+            "2": {"name": "string.quoted.double"}
+          }
+        }
+      ]
+    },
+
+    "field-type-expressions": {
+      "patterns": [
+        {
+          "name": "meta.type.repeated.field.api",
+          "match": "\\b(repeated)\\(([^)]+)\\)",
+          "captures": {
+            "1": {"name": "keyword.other.repeated.api"},
+            "2": {"name": "string.quoted.double"}
+          }
+        },
+        {
+          "name": "meta.type.map.field.api",
+          "match": "\\b(map)\\(([^:]+):\\s*([^)]+)\\)",
+          "captures": {
+            "1": {"name": "keyword.other.map.api"},
+            "2": {"name": "string.quoted.double"},
+            "3": {"name": "string.quoted.double"}
+          }
+        }
+      ]
+    },
+
+    "field-type-references": {
+      "patterns": [
+        {
+          "name": "constant.numeric.integer",
+          "match": "\\b(string|int32|int64|float32|float64|bool)\\b"
+        },
+        {
+          "name": "string.quoted.double",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+
+    "endpoint-definition": {
+      "patterns": [
+        {
+          "name": "meta.endpoint.api",
+          "begin": "\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+(GET|POST|PUT|DELETE|PATCH)\\s+",
+          "beginCaptures": {
+            "1": {"name": "entity.name.function.endpoint.api"},
+            "2": {"name": "keyword.other.http-method.api"}
+          },
+          "end": "(?=\\n|//|/\\*|[A-Za-z_][A-Za-z0-9_]*\\s+(GET|POST|PUT|DELETE|PATCH))",
+          "patterns": [
+            {"include": "#comments"},
+            {"include": "#url-with-parameters"},
+            {"include": "#function-calls"}
+          ]
+        }
+      ]
+    },
+
+    "url-with-parameters": {
+      "patterns": [
+        {
+          "name": "string.unquoted.url.api",
+          "begin": "(\\/)",
+          "beginCaptures": {
+            "1": {"name": "string.unquoted.url.api"}
+          },
+          "end": "(?=\\s+(body|parameters|returns)|\\s*$|//|/\\*)",
+          "patterns": [
+            {
+              "name": "variable.parameter.url.api",
+              "begin": "<",
+              "beginCaptures": {
+                "0": {"name": "punctuation.definition.url-parameter.begin.api"}
+              },
+              "end": ">",
+              "endCaptures": {
+                "0": {"name": "punctuation.definition.url-parameter.end.api"}
+              },
+              "patterns": [
+                {
+                  "match": "([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+                  "captures": {
+                    "1": {"name": "variable.parameter.name.api"},
+                    "2": {"name": "storage.type.parameter.api"}
+                  }
+                }
+              ]
+            },
+            {
+              "name": "string.unquoted.url.api",
+              "match": "[^<\\s]+"
+            }
+          ]
+        }
+      ]
+    },
+
+    "type-expressions": {
+      "patterns": [
+        {
+          "name": "meta.type.repeated.api",
+          "match": "\\b(repeated)\\(([^)]+)\\)",
+          "captures": {
+            "1": {"name": "keyword.other.repeated.api"},
+            "2": {"name": "storage.type.api"}
+          }
+        },
+        {
+          "name": "meta.type.map.api",
+          "match": "\\b(map)\\(([^:]+):\\s*([^)]+)\\)",
+          "captures": {
+            "1": {"name": "keyword.other.map.api"},
+            "2": {"name": "storage.type.key.api"},
+            "3": {"name": "storage.type.value.api"}
+          }
+        }
+      ]
+    },
+
+    "function-calls": {
+      "patterns": [
+        {
+          "name": "meta.function-call.api",
+          "match": "\\b(body|returns|parameters)\\(([^)]+)\\)",
+          "captures": {
+            "1": {"name": "entity.name.function.api"},
+            "2": {"name": "storage.type.api"}
+          }
+        }
+      ]
+    },
+
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.api",
+          "match": "\\b(type|enum|server|required)\\b"
+        },
+        {
+          "name": "keyword.other.api",
+          "match": "\\b(repeated|map|body|returns|parameters)\\b"
+        }
+      ]
+    },
+
+    "type-references": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.api",
+          "match": "\\b(string|int32|int64|float32|float64|bool)\\b"
+        },
+        {
+          "name": "storage.type.custom.api",
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+
+    "http-methods": {
+      "patterns": [
+        {
+          "name": "keyword.other.http-method.api",
+          "match": "\\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\\b"
+        }
+      ]
+    },
+
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.api",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.api",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.api",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.api",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.decimal.api",
+          "match": "\\b\\d+\\.\\d+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.api",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.api",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.colon.api",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.separator.comma.api",
+          "match": ","
+        }
+      ]
+    },
+
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.definition.block.api",
+          "match": "[{}]"
+        },
+        {
+          "name": "punctuation.definition.parameters.api",
+          "match": "[()]"
+        },
+        {
+          "name": "punctuation.definition.array.api",
+          "match": "[\\[\\]]"
+        }
+      ]
+    }
+  }
+}
