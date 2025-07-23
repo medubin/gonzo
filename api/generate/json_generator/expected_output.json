@@ -1,0 +1,702 @@
+{
+  "types": [
+    {
+      "name": "UserID",
+      "kind": "alias",
+      "target": "int64"
+    },
+    {
+      "name": "Email",
+      "kind": "alias",
+      "target": "string"
+    },
+    {
+      "name": "Timestamp",
+      "kind": "alias",
+      "target": "int64"
+    },
+    {
+      "name": "Score",
+      "kind": "alias",
+      "target": "float32"
+    },
+    {
+      "name": "IsActive",
+      "kind": "alias",
+      "target": "bool"
+    },
+    {
+      "name": "UserList",
+      "kind": "repeated",
+      "elementType": {
+        "kind": "reference",
+        "name": "User"
+      }
+    },
+    {
+      "name": "NotificationID",
+      "kind": "alias",
+      "target": "int32"
+    },
+    {
+      "name": "UserRoleHistory",
+      "kind": "repeated",
+      "elementType": {
+        "kind": "repeated",
+        "elementType": {
+          "kind": "reference",
+          "name": "string"
+        }
+      }
+    },
+    {
+      "name": "NestedUserGroups",
+      "kind": "repeated",
+      "elementType": {
+        "kind": "repeated",
+        "elementType": {
+          "kind": "reference",
+          "name": "UserList"
+        }
+      }
+    },
+    {
+      "name": "UserPermissions",
+      "kind": "map",
+      "keyType": {
+        "kind": "reference",
+        "name": "string"
+      },
+      "valueType": {
+        "kind": "reference",
+        "name": "bool"
+      }
+    },
+    {
+      "name": "UserActivityByMonth",
+      "kind": "map",
+      "keyType": {
+        "kind": "reference",
+        "name": "string"
+      },
+      "valueType": {
+        "kind": "map",
+        "keyType": {
+          "kind": "reference",
+          "name": "int64"
+        },
+        "valueType": {
+          "kind": "repeated",
+          "elementType": {
+            "kind": "reference",
+            "name": "int32"
+          }
+        }
+      }
+    },
+    {
+      "name": "User",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "ID",
+          "type": {
+            "kind": "reference",
+            "name": "UserID"
+          },
+          "required": false
+        },
+        {
+          "name": "Username",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "Email",
+          "type": {
+            "kind": "reference",
+            "name": "Email"
+          },
+          "required": false
+        },
+        {
+          "name": "Role",
+          "type": {
+            "kind": "reference",
+            "name": "UserRole"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "DetailedUser",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "ID",
+          "type": {
+            "kind": "reference",
+            "name": "UserID"
+          },
+          "required": true
+        },
+        {
+          "name": "Usernames",
+          "type": {
+            "kind": "repeated",
+            "elementType": {
+              "kind": "reference",
+              "name": "string"
+            }
+          },
+          "required": false
+        },
+        {
+          "name": "LoginCount",
+          "type": {
+            "kind": "map",
+            "keyType": {
+              "kind": "reference",
+              "name": "string"
+            },
+            "valueType": {
+              "kind": "reference",
+              "name": "int32"
+            }
+          },
+          "required": false
+        },
+        {
+          "name": "Profile",
+          "type": {
+            "kind": "reference",
+            "name": "UserProfile"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "UserProfile",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "FirstName",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "LastName",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "Bio",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "AvatarUrl",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "UserCollection",
+      "kind": "repeated",
+      "elementType": {
+        "kind": "reference",
+        "name": "User"
+      }
+    },
+    {
+      "name": "UsersByDepartment",
+      "kind": "map",
+      "keyType": {
+        "kind": "reference",
+        "name": "string"
+      },
+      "valueType": {
+        "kind": "reference",
+        "name": "User"
+      }
+    },
+    {
+      "name": "UserSearchParams",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "query",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "roles",
+          "type": {
+            "kind": "repeated",
+            "elementType": {
+              "kind": "reference",
+              "name": "UserRole"
+            }
+          },
+          "required": false
+        },
+        {
+          "name": "isActive",
+          "type": {
+            "kind": "reference",
+            "name": "bool"
+          },
+          "required": false
+        },
+        {
+          "name": "limit",
+          "type": {
+            "kind": "reference",
+            "name": "int32"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "UserListParams",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "page",
+          "type": {
+            "kind": "reference",
+            "name": "int32"
+          },
+          "required": false
+        },
+        {
+          "name": "pageSize",
+          "type": {
+            "kind": "reference",
+            "name": "int32"
+          },
+          "required": false
+        },
+        {
+          "name": "sortBy",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "sortOrder",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "CreateUserRequest",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Username",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "Email",
+          "type": {
+            "kind": "reference",
+            "name": "Email"
+          },
+          "required": true
+        },
+        {
+          "name": "Password",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "Role",
+          "type": {
+            "kind": "reference",
+            "name": "UserRole"
+          },
+          "required": false
+        },
+        {
+          "name": "Profile",
+          "type": {
+            "kind": "reference",
+            "name": "UserProfile"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "UpdateUserRequest",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "Username",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "Email",
+          "type": {
+            "kind": "reference",
+            "name": "Email"
+          },
+          "required": false
+        },
+        {
+          "name": "Role",
+          "type": {
+            "kind": "reference",
+            "name": "UserRole"
+          },
+          "required": false
+        },
+        {
+          "name": "Status",
+          "type": {
+            "kind": "reference",
+            "name": "UserStatus"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "DeleteUserRequest",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "reason",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "transferDataTo",
+          "type": {
+            "kind": "reference",
+            "name": "UserID"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "UserProfileUpdate",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "FirstName",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "LastName",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "Bio",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "AvatarUrl",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "ID",
+          "type": {
+            "kind": "reference",
+            "name": "NotificationID"
+          },
+          "required": false
+        },
+        {
+          "name": "Title",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "Message",
+          "type": {
+            "kind": "reference",
+            "name": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "CreatedAt",
+          "type": {
+            "kind": "reference",
+            "name": "Timestamp"
+          },
+          "required": false
+        },
+        {
+          "name": "IsRead",
+          "type": {
+            "kind": "reference",
+            "name": "bool"
+          },
+          "required": false
+        }
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "UserRole",
+      "baseType": "string",
+      "values": {
+        "ADMIN": "admin",
+        "MODERATOR": "moderator",
+        "USER": "user"
+      }
+    },
+    {
+      "name": "UserStatus",
+      "baseType": "string",
+      "values": {
+        "ACTIVE": "active",
+        "PENDING": "pending",
+        "SUSPENDED": "suspended"
+      }
+    },
+    {
+      "name": "WelcomeMessage",
+      "baseType": "string",
+      "values": {
+        "WELCOME": "Welcome to \"MyApp\""
+      }
+    }
+  ],
+  "servers": [
+    {
+      "name": "UserService",
+      "endpoints": [
+        {
+          "name": "GetUser",
+          "method": "GET",
+          "path": "/users/{id}",
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "UserID"
+            }
+          ],
+          "returns": {
+            "kind": "reference",
+            "name": "DetailedUser"
+          }
+        },
+        {
+          "name": "CreateUser",
+          "method": "POST",
+          "path": "/users",
+          "body": {
+            "kind": "reference",
+            "name": "CreateUserRequest"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "User"
+          }
+        },
+        {
+          "name": "UpdateUser",
+          "method": "PUT",
+          "path": "/users/{id}",
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "UserID"
+            }
+          ],
+          "body": {
+            "kind": "reference",
+            "name": "UpdateUserRequest"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "User"
+          }
+        },
+        {
+          "name": "DeleteUser",
+          "method": "DELETE",
+          "path": "/users/{id}",
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "UserID"
+            }
+          ],
+          "body": {
+            "kind": "reference",
+            "name": "DeleteUserRequest"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "User"
+          }
+        },
+        {
+          "name": "PatchUserProfile",
+          "method": "PATCH",
+          "path": "/users/{id}/profile",
+          "pathParams": [
+            {
+              "name": "id",
+              "type": "UserID"
+            }
+          ],
+          "body": {
+            "kind": "reference",
+            "name": "UserProfileUpdate"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "UserProfile"
+          }
+        },
+        {
+          "name": "ListUsers",
+          "method": "GET",
+          "path": "/users",
+          "parameters": {
+            "kind": "reference",
+            "name": "UserListParams"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "UserCollection"
+          }
+        },
+        {
+          "name": "SearchUsers",
+          "method": "GET",
+          "path": "/users/search",
+          "parameters": {
+            "kind": "reference",
+            "name": "UserSearchParams"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "UserCollection"
+          }
+        },
+        {
+          "name": "GetUsersByRole",
+          "method": "GET",
+          "path": "/users/role/{role}",
+          "pathParams": [
+            {
+              "name": "role",
+              "type": "UserRole"
+            }
+          ],
+          "parameters": {
+            "kind": "reference",
+            "name": "UserListParams"
+          },
+          "returns": {
+            "kind": "reference",
+            "name": "UserCollection"
+          }
+        }
+      ]
+    },
+    {
+      "name": "NotificationService",
+      "endpoints": [
+        {
+          "name": "GetUserNotifications",
+          "method": "GET",
+          "path": "/users/{userId}/notifications",
+          "pathParams": [
+            {
+              "name": "userId",
+              "type": "UserID"
+            }
+          ],
+          "parameters": {
+            "kind": "reference",
+            "name": "UserListParams"
+          },
+          "returns": {
+            "kind": "repeated",
+            "elementType": {
+              "kind": "reference",
+              "name": "Notification"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

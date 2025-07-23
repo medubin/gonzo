@@ -1,0 +1,159 @@
+// this is a comment
+/* 
+this is a multiline comment
+*/
+
+// you can define primitives like this
+type UserID int64//this is also a comment
+type Email string
+type Timestamp int64
+type Score float32
+type IsActive bool
+
+// enums can be defined like this
+// enums can be any primitive type
+enum UserRole string {
+  ADMIN = "admin"
+  MODERATOR = "moderator"
+  USER = "user"
+}
+
+enum UserStatus string {
+  ACTIVE = "active"
+  SUSPENDED = "suspended"
+  PENDING = "pending"
+}
+
+enum WelcomeMessage string {
+  WELCOME = "Welcome to \"MyApp\""
+}
+
+// you can defined lists this way
+type UserList repeated(User)
+// you can use types before they are defined
+type NotificationID int32
+
+// lists can be complex
+type UserRoleHistory repeated(repeated(string))
+type NestedUserGroups repeated(repeated(UserList))
+
+// you can defined maps this way
+type UserPermissions map(string: bool)
+// maps can be complex
+type UserActivityByMonth map(string: map(int64: repeated(int32)))
+
+// structs can be defined like this
+type User {
+  ID UserID
+  Username string
+  Email Email
+  Role UserRole
+}
+
+/* Struct fields can contain:
+** any primitives
+** repeated fields
+** map fields 
+** any defined types
+** other structs
+*/
+type DetailedUser {
+  // fields are optional unless marked with 'required'
+  required ID UserID
+  Usernames repeated(string)
+  LoginCount map(string: int32)
+  Profile UserProfile
+}
+
+type UserProfile {
+  FirstName string
+  LastName string
+  Bio string
+  AvatarUrl string
+}
+
+// both lists and maps can contain structs
+type UserCollection repeated(User)
+type UsersByDepartment map(string: User)
+
+/* Allowed in parameter structs:
+- Primitives: string, int32, int64, float32, float64, bool
+- Enums (serialize to underlying primitive)
+- Simple arrays: repeated(primitive) or repeated(enum)
+- Maybe simple maps: map(string: primitive)
+*/
+type UserSearchParams {
+  query string
+  roles repeated(UserRole)
+  isActive bool
+  limit int32
+}
+
+type UserListParams {
+  page int32
+  pageSize int32
+  sortBy string
+  sortOrder string
+}
+
+type CreateUserRequest {
+  required Username string
+  required Email Email
+  required Password string
+  Role UserRole
+  Profile UserProfile
+}
+
+type UpdateUserRequest {
+  Username string
+  Email Email
+  Role UserRole
+  Status UserStatus
+}
+
+type DeleteUserRequest {
+  reason string
+  transferDataTo UserID
+}
+
+type UserProfileUpdate {
+  FirstName string
+  LastName string
+  Bio string
+  AvatarUrl string
+}
+
+type Notification {
+  ID NotificationID
+  Title string
+  Message string
+  CreatedAt Timestamp
+  IsRead bool
+}
+
+/* Servers contain endpoints. 
+Each endpoint is defined as a name, verb url, optional body and optional returns
+*/
+server UserService {
+  // Endpoints can contain url parameters, which can be any primitive type or enum
+  // GET endpoints do not contain a body
+  GetUser GET /users/{id UserID} returns(DetailedUser)
+  
+  // All other urls can contain a body
+  // body and return always refer to a struct type
+  CreateUser POST /users body(CreateUserRequest) returns(User)
+  UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)
+  DeleteUser DELETE /users/{id UserID} body(DeleteUserRequest) returns(User)
+  PatchUserProfile PATCH /users/{id UserID}/profile body(UserProfileUpdate) returns(UserProfile)
+  
+  // Endpoints can take a struct of parameters
+  ListUsers GET /users parameters(UserListParams) returns(UserCollection)
+  SearchUsers GET /users/search parameters(UserSearchParams) returns(UserCollection)
+  GetUsersByRole GET /users/role/{role UserRole} parameters(UserListParams) returns(UserCollection)
+}
+
+// multiple servers can be defined in a single file
+server NotificationService {
+  GetUserNotifications GET /users/{userId UserID}/notifications parameters(UserListParams) returns(repeated(Notification))
+}
+
