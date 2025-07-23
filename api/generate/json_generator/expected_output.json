@@ -3,12 +3,36 @@
     {
       "name": "UserID",
       "kind": "alias",
-      "target": "int64"
+      "target": "int64",
+      "comments": [
+        {
+          "type": "single",
+          "content": "this is a comment",
+          "line": 1
+        },
+        {
+          "type": "multi",
+          "content": "this is a multiline comment",
+          "line": 2
+        },
+        {
+          "type": "single",
+          "content": "you can define primitives like this",
+          "line": 6
+        }
+      ]
     },
     {
       "name": "Email",
       "kind": "alias",
-      "target": "string"
+      "target": "string",
+      "comments": [
+        {
+          "type": "single",
+          "content": "this is also a comment",
+          "line": 7
+        }
+      ]
     },
     {
       "name": "Timestamp",
@@ -31,12 +55,26 @@
       "elementType": {
         "kind": "reference",
         "name": "User"
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "you can defined lists this way",
+          "line": 31
+        }
+      ]
     },
     {
       "name": "NotificationID",
       "kind": "alias",
-      "target": "int32"
+      "target": "int32",
+      "comments": [
+        {
+          "type": "single",
+          "content": "you can use types before they are defined",
+          "line": 33
+        }
+      ]
     },
     {
       "name": "UserRoleHistory",
@@ -47,7 +85,14 @@
           "kind": "reference",
           "name": "string"
         }
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "lists can be complex",
+          "line": 36
+        }
+      ]
     },
     {
       "name": "NestedUserGroups",
@@ -70,7 +115,14 @@
       "valueType": {
         "kind": "reference",
         "name": "bool"
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "you can defined maps this way",
+          "line": 40
+        }
+      ]
     },
     {
       "name": "UserActivityByMonth",
@@ -92,7 +144,14 @@
             "name": "int32"
           }
         }
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "maps can be complex",
+          "line": 42
+        }
+      ]
     },
     {
       "name": "User",
@@ -130,6 +189,13 @@
           },
           "required": false
         }
+      ],
+      "comments": [
+        {
+          "type": "single",
+          "content": "structs can be defined like this",
+          "line": 45
+        }
       ]
     },
     {
@@ -142,7 +208,14 @@
             "kind": "reference",
             "name": "UserID"
           },
-          "required": true
+          "required": true,
+          "comments": [
+            {
+              "type": "single",
+              "content": "fields are optional unless marked with 'required'",
+              "line": 61
+            }
+          ]
         },
         {
           "name": "Usernames",
@@ -177,6 +250,13 @@
             "name": "UserProfile"
           },
           "required": false
+        }
+      ],
+      "comments": [
+        {
+          "type": "multi",
+          "content": "Struct fields can contain:\n** any primitives\n** repeated fields\n** map fields \n** any defined types\n** other structs",
+          "line": 53
         }
       ]
     },
@@ -224,7 +304,14 @@
       "elementType": {
         "kind": "reference",
         "name": "User"
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "both lists and maps can contain structs",
+          "line": 75
+        }
+      ]
     },
     {
       "name": "UsersByDepartment",
@@ -276,6 +363,13 @@
             "name": "int32"
           },
           "required": false
+        }
+      ],
+      "comments": [
+        {
+          "type": "multi",
+          "content": "Allowed in parameter structs:\n- Primitives: string, int32, int64, float32, float64, bool\n- Enums (serialize to underlying primitive)\n- Simple arrays: repeated(primitive) or repeated(enum)\n- Maybe simple maps: map(string: primitive)",
+          "line": 79
         }
       ]
     },
@@ -516,7 +610,19 @@
         "ADMIN": "admin",
         "MODERATOR": "moderator",
         "USER": "user"
-      }
+      },
+      "comments": [
+        {
+          "type": "single",
+          "content": "enums can be defined like this",
+          "line": 13
+        },
+        {
+          "type": "single",
+          "content": "enums can be any primitive type",
+          "line": 14
+        }
+      ]
     },
     {
       "name": "UserStatus",
@@ -552,7 +658,19 @@
           "returns": {
             "kind": "reference",
             "name": "DetailedUser"
-          }
+          },
+          "comments": [
+            {
+              "type": "single",
+              "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
+              "line": 138
+            },
+            {
+              "type": "single",
+              "content": "GET endpoints do not contain a body",
+              "line": 139
+            }
+          ]
         },
         {
           "name": "CreateUser",
@@ -565,7 +683,19 @@
           "returns": {
             "kind": "reference",
             "name": "User"
-          }
+          },
+          "comments": [
+            {
+              "type": "single",
+              "content": "All other urls can contain a body",
+              "line": 142
+            },
+            {
+              "type": "single",
+              "content": "body and return always refer to a struct type",
+              "line": 143
+            }
+          ]
         },
         {
           "name": "UpdateUser",
@@ -635,7 +765,14 @@
           "returns": {
             "kind": "reference",
             "name": "UserCollection"
-          }
+          },
+          "comments": [
+            {
+              "type": "single",
+              "content": "Endpoints can take a struct of parameters",
+              "line": 149
+            }
+          ]
         },
         {
           "name": "SearchUsers",
@@ -669,6 +806,13 @@
             "name": "UserCollection"
           }
         }
+      ],
+      "comments": [
+        {
+          "type": "multi",
+          "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
+          "line": 134
+        }
       ]
     },
     {
@@ -695,6 +839,13 @@
               "name": "Notification"
             }
           }
+        }
+      ],
+      "comments": [
+        {
+          "type": "single",
+          "content": "multiple servers can be defined in a single file",
+          "line": 155
         }
       ]
     }

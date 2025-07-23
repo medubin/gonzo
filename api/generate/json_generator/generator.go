@@ -2,7 +2,6 @@ package jsongenerator
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -15,6 +14,7 @@ const (
 	TokenString
 	TokenNumber
 	TokenSymbol
+	TokenComment
 	TokenError
 	TokenEOF
 )
@@ -23,6 +23,13 @@ type Token struct {
 	Type  TokenType
 	Value string
 	Line  int
+}
+
+// Comment represents a comment in the source
+type Comment struct {
+	Type    string `json:"type"`    // "single" or "multi"
+	Content string `json:"content"` // Comment text without // or /* */
+	Line    int    `json:"line"`
 }
 
 // Keywords defined at package level for better maintenance and performance
@@ -49,12 +56,6 @@ func isKeyword(word string) bool {
 	return exists
 }
 
-// Pre-compiled regex patterns for better performance
-var (
-	singleLineComment = regexp.MustCompile(`//.*`)
-	multiLineComment  = regexp.MustCompile(`/\*[\s\S]*?\*/`)
-)
-
 // Lexer
 type Lexer struct {
 	input    string
@@ -63,22 +64,10 @@ type Lexer struct {
 }
 
 func NewLexer(input string) *Lexer {
-	// Remove comments first
-	input = removeComments(input)
 	return &Lexer{
 		input: input,
 		line:  1,
 	}
-}
-
-func removeComments(input string) string {
-	// Remove single line comments
-	input = singleLineComment.ReplaceAllString(input, "")
-
-	// Remove multi-line comments
-	input = multiLineComment.ReplaceAllString(input, "")
-
-	return input
 }
 
 func (l *Lexer) NextToken() Token {
@@ -89,6 +78,16 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	char := l.input[l.position]
+
+	// Handle comments
+	if char == '/' && l.position+1 < len(l.input) {
+		nextChar := l.input[l.position+1]
+		if nextChar == '/' {
+			return l.readSingleLineComment()
+		} else if nextChar == '*' {
+			return l.readMultiLineComment()
+		}
+	}
 
 	// Handle symbols
 	if strings.ContainsRune("()=:,/{}", rune(char)) {
@@ -130,6 +129,46 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
+func (l *Lexer) readSingleLineComment() Token {
+	startLine := l.line
+	l.position += 2 // Skip //
+	start := l.position
+
+	// Read until end of line
+	for l.position < len(l.input) && l.input[l.position] != '\n' {
+		l.position++
+	}
+
+	content := strings.TrimSpace(l.input[start:l.position])
+	return Token{Type: TokenComment, Value: fmt.Sprintf("single:%s", content), Line: startLine}
+}
+
+func (l *Lexer) readMultiLineComment() Token {
+	startLine := l.line
+	l.position += 2 // Skip /*
+	start := l.position
+
+	// Read until */
+	for l.position < len(l.input)-1 {
+		if l.input[l.position] == '*' && l.input[l.position+1] == '/' {
+			content := strings.TrimSpace(l.input[start:l.position])
+			l.position += 2 // Skip */
+			return Token{Type: TokenComment, Value: fmt.Sprintf("multi:%s", content), Line: startLine}
+		}
+		if l.input[l.position] == '\n' {
+			l.line++
+		}
+		l.position++
+	}
+
+	// Unterminated comment
+	return Token{
+		Type:  TokenError,
+		Value: fmt.Sprintf("unterminated comment starting at line %d", startLine),
+		Line:  startLine,
+	}
+}
+
 func (l *Lexer) readString() Token {
 	startLine := l.line
 	l.position++ // Skip opening quote
@@ -137,7 +176,7 @@ func (l *Lexer) readString() Token {
 
 	for l.position < len(l.input) {
 		char := l.input[l.position]
-		
+
 		// Check for unterminated string at newline
 		if char == '\n' {
 			return Token{
@@ -146,7 +185,7 @@ func (l *Lexer) readString() Token {
 				Line:  startLine,
 			}
 		}
-		
+
 		// Handle escaped characters
 		if char == '\\' && l.position+1 < len(l.input) {
 			l.position++ // Skip the backslash
@@ -170,13 +209,13 @@ func (l *Lexer) readString() Token {
 			l.position++
 			continue
 		}
-		
+
 		// Found closing quote
 		if char == '"' {
 			l.position++ // Skip closing quote
 			return Token{Type: TokenString, Value: result.String(), Line: startLine}
 		}
-		
+
 		result.WriteByte(char)
 		l.position++
 	}
@@ -191,16 +230,36 @@ func (l *Lexer) readString() Token {
 
 func (l *Lexer) readNumber() Token {
 	start := l.position
+	hasDecimal := false
 
 	if l.input[l.position] == '-' {
 		l.position++
 	}
 
-	for l.position < len(l.input) && (isDigit(l.input[l.position]) || l.input[l.position] == '.') {
-		l.position++
+	for l.position < len(l.input) {
+		char := l.input[l.position]
+		if isDigit(char) {
+			l.position++
+		} else if char == '.' && !hasDecimal {
+			hasDecimal = true
+			l.position++
+		} else {
+			break
+		}
 	}
 
-	return Token{Type: TokenNumber, Value: l.input[start:l.position], Line: l.line}
+	value := l.input[start:l.position]
+
+	// Validate the number format
+	if strings.HasSuffix(value, ".") || strings.Contains(value, "..") {
+		return Token{
+			Type:  TokenError,
+			Value: fmt.Sprintf("invalid number format '%s'", value),
+			Line:  l.line,
+		}
+	}
+
+	return Token{Type: TokenNumber, Value: value, Line: l.line}
 }
 
 func (l *Lexer) readIdentifier() Token {
@@ -229,7 +288,16 @@ func isDigit(char byte) bool {
 	return char >= '0' && char <= '9'
 }
 
-// AST Node types for JSON output
+// Helper function to parse comment content
+func parseCommentContent(tokenValue string) Comment {
+	parts := strings.SplitN(tokenValue, ":", 2)
+	if len(parts) != 2 {
+		return Comment{Type: "single", Content: tokenValue}
+	}
+	return Comment{Type: parts[0], Content: parts[1]}
+}
+
+// AST Node types for JSON output with comments
 type APIDefinition struct {
 	Types   []TypeDef   `json:"types"`
 	Enums   []EnumDef   `json:"enums"`
@@ -244,6 +312,7 @@ type TypeDef struct {
 	ElementType *TypeExpr  `json:"elementType,omitempty"` // For repeated
 	KeyType     *TypeExpr  `json:"keyType,omitempty"`     // For maps
 	ValueType   *TypeExpr  `json:"valueType,omitempty"`   // For maps
+	Comments    []Comment  `json:"comments,omitempty"`    // Associated comments
 }
 
 type TypeExpr struct {
@@ -258,17 +327,20 @@ type FieldDef struct {
 	Name     string    `json:"name"`
 	Type     *TypeExpr `json:"type"`
 	Required bool      `json:"required"`
+	Comments []Comment `json:"comments,omitempty"` // Associated comments
 }
 
 type EnumDef struct {
 	Name     string            `json:"name"`
 	BaseType string            `json:"baseType"`
 	Values   map[string]string `json:"values"`
+	Comments []Comment         `json:"comments,omitempty"` // Associated comments
 }
 
 type ServerDef struct {
 	Name      string        `json:"name"`
 	Endpoints []EndpointDef `json:"endpoints"`
+	Comments  []Comment     `json:"comments,omitempty"` // Associated comments
 }
 
 type EndpointDef struct {
@@ -279,6 +351,7 @@ type EndpointDef struct {
 	Parameters *TypeExpr  `json:"parameters,omitempty"`
 	Body       *TypeExpr  `json:"body,omitempty"`
 	Returns    *TypeExpr  `json:"returns,omitempty"`
+	Comments   []Comment  `json:"comments,omitempty"` // Associated comments
 }
 
 type ParamDef struct {
@@ -286,10 +359,11 @@ type ParamDef struct {
 	Type string `json:"type"`
 }
 
-// Parser
+// Parser with comment handling
 type Parser struct {
 	lexer        *Lexer
 	currentToken Token
+	comments     []Comment // Buffer for accumulated comments
 }
 
 func NewParser(input string) *Parser {
@@ -301,6 +375,21 @@ func NewParser(input string) *Parser {
 
 func (p *Parser) nextToken() {
 	p.currentToken = p.lexer.NextToken()
+
+	// Collect comments
+	for p.currentToken.Type == TokenComment {
+		comment := parseCommentContent(p.currentToken.Value)
+		comment.Line = p.currentToken.Line
+		p.comments = append(p.comments, comment)
+		p.currentToken = p.lexer.NextToken()
+	}
+}
+
+// Get and clear accumulated comments
+func (p *Parser) getComments() []Comment {
+	comments := p.comments
+	p.comments = nil
+	return comments
 }
 
 func (p *Parser) expect(value string) error {
@@ -357,6 +446,9 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 }
 
 func (p *Parser) parseTypeDef() (*TypeDef, error) {
+	// Get comments that appeared before 'type'
+	comments := p.getComments()
+
 	if err := p.expect("type"); err != nil {
 		return nil, err
 	}
@@ -366,7 +458,7 @@ func (p *Parser) parseTypeDef() (*TypeDef, error) {
 		return nil, err
 	}
 
-	typeDef := &TypeDef{Name: name}
+	typeDef := &TypeDef{Name: name, Comments: comments}
 
 	// Check if it's a struct
 	if p.currentToken.Value == "{" {
@@ -485,7 +577,10 @@ func (p *Parser) parseStruct() ([]FieldDef, error) {
 }
 
 func (p *Parser) parseField() (*FieldDef, error) {
-	field := &FieldDef{}
+	// Get comments that appeared before this field
+	comments := p.getComments()
+
+	field := &FieldDef{Comments: comments}
 
 	// Check for required keyword
 	if p.currentToken.Value == "required" {
@@ -510,6 +605,9 @@ func (p *Parser) parseField() (*FieldDef, error) {
 }
 
 func (p *Parser) parseEnumDef() (*EnumDef, error) {
+	// Get comments that appeared before 'enum'
+	comments := p.getComments()
+
 	if err := p.expect("enum"); err != nil {
 		return nil, err
 	}
@@ -531,6 +629,9 @@ func (p *Parser) parseEnumDef() (*EnumDef, error) {
 	values := make(map[string]string)
 
 	for p.currentToken.Value != "}" {
+		// Skip comments inside enum (could be enhanced to associate with enum values)
+		p.getComments()
+
 		key, err := p.expectIdentifier()
 		if err != nil {
 			return nil, err
@@ -562,10 +663,14 @@ func (p *Parser) parseEnumDef() (*EnumDef, error) {
 		Name:     name,
 		BaseType: baseType,
 		Values:   values,
+		Comments: comments,
 	}, nil
 }
 
 func (p *Parser) parseServerDef() (*ServerDef, error) {
+	// Get comments that appeared before 'server'
+	comments := p.getComments()
+
 	if err := p.expect("server"); err != nil {
 		return nil, err
 	}
@@ -596,10 +701,14 @@ func (p *Parser) parseServerDef() (*ServerDef, error) {
 	return &ServerDef{
 		Name:      name,
 		Endpoints: endpoints,
+		Comments:  comments,
 	}, nil
 }
 
 func (p *Parser) parseEndpoint() (*EndpointDef, error) {
+	// Get comments that appeared before this endpoint
+	comments := p.getComments()
+
 	name, err := p.expectIdentifier()
 	if err != nil {
 		return nil, err
@@ -620,6 +729,7 @@ func (p *Parser) parseEndpoint() (*EndpointDef, error) {
 		Method:     method,
 		Path:       path,
 		PathParams: pathParams,
+		Comments:   comments,
 	}
 
 	// Parse optional clauses
