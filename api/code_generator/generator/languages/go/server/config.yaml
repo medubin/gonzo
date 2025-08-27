@@ -84,3 +84,13 @@ templates:
     func (s *{{.Server.Name}}Impl) {{.Endpoint.Name}}(ctx context.Context, body {{.Endpoint.BodyType}}, cookie cookies.Cookies, url url.URL[{{.Endpoint.URLType}}]) ({{.Endpoint.ReturnType}}, error) {
       return nil, gerrors.UnimplementedError("{{.Endpoint.Name}}")
     }
+  server_impl: |
+    {{.Settings.PackageComment}}
+    package {{.PackageName}}
+
+    {{range .Servers}}
+    {{if .Comments}}{{formatComments .Comments}}
+    {{end}}type {{.Name}}Impl struct {
+    	// Add your server implementation fields here
+    }
+    {{end}}
