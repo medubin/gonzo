@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -341,10 +342,18 @@ func (tg *TemplateGenerator) convertEnum(enumDef *EnumDef) TemplateEnum {
 		GoType:   tg.mapType(enumDef.BaseType),
 	}
 
-	for key, value := range enumDef.Values {
+	// Sort keys for consistent ordering
+	var keys []string
+	for key := range enumDef.Values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	// Add values in sorted order
+	for _, key := range keys {
 		te.Values = append(te.Values, TemplateEnumValue{
 			Key:   key,
-			Value: value,
+			Value: enumDef.Values[key],
 		})
 	}
 
