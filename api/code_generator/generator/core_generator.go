@@ -9,15 +9,14 @@ import (
 	"strings"
 	"text/template"
 
-	"gopkg.in/yaml.v2"
 	"github.com/iancoleman/strcase"
+	"gopkg.in/yaml.v2"
 )
 
 // LanguageSettings holds language-specific settings
 type LanguageSettings struct {
-	PackageComment string   `yaml:"package_comment"`
-	ImplPackage    string   `yaml:"impl_package"`
-	ImplImports    []string `yaml:"impl_imports"`
+	PackageComment  string   `yaml:"package_comment"`
+	EndpointImports []string `yaml:"endpoint_imports"`
 }
 
 // LanguageConfig defines language-specific configuration
