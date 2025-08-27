@@ -9,6 +9,6 @@ import (
 )
 
 // POST /session/new
-func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error) {
+func (s *UserServiceImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error) {
 	return nil, gerrors.UnimplementedError("SignIn")
 }

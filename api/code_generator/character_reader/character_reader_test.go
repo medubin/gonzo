@@ -3,7 +3,7 @@ package cr_test
 import (
 	"testing"
 
-	cr "github.com/medubin/gonzo/api/generate/character_reader"
+	cr "github.com/medubin/gonzo/api/code_generator/character_reader"
 	"github.com/stretchr/testify/assert"
 )
 

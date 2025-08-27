@@ -6,10 +6,28 @@ import (
 	"fmt"
 	"os"
 
-	api "github.com/medubin/gonzo/api/generate"
-	"github.com/medubin/gonzo/api/generate/fileio"
-	"github.com/medubin/gonzo/api/generate/utils"
+	"github.com/medubin/gonzo/api/code_generator/fileio"
+	"github.com/medubin/gonzo/api/code_generator/generator"
+	"github.com/medubin/gonzo/api/code_generator/utils"
 )
+
+type Languages int
+
+const (
+	Golang Languages = iota
+)
+
+type Stacks int
+
+const (
+	Server Stacks = iota
+)
+
+var StackLanguages = map[Stacks]map[Languages]string{
+	Server: {
+		Golang: "",
+	},
+}
 
 type Runner interface {
 	Init([]string) error
@@ -51,8 +69,9 @@ func NewGenerateCommand() *GenerateCommand {
 	}
 	gc.fs.StringVar(&gc.input, "input", "", "input file. Should end in .api")
 	gc.fs.StringVar(&gc.output, "output", "", "output directory")
-	gc.fs.StringVar(&gc.stack, "stack", "server", "server or client. Defaults to server")
-	gc.fs.StringVar(&gc.language, "language", "go", "language, can be go or typescript")
+	gc.fs.StringVar(&gc.stack, "stack", "", "server or client. Defaults to server")
+	gc.fs.StringVar(&gc.language, "language", "", "language, can be go or typescript")
+	gc.fs.StringVar(&gc.packageName, "package", "", "package name")
 
 	return gc
 }
@@ -63,8 +82,9 @@ type GenerateCommand struct {
 	input  string
 	output string
 
-	stack    string
-	language string
+	stack       string
+	language    string
+	packageName string
 }
 
 func (g *GenerateCommand) Name() string {
@@ -80,43 +100,65 @@ func (g *GenerateCommand) Run() error {
 		return fmt.Errorf("unsupported language stack combination: %s, %s", g.language, g.stack)
 	}
 
+	if g.input == "" {
+		return fmt.Errorf("input required")
+	}
+
+	if g.output == "" {
+		return fmt.Errorf("output required")
+	}
+
+	if g.packageName == "" {
+		return fmt.Errorf("package name required")
+
+	}
+
 	lines, err := fileio.ParseFile(g.input + ".api")
 	if err != nil {
 		return err
 	}
 
-	if g.stack == "client" {
-		types, _, err := api.Generate(lines, g.stack, g.language)
+	parser := generator.NewParser(string(lines))
+	api, err := parser.Parse()
+	if err != nil {
+		return err
+	}
+
+	template, err := generator.NewTemplateGenerator("api/code_generator/generator/languages/go/server/config.yaml")
+	if err != nil {
+		return err
+	}
+
+	results, err := template.Generate(api, g.packageName)
+	if err != nil {
+		return err
+	}
+
+	for name, result := range results {
+		err = fileio.WriteToFile(g.output, name, result)
 		if err != nil {
 			return err
 		}
-		return fileio.WriteToFile(g.output, "types", types, true)
 	}
 
-	// Server-side generation
-	types, endpoints, err := api.Generate(lines, g.stack, g.language)
-	if err != nil {
-		return err
-	}
+	// err = fileio.WriteToFile(g.output, "types", types,)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = fileio.WriteToFile(g.output, "types", types, false)
-	if err != nil {
-		return err
-	}
+	// err = fileio.WriteEndpoints(g.output, endpoints)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = fileio.WriteEndpoints(g.output, endpoints)
-	if err != nil {
-		return err
-	}
+	// 	server := `package server
 
-	server := `package server
-
-type ServerImpl struct{}
-`
-	err = fileio.SafeWriteToFile(g.output, "server", server)
-	if err != nil {
-		return err
-	}
+	// type ServerImpl struct{}
+	// `
+	// err = fileio.SafeWriteToFile(g.output, "server_impl", server)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

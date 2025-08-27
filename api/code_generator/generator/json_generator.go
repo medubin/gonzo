@@ -1,4 +1,4 @@
-package jsongenerator
+package generator
 
 import (
 	"fmt"

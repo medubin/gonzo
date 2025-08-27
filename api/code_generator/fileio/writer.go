@@ -5,15 +5,11 @@ import (
 	"os"
 )
 
-func WriteToFile(directory string, name string, output string, isTypescript bool) error {
+func WriteToFile(directory string, name string, output string) error {
 	_ = os.Mkdir(directory, os.ModePerm)
 
-	var extension = ".go"
-	if isTypescript {
-		extension = ".ts"
-	}
 
-	file, err := os.Create(directory + "/" + name + extension)
+	file, err := os.Create(directory + "/" + name)
 	if err != nil {
 		return err
 	}
