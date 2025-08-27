@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/medubin/gonzo/api/code_generator/fileio"
 	"github.com/medubin/gonzo/api/code_generator/generator"
@@ -12,6 +13,9 @@ import (
 )
 
 type Languages int
+
+var serverRegex = regexp.MustCompile(`^server\..+$`)
+var typesRegex = regexp.MustCompile(`^types\..+$`)
 
 const (
 	Golang Languages = iota
@@ -135,7 +139,8 @@ func (g *GenerateCommand) Run() error {
 	}
 
 	for name, result := range results {
-		err = fileio.WriteToFile(g.output, name, result)
+		safe := (!serverRegex.MatchString(name) && !typesRegex.MatchString(name))
+		err = fileio.WriteToFile(g.output, name, result, safe)
 		if err != nil {
 			return err
 		}

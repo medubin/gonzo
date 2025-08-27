@@ -12,4 +12,5 @@ import (
 // POST /users
 func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[interface{}]) (*User, error) {
   return nil, gerrors.UnimplementedError("CreateUser")
+
 }

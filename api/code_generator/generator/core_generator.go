@@ -113,10 +113,6 @@ type TemplateGenerator struct {
 
 // NewTemplateGenerator creates a new template generator
 func NewTemplateGenerator(configPath string) (*TemplateGenerator, error) {
-	entries, _ := os.ReadDir("./")
-	for _, e := range entries {
-		println(e.Name())
-	}
 	config, err := loadLanguageConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)

@@ -5,14 +5,23 @@ import (
 	"os"
 )
 
-func WriteToFile(directory string, name string, output string) error {
+func WriteToFile(directory string, name string, output string, safe bool) error {
 	_ = os.Mkdir(directory, os.ModePerm)
 
+	filename := directory + "/" + name
 
-	file, err := os.Create(directory + "/" + name)
+	if safe {
+		if fileExists(filename) {
+			return nil
+		}
+		return os.WriteFile(filename, []byte(output), 0644)
+	}
+
+	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
+
 	_, err = file.WriteString(output)
 	if err != nil {
 		return err
@@ -21,26 +30,7 @@ func WriteToFile(directory string, name string, output string) error {
 	return nil
 }
 
-func SafeWriteToFile(directory string, name string, output string) error {
-	_ = os.Mkdir(directory, os.ModePerm)
-
-	if fileExists(directory, name) {
-		return nil
-	}
-	return os.WriteFile(directory+"/"+name+".go", []byte(output), 0644)
-}
-
-func WriteEndpoints(directory string, endpoints map[string]string) error {
-	for name, endpoint := range endpoints {
-		err := SafeWriteToFile(directory, name, endpoint)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func fileExists(directory string, name string) bool {
-	_, err := os.Stat(directory + "/" + name + ".go")
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
 	return !errors.Is(err, os.ErrNotExist)
 }
