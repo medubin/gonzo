@@ -146,7 +146,10 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 	tg.funcMap["upper"] = strings.ToUpper
 	tg.funcMap["join"] = strings.Join
 	tg.funcMap["hasPrefix"] = strings.HasPrefix
-	tg.funcMap["quote"] = func(s string) string { return fmt.Sprintf(`"%s"`, s) }
+	tg.funcMap["quote"] = func(s string) string {
+		escaped := strings.ReplaceAll(s, `"`, `\"`)
+		return fmt.Sprintf(`"%s"`, escaped)
+	}
 	tg.funcMap["formatComment"] = tg.formatComment
 	tg.funcMap["formatComments"] = tg.formatTemplateComments
 	tg.funcMap["indent"] = func(tabCount int, text string) string {

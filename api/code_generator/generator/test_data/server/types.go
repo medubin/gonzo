@@ -7,23 +7,23 @@ package server
 type UserRole string
 
 const (
-	UserRole_ADMIN UserRole = "admin"
 	UserRole_MODERATOR UserRole = "moderator"
 	UserRole_USER UserRole = "user"
+	UserRole_ADMIN UserRole = "admin"
 )
 
 type UserStatus string
 
 const (
+	UserStatus_PENDING UserStatus = "pending"
 	UserStatus_ACTIVE UserStatus = "active"
 	UserStatus_SUSPENDED UserStatus = "suspended"
-	UserStatus_PENDING UserStatus = "pending"
 )
 
 type WelcomeMessage string
 
 const (
-	WelcomeMessage_WELCOME WelcomeMessage = "Welcome to "MyApp""
+	WelcomeMessage_WELCOME WelcomeMessage = "Welcome to \"MyApp\""
 )
 
 

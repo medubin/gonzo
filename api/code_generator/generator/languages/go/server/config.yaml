@@ -30,7 +30,7 @@ templates:
     {{end}}type {{.Name}} {{.GoType}}
 
     const (
-    {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}"{{.Value}}"{{else}}{{.Value}}{{end}}
+    {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}
     {{end}})
     {{end}}
 
