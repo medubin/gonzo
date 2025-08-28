@@ -39,7 +39,7 @@ templates:
     {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "struct"}}type {{.Name}} struct {
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}	{{.GoName}} {{.Type}} `json:"{{.JSONTag}}"`
+    {{end}}	{{capitalize .Name}} {{.Type}} `json:"{{.JSONTag}}"`
     {{end}}}
     {{else if eq .Kind "repeated"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "map"}}type {{.Name}} {{.MappedType}}
@@ -48,7 +48,7 @@ templates:
     
     {{range .Servers}}{{range .Endpoints}}{{if .PathParams}}// URL parameters for {{.Name}}
     type {{.Name}}Url struct {
-    {{range .PathParams}}	{{.GoName}} {{.Type}} `url:"{{.Name}}"`
+    {{range .PathParams}}	{{capitalize .Name}} {{.Type}} `url:"{{.Name}}"`
     {{end}}}
     {{end}}{{end}}{{end}}
 

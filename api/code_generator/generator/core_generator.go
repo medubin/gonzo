@@ -63,7 +63,6 @@ type TemplateField struct {
 	Required bool
 	Comments []TemplateComment
 	JSONTag  string
-	GoName   string // capitalized field name
 }
 
 type TemplateEnum struct {
@@ -102,7 +101,6 @@ type TemplateEndpoint struct {
 type TemplatePathParam struct {
 	Name   string
 	Type   string
-	GoName string
 }
 
 // TemplateGenerator generates code using templates
@@ -338,7 +336,6 @@ func (tg *TemplateGenerator) convertField(field *FieldDef) TemplateField {
 		Required: field.Required,
 		Comments: tg.extractComments(field.Comments),
 		JSONTag:  jsonTag,
-		GoName:   tg.capitalize(field.Name),
 	}
 }
 
@@ -396,7 +393,6 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 		te.PathParams = append(te.PathParams, TemplatePathParam{
 			Name:   param.Name,
 			Type:   tg.mapType(param.Type),
-			GoName: tg.capitalize(param.Name),
 		})
 	}
 
