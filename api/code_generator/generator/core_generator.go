@@ -22,12 +22,13 @@ type LanguageSettings struct {
 
 // LanguageConfig defines language-specific configuration
 type LanguageConfig struct {
-	Language   string            `yaml:"language"`
-	FileExt    string            `yaml:"file_ext"`
-	Primitives map[string]string `yaml:"primitives"`
-	Templates  map[string]string `yaml:"templates"`
-	Imports    []string          `yaml:"default_imports"`
-	Settings   LanguageSettings  `yaml:"settings"`
+	Language     string            `yaml:"language"`
+	FileExt      string            `yaml:"file_ext"`
+	Primitives   map[string]string `yaml:"primitives"`
+	TypePatterns map[string]string `yaml:"type_patterns"`
+	Templates    map[string]string `yaml:"templates"`
+	Imports      []string          `yaml:"default_imports"`
+	Settings     LanguageSettings  `yaml:"settings"`
 }
 
 // TemplateData represents the data passed to templates
@@ -48,12 +49,12 @@ type TemplateComment struct {
 }
 
 type TemplateType struct {
-	Name     string
-	Kind     string
-	Target   string // for aliases
-	Fields   []TemplateField
-	Comments []TemplateComment
-	GoType   string // language-specific type representation
+	Name       string
+	Kind       string
+	Target     string // for aliases
+	Fields     []TemplateField
+	Comments   []TemplateComment
+	MappedType string // The complete mapped type string
 }
 
 type TemplateField struct {
@@ -70,7 +71,6 @@ type TemplateEnum struct {
 	BaseType string
 	Values   []TemplateEnumValue
 	Comments []TemplateComment
-	GoType   string
 }
 
 type TemplateEnumValue struct {
@@ -138,6 +138,7 @@ func NewTemplateGenerator(configPath string) (*TemplateGenerator, error) {
 // setupTemplateFunctions adds helper functions for templates
 func (tg *TemplateGenerator) setupTemplateFunctions() {
 	tg.funcMap["mapType"] = tg.mapType
+	tg.funcMap["mapTypeExpr"] = tg.mapTypeExpr
 	tg.funcMap["capitalize"] = tg.capitalize
 	tg.funcMap["lower"] = strings.ToLower
 	tg.funcMap["upper"] = strings.ToUpper
@@ -291,22 +292,29 @@ func (tg *TemplateGenerator) convertType(typeDef *TypeDef) TemplateType {
 		tt.Fields = append(tt.Fields, tg.convertField(&field))
 	}
 
-	// Set GoType based on kind
+	// Set MappedType based on kind
 	switch typeDef.Kind {
 	case "alias":
-		tt.GoType = tg.mapType(typeDef.Target)
+		tt.MappedType = tg.mapType(typeDef.Target)
 	case "repeated":
 		if typeDef.ElementType != nil {
-			tt.GoType = fmt.Sprintf("[]%s", tg.mapTypeExpr(typeDef.ElementType))
+			repeatedTypeExpr := &TypeExpr{
+				Kind:        "repeated",
+				ElementType: typeDef.ElementType,
+			}
+			tt.MappedType = tg.mapTypeExpr(repeatedTypeExpr)
 		}
 	case "map":
 		if typeDef.KeyType != nil && typeDef.ValueType != nil {
-			tt.GoType = fmt.Sprintf("map[%s]%s",
-				tg.mapTypeExpr(typeDef.KeyType),
-				tg.mapTypeExpr(typeDef.ValueType))
+			mapTypeExpr := &TypeExpr{
+				Kind:      "map",
+				KeyType:   typeDef.KeyType,
+				ValueType: typeDef.ValueType,
+			}
+			tt.MappedType = tg.mapTypeExpr(mapTypeExpr)
 		}
 	case "struct":
-		tt.GoType = "struct"
+		tt.MappedType = "struct"
 	}
 
 	return tt
@@ -335,7 +343,6 @@ func (tg *TemplateGenerator) convertEnum(enumDef *EnumDef) TemplateEnum {
 		Name:     enumDef.Name,
 		BaseType: enumDef.BaseType,
 		Comments: tg.extractComments(enumDef.Comments),
-		GoType:   tg.mapType(enumDef.BaseType),
 	}
 
 	// Sort keys for consistent ordering
@@ -393,7 +400,11 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 		te.BodyType = fmt.Sprintf("*%s", tg.mapTypeExpr(endpoint.Body))
 		te.HasBody = true
 	} else {
-		te.BodyType = "*interface{}"
+		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+			te.BodyType = fmt.Sprintf("*%s", defaultPattern)
+		} else {
+			te.BodyType = "*interface{}" // fallback
+		}
 	}
 
 	// Set return type
@@ -401,14 +412,22 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 		te.ReturnType = fmt.Sprintf("*%s", tg.mapTypeExpr(endpoint.Returns))
 		te.HasReturn = true
 	} else {
-		te.ReturnType = "*interface{}"
+		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+			te.ReturnType = fmt.Sprintf("*%s", defaultPattern)
+		} else {
+			te.ReturnType = "*interface{}" // fallback
+		}
 	}
 
 	// Set URL type
 	if len(endpoint.PathParams) > 0 {
 		te.URLType = fmt.Sprintf("%sUrl", endpoint.Name)
 	} else {
-		te.URLType = "interface{}"
+		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+			te.URLType = defaultPattern
+		} else {
+			te.URLType = "interface{}" // fallback
+		}
 	}
 
 	// Check for parameters
@@ -427,20 +446,30 @@ func (tg *TemplateGenerator) mapType(typeName string) string {
 
 func (tg *TemplateGenerator) mapTypeExpr(typeExpr *TypeExpr) string {
 	if typeExpr == nil {
-		return "interface{}"
+		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+			return defaultPattern
+		}
+		return "interface{}" // fallback
 	}
 
 	switch typeExpr.Kind {
 	case "reference":
 		return tg.mapType(typeExpr.Name)
 	case "repeated":
-		return fmt.Sprintf("[]%s", tg.mapTypeExpr(typeExpr.ElementType))
+		if pattern, ok := tg.config.TypePatterns["repeated"]; ok {
+			return fmt.Sprintf(pattern, tg.mapTypeExpr(typeExpr.ElementType))
+		}
+		return fmt.Sprintf("[]%s", tg.mapTypeExpr(typeExpr.ElementType)) // fallback
 	case "map":
-		return fmt.Sprintf("map[%s]%s",
-			tg.mapTypeExpr(typeExpr.KeyType),
-			tg.mapTypeExpr(typeExpr.ValueType))
+		if pattern, ok := tg.config.TypePatterns["map"]; ok {
+			return fmt.Sprintf(pattern, tg.mapTypeExpr(typeExpr.KeyType), tg.mapTypeExpr(typeExpr.ValueType))
+		}
+		return fmt.Sprintf("map[%s]%s", tg.mapTypeExpr(typeExpr.KeyType), tg.mapTypeExpr(typeExpr.ValueType)) // fallback
 	default:
-		return "interface{}"
+		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+			return defaultPattern
+		}
+		return "interface{}" // fallback
 	}
 }
 

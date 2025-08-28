@@ -24,28 +24,28 @@ templates:
   types: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}
-
+    
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
-    {{end}}type {{.Name}} {{.GoType}}
-
+    {{end}}type {{.Name}} {{mapType .BaseType}}
+    
     const (
     {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}
     {{end}})
     {{end}}
-
+    
     {{range .Types}}
     {{if .Comments}}{{formatComments .Comments}}
-    {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.GoType}}
+    {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "struct"}}type {{.Name}} struct {
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
     {{end}}	{{.GoName}} {{.Type}} `json:"{{.JSONTag}}"`
     {{end}}}
-    {{else if eq .Kind "repeated"}}type {{.Name}} {{.GoType}}
-    {{else if eq .Kind "map"}}type {{.Name}} {{.GoType}}
+    {{else if eq .Kind "repeated"}}type {{.Name}} {{.MappedType}}
+    {{else if eq .Kind "map"}}type {{.Name}} {{.MappedType}}
     {{end}}
     {{end}}
-
+    
     {{range .Servers}}{{range .Endpoints}}{{if .PathParams}}// URL parameters for {{.Name}}
     type {{.Name}}Url struct {
     {{range .PathParams}}	{{.GoName}} {{.Type}} `url:"{{.Name}}"`
