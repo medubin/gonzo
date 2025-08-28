@@ -16,6 +16,7 @@ type Languages int
 
 var serverRegex = regexp.MustCompile(`^server\..+$`)
 var typesRegex = regexp.MustCompile(`^types\..+$`)
+var clientRegex = regexp.MustCompile(`^client\..+$`)
 
 const (
 	Golang Languages = iota
@@ -100,7 +101,8 @@ func (g *GenerateCommand) Init(args []string) error {
 }
 
 func (g *GenerateCommand) Run() error {
-	if !utils.IsLanguageStackAllowed(g.language, g.stack) {
+	config := utils.GetLanguageStackConfig(g.language, g.stack)
+	if config == "" {
 		return fmt.Errorf("unsupported language stack combination: %s, %s", g.language, g.stack)
 	}
 
@@ -128,7 +130,7 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	template, err := generator.NewTemplateGenerator("api/code_generator/generator/languages/go/server/config.yaml")
+	template, err := generator.NewTemplateGenerator(config)
 	if err != nil {
 		return err
 	}
@@ -139,31 +141,12 @@ func (g *GenerateCommand) Run() error {
 	}
 
 	for name, result := range results {
-		safe := (!serverRegex.MatchString(name) && !typesRegex.MatchString(name))
+		safe := (!serverRegex.MatchString(name) && !typesRegex.MatchString(name) && !clientRegex.MatchString(name))
 		err = fileio.WriteToFile(g.output, name, result, safe)
 		if err != nil {
 			return err
 		}
 	}
-
-	// err = fileio.WriteToFile(g.output, "types", types,)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// err = fileio.WriteEndpoints(g.output, endpoints)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// 	server := `package server
-
-	// type ServerImpl struct{}
-	// `
-	// err = fileio.SafeWriteToFile(g.output, "server_impl", server)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

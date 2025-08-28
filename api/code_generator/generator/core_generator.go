@@ -89,6 +89,7 @@ type TemplateEndpoint struct {
 	Method     string
 	Path       string
 	PathParams []TemplatePathParam
+	Parameters string
 	BodyType   string
 	ReturnType string
 	URLType    string
@@ -163,6 +164,10 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 		}
 		return strings.Join(lines, "\n")
 	}
+	tg.funcMap["replace"] = func(old, new, s string) string {
+		return strings.ReplaceAll(s, old, new)
+	}
+	tg.funcMap["getUsedTypes"] = tg.getUsedTypes
 }
 
 // loadLanguageConfig loads language configuration from YAML
@@ -432,6 +437,9 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 
 	// Check for parameters
 	te.HasParams = endpoint.Parameters != nil
+	if endpoint.Parameters != nil {
+		te.Parameters = tg.mapTypeExpr(endpoint.Parameters)
+	}
 
 	return te
 }
@@ -543,6 +551,106 @@ func GenerateFromJSONWithTemplate(jsonData []byte, packageName, configPath strin
 	}
 
 	return generator.Generate(&apiDef, packageName)
+}
+
+// getUsedTypes analyzes template data and returns only the types that are actually used
+func (tg *TemplateGenerator) getUsedTypes(data TemplateData) []TemplateType {
+	usedTypeNames := make(map[string]bool)
+	
+	// Collect all type names used in servers/endpoints
+	for _, server := range data.Servers {
+		for _, endpoint := range server.Endpoints {
+			// Check return type
+			if endpoint.ReturnType != "" {
+				tg.extractTypeNames(endpoint.ReturnType, usedTypeNames, data)
+			}
+			// Check body type
+			if endpoint.BodyType != "" {
+				tg.extractTypeNames(endpoint.BodyType, usedTypeNames, data)
+			}
+			// Check parameters
+			if endpoint.Parameters != "" {
+				tg.extractTypeNames(endpoint.Parameters, usedTypeNames, data)
+			}
+			// Add path param interface types (e.g., UpdateUserParams) 
+			// but don't scan their field types since those are handled in the types file
+			if len(endpoint.PathParams) > 0 {
+				paramTypeName := endpoint.Name + "Params"
+				usedTypeNames[paramTypeName] = true
+			}
+		}
+	}
+	
+	// Filter types to only include used ones, plus add generated param types
+	var usedTypes []TemplateType
+	for _, typ := range data.Types {
+		if usedTypeNames[typ.Name] {
+			usedTypes = append(usedTypes, typ)
+		}
+	}
+	
+	// Add dynamically generated parameter interface types
+	for _, server := range data.Servers {
+		for _, endpoint := range server.Endpoints {
+			if len(endpoint.PathParams) > 0 {
+				paramTypeName := endpoint.Name + "Params"
+				if usedTypeNames[paramTypeName] {
+					// Create a synthetic TemplateType for the param interface
+					paramType := TemplateType{
+						Name: paramTypeName,
+						Kind: "interface",
+					}
+					usedTypes = append(usedTypes, paramType)
+				}
+			}
+		}
+	}
+	
+	return usedTypes
+}
+
+// extractTypeNames extracts type names from a type string
+func (tg *TemplateGenerator) extractTypeNames(typeStr string, usedNames map[string]bool, data TemplateData) {
+	// Remove common decorators
+	cleaned := strings.ReplaceAll(typeStr, "*", "")
+	cleaned = strings.ReplaceAll(cleaned, "Array<", "")
+	cleaned = strings.ReplaceAll(cleaned, "Record<", "")
+	cleaned = strings.ReplaceAll(cleaned, ">", "")
+	cleaned = strings.ReplaceAll(cleaned, ",", " ")
+	
+	// Split by common separators and check each part
+	parts := strings.Fields(cleaned)
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" || tg.isPrimitive(part) {
+			continue
+		}
+		
+		// Check if it's one of our defined types
+		for _, typ := range data.Types {
+			if typ.Name == part {
+				usedNames[part] = true
+				// Don't recursively check fields - in TypeScript, importing a type 
+				// automatically makes its field types available
+				break
+			}
+		}
+	}
+}
+
+
+// isPrimitive checks if a type is a primitive type
+func (tg *TemplateGenerator) isPrimitive(typeName string) bool {
+	primitives := map[string]bool{
+		"string":    true,
+		"number":    true,
+		"boolean":   true,
+		"any":       true,
+		"void":      true,
+		"undefined": true,
+		"null":      true,
+	}
+	return primitives[typeName]
 }
 
 // SaveGeneratedFiles saves generated files to disk

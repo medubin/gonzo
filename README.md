@@ -14,6 +14,7 @@ Gonzo takes API definitions written in a custom Domain Specific Language (DSL) a
 ## How It Works
 
 1. **Define your API** using Gonzo's `.api` format:
+
    ```
    type User {
      ID int32
@@ -33,6 +34,7 @@ Gonzo takes API definitions written in a custom Domain Specific Language (DSL) a
    ```
 
 2. **Generate code** using the Gonzo CLI:
+
    ```bash
    gonzo-api generate -input server -output ./generated -language go -stack server
    ```
@@ -68,11 +70,13 @@ This project includes a complete example implementation of a user authentication
 The Gonzo CLI provides a `generate` command to create code from your API definitions:
 
 ### Basic Syntax
+
 ```bash
 gonzo-api generate [flags]
 ```
 
 ### Available Flags
+
 - `-input <name>`: Input file name (without .api extension). Required.
 - `-output <directory>`: Output directory for generated files. Required.
 - `-language <lang>`: Target language (`go` or `typescript`). Default: `go`
@@ -81,16 +85,19 @@ gonzo-api generate [flags]
 ### Examples
 
 **Generate Go server code:**
+
 ```bash
-gonzo-api generate -input server -output ./server -language go -stack server
+go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -output api/code_generator/generator/test_data/server -language go -stack server -package server
 ```
 
 **Generate TypeScript client code:**
+
 ```bash
-gonzo-api generate -input server -output ./client -language typescript -stack client
+go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -output api/code_generator/generator/test_data/client -language typescript -stack client -package client
 ```
 
 **Generate from a different API file:**
+
 ```bash
 gonzo-api generate -input my-api -output ./generated -language go -stack server
 ```
@@ -100,11 +107,13 @@ gonzo-api generate -input my-api -output ./generated -language go -stack server
 When you run the generate command, Gonzo creates:
 
 **For Go servers (`-stack server`):**
+
 - `types.go` - Type definitions and interfaces
 - `server.go` - Server implementation struct (if it doesn't exist)
 - Individual endpoint files (e.g., `signup.go`, `get_user.go`)
 
 **For TypeScript clients (`-stack client`):**
+
 - `types.ts` - Type definitions
 - Client code for making API calls
 
@@ -119,12 +128,15 @@ When you run the generate command, Gonzo creates:
 4. Build and run your application
 
 # TODO
+
 ## service
+
 - [] finish auth
 - [] dockerize
 - [] cdk
 
 ## api
+
 - [x] error to http code handling
 - [] nested routes
 - [] add required type with check
@@ -145,4 +157,5 @@ When you run the generate command, Gonzo creates:
 - [] handle nested maps and arrays
 
 ## frontend
+
 - [] react
