@@ -7,7 +7,6 @@ export interface RequestOptions {
   timeout?: number;
 }
 
-
 /*
  * Servers contain endpoints.
  * Each endpoint is defined as a name, verb url, optional body and optional returns
@@ -23,9 +22,6 @@ export class UserServiceClient {
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
     
-    
-    
-
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -44,8 +40,6 @@ export class UserServiceClient {
     let url = `${this.baseUrl}/users`;
     
     
-    
-
     const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -68,9 +62,6 @@ export class UserServiceClient {
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
     
-    
-    
-
     const response = await fetch(url, {
       method: 'PUT',
       body: JSON.stringify(body),
@@ -93,9 +84,6 @@ export class UserServiceClient {
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
     
-    
-    
-
     const response = await fetch(url, {
       method: 'DELETE',
       body: JSON.stringify(body),
@@ -118,9 +106,6 @@ export class UserServiceClient {
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
     
-    
-    
-
     const response = await fetch(url, {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -142,7 +127,6 @@ export class UserServiceClient {
     let url = `${this.baseUrl}/users`;
     
     
-    
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -154,7 +138,6 @@ export class UserServiceClient {
       url += '?' + searchParams.toString();
     }
     
-
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -171,7 +154,6 @@ export class UserServiceClient {
     let url = `${this.baseUrl}/users/search`;
     
     
-    
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -183,7 +165,6 @@ export class UserServiceClient {
       url += '?' + searchParams.toString();
     }
     
-
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -202,8 +183,6 @@ export class UserServiceClient {
     // Replace path parameters
     url = url.replace('{role}', String(params.role));
     
-    
-    
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -215,7 +194,6 @@ export class UserServiceClient {
       url += '?' + searchParams.toString();
     }
     
-
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -240,8 +218,6 @@ export class NotificationServiceClient {
     // Replace path parameters
     url = url.replace('{userId}', String(params.userId));
     
-    
-    
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -253,7 +229,6 @@ export class NotificationServiceClient {
       url += '?' + searchParams.toString();
     }
     
-
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,

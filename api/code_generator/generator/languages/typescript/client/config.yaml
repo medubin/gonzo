@@ -52,7 +52,6 @@ templates:
       headers?: Record<string, string>;
       timeout?: number;
     }
-
     {{range .Servers}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}export class {{.Name}}Client {
@@ -63,9 +62,7 @@ templates:
         let url = `${this.baseUrl}{{.Path}}`;
         {{if .PathParams}}
         // Replace path parameters
-        {{range .PathParams}}url = url.replace('{{printf "{%s}" .Name}}', String(params.{{.Name}}));
-        {{end}}{{end}}
-        
+        {{range .PathParams}}url = url.replace('{{printf "{%s}" .Name}}', String(params.{{.Name}}));{{end}}{{end}}
         {{if .HasParams}}
         // Add query parameters
         const searchParams = new URLSearchParams();
@@ -78,7 +75,6 @@ templates:
           url += '?' + searchParams.toString();
         }
         {{end}}
-
         const response = await fetch(url, {
           method: '{{.Method}}',
           {{if .HasBody}}body: JSON.stringify(body),
