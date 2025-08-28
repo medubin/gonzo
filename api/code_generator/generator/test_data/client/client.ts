@@ -17,7 +17,7 @@ export class UserServiceClient {
 
 	// Endpoints can contain url parameters, which can be any primitive type or enum
 	// GET endpoints do not contain a body
-  async getuser(params: GetUserParams, options?: RequestOptions): Promise<DetailedUser> {
+  async getUser(params: GetUserParams, options?: RequestOptions): Promise<DetailedUser> {
     let url = `${this.baseUrl}/users/{id}`;
     
     // Replace path parameters
@@ -40,7 +40,7 @@ export class UserServiceClient {
   }
 	// All other urls can contain a body
 	// body and return always refer to a struct type
-  async createuser(body: CreateUserRequest, options?: RequestOptions): Promise<User> {
+  async createUser(body: CreateUserRequest, options?: RequestOptions): Promise<User> {
     let url = `${this.baseUrl}/users`;
     
     
@@ -62,7 +62,7 @@ export class UserServiceClient {
 
     return response.json();
   }
-  async updateuser(body: UpdateUserRequest, params: UpdateUserParams, options?: RequestOptions): Promise<User> {
+  async updateUser(body: UpdateUserRequest, params: UpdateUserParams, options?: RequestOptions): Promise<User> {
     let url = `${this.baseUrl}/users/{id}`;
     
     // Replace path parameters
@@ -87,7 +87,7 @@ export class UserServiceClient {
 
     return response.json();
   }
-  async deleteuser(body: DeleteUserRequest, params: DeleteUserParams, options?: RequestOptions): Promise<User> {
+  async deleteUser(body: DeleteUserRequest, params: DeleteUserParams, options?: RequestOptions): Promise<User> {
     let url = `${this.baseUrl}/users/{id}`;
     
     // Replace path parameters
@@ -112,7 +112,7 @@ export class UserServiceClient {
 
     return response.json();
   }
-  async patchuserprofile(body: UserProfileUpdate, params: PatchUserProfileParams, options?: RequestOptions): Promise<UserProfile> {
+  async patchUserProfile(body: UserProfileUpdate, params: PatchUserProfileParams, options?: RequestOptions): Promise<UserProfile> {
     let url = `${this.baseUrl}/users/{id}/profile`;
     
     // Replace path parameters
@@ -138,7 +138,7 @@ export class UserServiceClient {
     return response.json();
   }
 	// Endpoints can take a struct of parameters
-  async listusers(parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
+  async listUsers(parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users`;
     
     
@@ -167,7 +167,7 @@ export class UserServiceClient {
 
     return response.json();
   }
-  async searchusers(parameters: UserSearchParams, options?: RequestOptions): Promise<UserCollection> {
+  async searchUsers(parameters: UserSearchParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users/search`;
     
     
@@ -196,7 +196,7 @@ export class UserServiceClient {
 
     return response.json();
   }
-  async getusersbyrole(params: GetUsersByRoleParams, parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
+  async getUsersByRole(params: GetUsersByRoleParams, parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users/role/{role}`;
     
     // Replace path parameters
@@ -234,7 +234,7 @@ export class UserServiceClient {
 export class NotificationServiceClient {
   constructor(private baseUrl: string) {}
 
-  async getusernotifications(params: GetUserNotificationsParams, parameters: UserListParams, options?: RequestOptions): Promise<Array<Notification>> {
+  async getUserNotifications(params: GetUserNotificationsParams, parameters: UserListParams, options?: RequestOptions): Promise<Array<Notification>> {
     let url = `${this.baseUrl}/users/{userId}/notifications`;
     
     // Replace path parameters

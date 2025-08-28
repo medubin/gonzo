@@ -141,6 +141,7 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 	tg.funcMap["capitalize"] = tg.capitalize
 	tg.funcMap["lower"] = strings.ToLower
 	tg.funcMap["upper"] = strings.ToUpper
+	tg.funcMap["camelCase"] = strcase.ToLowerCamel
 	tg.funcMap["join"] = strings.Join
 	tg.funcMap["hasPrefix"] = strings.HasPrefix
 	tg.funcMap["quote"] = func(s string) string {

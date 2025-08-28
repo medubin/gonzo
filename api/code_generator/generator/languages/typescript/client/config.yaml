@@ -59,7 +59,7 @@ templates:
       constructor(private baseUrl: string) {}
 
     {{range .Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}  async {{lower .Name}}({{if .HasBody}}body: {{.BodyType | replace "*" ""}}, {{end}}{{if .PathParams}}params: {{.Name}}Params, {{end}}{{if .HasParams}}parameters: {{.Parameters}}, {{end}}options?: RequestOptions): Promise<{{.ReturnType | replace "*" ""}}> {
+    {{end}}  async {{camelCase .Name}}({{if .HasBody}}body: {{.BodyType | replace "*" ""}}, {{end}}{{if .PathParams}}params: {{.Name}}Params, {{end}}{{if .HasParams}}parameters: {{.Parameters}}, {{end}}options?: RequestOptions): Promise<{{.ReturnType | replace "*" ""}}> {
         let url = `${this.baseUrl}{{.Path}}`;
         {{if .PathParams}}
         // Replace path parameters
