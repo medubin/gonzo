@@ -17,17 +17,17 @@ import (
 type UserService interface {
 	// Endpoints can contain url parameters, which can be any primitive type or enum
 	// GET endpoints do not contain a body
-	GetUser(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*DetailedUser, error)
+	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*DetailedUser, error)
 	// All other urls can contain a body
 	// body and return always refer to a struct type
-	CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[any]) (*User, error)
+	CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}]) (*User, error)
 	UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[UpdateUserUrl]) (*User, error)
 	DeleteUser(ctx context.Context, body *DeleteUserRequest, cookie cookies.Cookies, url url.URL[DeleteUserUrl]) (*User, error)
 	PatchUserProfile(ctx context.Context, body *UserProfileUpdate, cookie cookies.Cookies, url url.URL[PatchUserProfileUrl]) (*UserProfile, error)
 	// Endpoints can take a struct of parameters
-	ListUsers(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[any]) (*UserCollection, error)
-	SearchUsers(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[any]) (*UserCollection, error)
-	GetUsersByRole(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUsersByRoleUrl]) (*UserCollection, error)
+	ListUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}]) (*UserCollection, error)
+	SearchUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}]) (*UserCollection, error)
+	GetUsersByRole(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersByRoleUrl]) (*UserCollection, error)
 }
 
 func StartUserService(s UserService, r *router.Router) {
@@ -43,7 +43,7 @@ func StartUserService(s UserService, r *router.Router) {
 
 // multiple servers can be defined in a single file
 type NotificationService interface {
-	GetUserNotifications(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserNotificationsUrl]) (*[]Notification, error)
+	GetUserNotifications(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserNotificationsUrl]) (*[]Notification, error)
 }
 
 func StartNotificationService(s NotificationService, r *router.Router) {

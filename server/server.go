@@ -11,11 +11,11 @@ import (
 
 
 type GonzoServer interface {
-	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[any]) (*SignupResponse, error)
-	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[any]) (*SignInResponse, error)
-	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[any]) (*SignOutResponse, error)
-	GetUser(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
-	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[any]) (*GetUsersResponse, error)
+	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignupResponse, error)
+	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignInResponse, error)
+	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignOutResponse, error)
+	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
+	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}]) (*GetUsersResponse, error)
 }
 
 func StartGonzoServer(s GonzoServer, r *router.Router) {

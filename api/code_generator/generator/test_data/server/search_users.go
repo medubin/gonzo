@@ -8,6 +8,6 @@ import (
 )
 
 // GET /users/search
-func (s *UserServiceImpl) SearchUsers(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[any]) (*UserCollection, error) {
+func (s *UserServiceImpl) SearchUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}]) (*UserCollection, error) {
   return nil, gerrors.UnimplementedError("SearchUsers")
 }

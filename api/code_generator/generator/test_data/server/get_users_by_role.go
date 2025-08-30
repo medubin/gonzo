@@ -8,6 +8,6 @@ import (
 )
 
 // GET /users/role/{role}
-func (s *UserServiceImpl) GetUsersByRole(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUsersByRoleUrl]) (*UserCollection, error) {
+func (s *UserServiceImpl) GetUsersByRole(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersByRoleUrl]) (*UserCollection, error) {
   return nil, gerrors.UnimplementedError("GetUsersByRole")
 }

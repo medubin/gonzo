@@ -10,6 +10,6 @@ import (
 // Endpoints can contain url parameters, which can be any primitive type or enum
 // GET endpoints do not contain a body
 // GET /users/{id}
-func (s *UserServiceImpl) GetUser(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*DetailedUser, error) {
+func (s *UserServiceImpl) GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*DetailedUser, error) {
   return nil, gerrors.UnimplementedError("GetUser")
 }

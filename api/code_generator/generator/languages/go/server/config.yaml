@@ -10,7 +10,7 @@ primitives:
 type_patterns:
   repeated: "[]%s"
   map: "map[%s]%s"
-  default: "any"
+  default: "struct{}"
 default_imports:
   - context
   - github.com/medubin/gonzo/api/src/cookies
