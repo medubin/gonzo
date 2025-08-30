@@ -9,6 +9,6 @@ import (
 
 // Endpoints can take a struct of parameters
 // GET /users
-func (s *UserServiceImpl) ListUsers(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[interface{}]) (*UserCollection, error) {
+func (s *UserServiceImpl) ListUsers(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[any]) (*UserCollection, error) {
   return nil, gerrors.UnimplementedError("ListUsers")
 }

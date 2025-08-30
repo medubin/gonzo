@@ -167,6 +167,7 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 		return strings.ReplaceAll(s, old, new)
 	}
 	tg.funcMap["getUsedTypes"] = tg.getUsedTypes
+	tg.funcMap["handleUnknownType"] = tg.handleUnknownType
 }
 
 // loadLanguageConfig loads language configuration from YAML
@@ -402,11 +403,7 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 		te.BodyType = fmt.Sprintf("*%s", tg.mapTypeExpr(endpoint.Body))
 		te.HasBody = true
 	} else {
-		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
-			te.BodyType = fmt.Sprintf("*%s", defaultPattern)
-		} else {
-			te.BodyType = "*interface{}" // fallback
-		}
+		te.BodyType = fmt.Sprintf("*%s", tg.getDefaultType())
 	}
 
 	// Set return type
@@ -414,22 +411,14 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 		te.ReturnType = fmt.Sprintf("*%s", tg.mapTypeExpr(endpoint.Returns))
 		te.HasReturn = true
 	} else {
-		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
-			te.ReturnType = fmt.Sprintf("*%s", defaultPattern)
-		} else {
-			te.ReturnType = "*interface{}" // fallback
-		}
+		te.ReturnType = fmt.Sprintf("*%s", tg.getDefaultType())
 	}
 
 	// Set URL type
 	if len(endpoint.PathParams) > 0 {
 		te.URLType = fmt.Sprintf("%sUrl", endpoint.Name)
 	} else {
-		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
-			te.URLType = defaultPattern
-		} else {
-			te.URLType = "interface{}" // fallback
-		}
+		te.URLType = tg.getDefaultType()
 	}
 
 	// Check for parameters
@@ -451,10 +440,7 @@ func (tg *TemplateGenerator) mapType(typeName string) string {
 
 func (tg *TemplateGenerator) mapTypeExpr(typeExpr *TypeExpr) string {
 	if typeExpr == nil {
-		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
-			return defaultPattern
-		}
-		return "interface{}" // fallback
+		return tg.getDefaultType()
 	}
 
 	switch typeExpr.Kind {
@@ -464,18 +450,36 @@ func (tg *TemplateGenerator) mapTypeExpr(typeExpr *TypeExpr) string {
 		if pattern, ok := tg.config.TypePatterns["repeated"]; ok {
 			return fmt.Sprintf(pattern, tg.mapTypeExpr(typeExpr.ElementType))
 		}
-		return fmt.Sprintf("[]%s", tg.mapTypeExpr(typeExpr.ElementType)) // fallback
+		return tg.getRepeatedTypeFallback(tg.mapTypeExpr(typeExpr.ElementType))
 	case "map":
 		if pattern, ok := tg.config.TypePatterns["map"]; ok {
 			return fmt.Sprintf(pattern, tg.mapTypeExpr(typeExpr.KeyType), tg.mapTypeExpr(typeExpr.ValueType))
 		}
-		return fmt.Sprintf("map[%s]%s", tg.mapTypeExpr(typeExpr.KeyType), tg.mapTypeExpr(typeExpr.ValueType)) // fallback
+		return tg.getMapTypeFallback(tg.mapTypeExpr(typeExpr.KeyType), tg.mapTypeExpr(typeExpr.ValueType))
 	default:
-		if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
-			return defaultPattern
-		}
-		return "interface{}" // fallback
+		return tg.getDefaultType()
 	}
+}
+
+// getDefaultType returns the default type for unknown/null types
+func (tg *TemplateGenerator) getDefaultType() string {
+	if defaultPattern, ok := tg.config.TypePatterns["default"]; ok {
+		return defaultPattern
+	}
+	// Language-agnostic fallback - let templates handle this
+	return "UNKNOWN_TYPE"
+}
+
+// getRepeatedTypeFallback returns a language-agnostic fallback for repeated types
+func (tg *TemplateGenerator) getRepeatedTypeFallback(elementType string) string {
+	// Language-agnostic fallback - let templates handle this
+	return fmt.Sprintf("REPEATED_OF_%s", elementType)
+}
+
+// getMapTypeFallback returns a language-agnostic fallback for map types
+func (tg *TemplateGenerator) getMapTypeFallback(keyType, valueType string) string {
+	// Language-agnostic fallback - let templates handle this
+	return fmt.Sprintf("MAP_OF_%s_TO_%s", keyType, valueType)
 }
 
 func (tg *TemplateGenerator) capitalize(s string) string {
@@ -638,16 +642,45 @@ func (tg *TemplateGenerator) extractTypeNames(typeStr string, usedNames map[stri
 
 // isPrimitive checks if a type is a primitive type
 func (tg *TemplateGenerator) isPrimitive(typeName string) bool {
-	primitives := map[string]bool{
-		"string":    true,
-		"number":    true,
-		"boolean":   true,
-		"any":       true,
+	// Check if it's defined in the language's primitive mappings
+	_, isPrimitive := tg.config.Primitives[typeName]
+	if isPrimitive {
+		return true
+	}
+	
+	// Check for default type pattern (which would be language-specific)
+	if defaultType, ok := tg.config.TypePatterns["default"]; ok && typeName == defaultType {
+		return true
+	}
+	
+	// Common language-agnostic primitives that should be recognized
+	commonPrimitives := map[string]bool{
 		"void":      true,
 		"undefined": true,
 		"null":      true,
 	}
-	return primitives[typeName]
+	return commonPrimitives[typeName]
+}
+
+// handleUnknownType processes unknown type markers and converts them to appropriate language types
+func (tg *TemplateGenerator) handleUnknownType(typeStr string) string {
+	// Convert fallback markers to actual language types
+	switch {
+	case strings.HasPrefix(typeStr, "REPEATED_OF_"):
+		elementType := strings.TrimPrefix(typeStr, "REPEATED_OF_")
+		elementType = tg.handleUnknownType(elementType) // recursive for nested unknowns
+		return tg.getRepeatedTypeFallback(elementType)
+	case strings.HasPrefix(typeStr, "MAP_OF_") && strings.Contains(typeStr, "_TO_"):
+		parts := strings.Split(strings.TrimPrefix(typeStr, "MAP_OF_"), "_TO_")
+		if len(parts) == 2 {
+			keyType := tg.handleUnknownType(parts[0])
+			valueType := tg.handleUnknownType(parts[1])
+			return tg.getMapTypeFallback(keyType, valueType)
+		}
+	case typeStr == "UNKNOWN_TYPE":
+		return tg.getDefaultType()
+	}
+	return typeStr
 }
 
 // SaveGeneratedFiles saves generated files to disk

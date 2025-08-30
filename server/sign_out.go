@@ -7,13 +7,12 @@ import (
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
-  "github.com/medubin/gonzo/db/queries"
-
+	"github.com/medubin/gonzo/db/queries"
 )
 
 // DELETE /session
-func (s *ServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[SignOutUrl]) (*SignOutResponse, error) {
-  if body == nil {
+func (s *GonzoServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[interface{}]) (*SignOutResponse, error) {
+	if body == nil {
 		return nil, gerrors.MissingArgumentError("body")
 	}
 
@@ -45,4 +44,5 @@ func (s *ServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie cook
 	})
 
 	return &SignOutResponse{}, nil
+
 }

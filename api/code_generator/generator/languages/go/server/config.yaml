@@ -7,6 +7,10 @@ primitives:
   float32: float32
   float64: float64
   bool: bool
+type_patterns:
+  repeated: "[]%s"
+  map: "map[%s]%s"
+  default: "any"
 default_imports:
   - context
   - github.com/medubin/gonzo/api/src/cookies
@@ -24,34 +28,26 @@ templates:
   types: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}
-    
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}type {{.Name}} {{mapType .BaseType}}
-    
     const (
     {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}
-    {{end}})
-    {{end}}
-    
+    {{end}}){{end}}
     {{range .Types}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "struct"}}type {{.Name}} struct {
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}	{{capitalize .Name}} {{.Type}} `json:"{{.JSONTag}}"`
+    {{end}}	{{capitalize .Name}} *{{.Type}} `json:"{{.JSONTag}}"`
     {{end}}}
     {{else if eq .Kind "repeated"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "map"}}type {{.Name}} {{.MappedType}}
-    {{end}}
-    {{end}}
-    
+    {{end}}{{end}}
     {{range .Servers}}{{range .Endpoints}}{{if .PathParams}}// URL parameters for {{.Name}}
     type {{.Name}}Url struct {
-    {{range .PathParams}}	{{capitalize .Name}} {{.Type}} `url:"{{.Name}}"`
-    {{end}}}
-    {{end}}{{end}}{{end}}
-
+    {{range .PathParams}}	{{capitalize .Name}} *{{.Type}} `url:"{{.Name}}"`
+    {{end}}}{{end}}{{end}}{{end}}
   server: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}

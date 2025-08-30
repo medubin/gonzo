@@ -34,7 +34,7 @@ type GetUserResponse {
 }
 
 type GetUsersBody {
-   UserIDs repeated(UserID)
+  UserIDs repeated(UserID)
 }
 
 type GetUsersResponse {
@@ -48,11 +48,15 @@ type SignOutBody {
 type SignOutResponse {
 }
 
+type GetUserParams {
+
+}
+
 server GonzoServer {
   Signup POST /user/new body(SignupBody) returns(SignupResponse)
   SignIn POST /session/new body(SignInBody) returns(SignInResponse)
   SignOut DELETE /session body(SignOutBody) returns(SignOutResponse)
 
-  GetUser GET /user/<UserID> returns(GetUserResponse)
+  GetUser GET /user/{UserID UserID} parameters(GetUserParams) returns(GetUserResponse)
   GetUsers GET /users/ body(GetUsersBody) returns(GetUsersResponse)
 }

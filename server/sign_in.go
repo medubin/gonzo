@@ -12,7 +12,7 @@ import (
 )
 
 // POST /session/new
-func (s *ServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[SignInUrl]) (*SignInResponse, error) {
+func (s *GonzoServerImpl) SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[interface{}]) (*SignInResponse, error) {
 	if body == nil {
 		return nil, gerrors.MissingArgumentError("body")
 	}

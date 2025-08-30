@@ -10,7 +10,6 @@ import (
 // All other urls can contain a body
 // body and return always refer to a struct type
 // POST /users
-func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[interface{}]) (*User, error) {
+func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[any]) (*User, error) {
   return nil, gerrors.UnimplementedError("CreateUser")
-
 }

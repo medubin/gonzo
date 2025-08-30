@@ -10,7 +10,7 @@ import (
 )
 
 // GET /user/{UserID}
-func (s *ServerImpl) GetUser(ctx context.Context, body *interface{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error) {
+func (s *GonzoServerImpl) GetUser(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error) {
 	if url.Params.UserID == nil {
 		return nil, gerrors.MissingArgumentError("user id")
 	}

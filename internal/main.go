@@ -28,7 +28,7 @@ func run() error {
 
 	queries := queries.New(db)
 	r := &router.Router{}
-	s := &server.ServerImpl{
+	s := &server.GonzoServerImpl{
 		Queries: *queries,
 	}
 

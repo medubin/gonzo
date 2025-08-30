@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
-  "errors"
 
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/url"
@@ -12,15 +12,15 @@ import (
 )
 
 // POST /user/new
-func (s *ServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[SignupUrl]) (*SignupResponse, error) {
+func (s *GonzoServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[interface{}]) (*SignupResponse, error) {
 	if body == nil {
 		return nil, errors.New("missing body")
 	}
 	user := body.User
 	password := body.Password
-  if user == nil {
-    return nil, errors.New("missing user")
-  }
+	if user == nil {
+		return nil, errors.New("missing user")
+	}
 
 	if user.Email == nil {
 		return nil, errors.New("missing email")

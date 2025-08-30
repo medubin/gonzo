@@ -15,7 +15,6 @@ type Router struct {
 }
 
 func (rtr *Router) Route(method, path string, handlerFunc http.HandlerFunc) {
-
 	exactPath := url.ConvertPathToRegex(path)
 
 	e := RouteEntry{
