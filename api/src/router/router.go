@@ -103,36 +103,27 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	hasMiddleware := len(rtr.middleware) > 0
-	var middlewareReq *middleware.MiddlewareRequest
-	var err error
+	// Always create middleware request (lightweight operation)
+	middlewareReq := &middleware.MiddlewareRequest{
+		Method:  r.Method,
+		Path:    r.URL.Path,
+		Headers: middleware.ConvertHeadersFromHTTP(r.Header),
+		Params:  r.URL.Query(),
+	}
 
-	// Create middleware request only if needed
-	if hasMiddleware {
-		middlewareReq = &middleware.MiddlewareRequest{
-			Method:  r.Method,
-			Path:    r.URL.Path,
-			Headers: middleware.ConvertHeadersFromHTTP(r.Header),
-			Params:  r.URL.Query(),
-		}
-
-		// Call BeforeRouting middleware
-		for _, m := range rtr.middleware {
-			middlewareReq, err = m.BeforeRouting(middlewareReq)
-			if err != nil {
-				gerrors.JSONError(w, err)
-				return
-			}
+	// Execute BeforeRouting middleware
+	for _, m := range rtr.middleware {
+		var err error
+		middlewareReq, err = m.BeforeRouting(middlewareReq)
+		if err != nil {
+			gerrors.JSONError(w, err)
+			return
 		}
 	}
 
-	// Use original request method/path or modified middleware version
-	method := r.Method
-	path := r.URL.Path
-	if hasMiddleware {
-		method = middlewareReq.Method
-		path = middlewareReq.Path
-	}
+	// Use middleware-modified method/path for routing
+	method := middlewareReq.Method
+	path := middlewareReq.Path
 
 	for _, e := range rtr.routes {
 		if e.Method != method {
@@ -144,6 +135,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := context.WithValue(r.Context(), url.ParamKey{}, params)
+		middlewareReq.PathParams = params
 
 		// Get route info for middleware
 		routeInfo := e.Info
@@ -157,57 +149,23 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Middleware BeforeHandler hook
-		if hasMiddleware {
-			middlewareReq.PathParams = params
-
-			// Execute global middleware first
-			for _, m := range rtr.middleware {
-				ctx, middlewareReq, err = m.BeforeHandler(ctx, middlewareReq, routeInfo)
-				if err != nil {
-					rtr.handleMiddlewareError(w, ctx, middlewareReq, err, routeInfo)
-					return
-				}
+		// Execute BeforeHandler middleware: global first, then route-specific
+		allMiddleware := append(rtr.middleware, e.RouteMiddleware...)
+		for _, m := range allMiddleware {
+			var err error
+			ctx, middlewareReq, err = m.BeforeHandler(ctx, middlewareReq, routeInfo)
+			if err != nil {
+				rtr.handleMiddlewareError(w, ctx, middlewareReq, err, routeInfo)
+				return
 			}
-			
-			// Then execute route-specific middleware
-			for _, m := range e.RouteMiddleware {
-				ctx, middlewareReq, err = m.BeforeHandler(ctx, middlewareReq, routeInfo)
-				if err != nil {
-					rtr.handleMiddlewareError(w, ctx, middlewareReq, err, routeInfo)
-					return
-				}
-			}
-		} else if len(e.RouteMiddleware) > 0 {
-			// No global middleware but we have route middleware
-			middlewareReq = &middleware.MiddlewareRequest{
-				Method:     r.Method,
-				Path:       r.URL.Path,
-				Headers:    middleware.ConvertHeadersFromHTTP(r.Header),
-				Params:     r.URL.Query(),
-				PathParams: params,
-			}
-			
-			for _, m := range e.RouteMiddleware {
-				ctx, middlewareReq, err = m.BeforeHandler(ctx, middlewareReq, routeInfo)
-				if err != nil {
-					rtr.handleMiddlewareError(w, ctx, middlewareReq, err, routeInfo)
-					return
-				}
-			}
-			hasMiddleware = true // Now we have middleware to handle
 		}
 
-		// Execute handler
-		if hasMiddleware {
-			// With middleware: capture response
-			responseCapture := &responseWriter{statusCode: 200}
-			e.HandlerFunc.ServeHTTP(responseCapture, r.WithContext(ctx))
-			rtr.handleMiddlewareResponse(w, ctx, middlewareReq, responseCapture, routeInfo, e.RouteMiddleware)
-		} else {
-			// Without middleware: direct execution
-			e.HandlerFunc.ServeHTTP(w, r.WithContext(ctx))
-		}
+		// Execute handler with response capture
+		responseCapture := &responseWriter{statusCode: 200}
+		e.HandlerFunc.ServeHTTP(responseCapture, r.WithContext(ctx))
+		
+		// Handle response through middleware
+		rtr.handleMiddlewareResponse(w, ctx, middlewareReq, responseCapture, routeInfo, allMiddleware)
 		return
 	}
 
@@ -224,7 +182,7 @@ func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Cont
 	gerrors.JSONError(w, err)
 }
 
-func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, responseCapture *responseWriter, info *middleware.RouteInfo, routeMiddleware []middleware.Middleware) {
+func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, responseCapture *responseWriter, info *middleware.RouteInfo, allMiddleware []middleware.Middleware) {
 	// Parse captured body for middleware access
 	var bodyForMiddleware any
 	if len(responseCapture.body) > 0 {
@@ -244,18 +202,9 @@ func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.C
 
 	var err error
 	
-	// Execute route-specific middleware AfterHandler first (reverse order)
-	for i := len(routeMiddleware) - 1; i >= 0; i-- {
-		middlewareResp, err = routeMiddleware[i].AfterHandler(ctx, req, middlewareResp, info)
-		if err != nil {
-			rtr.handleMiddlewareError(w, ctx, req, err, info)
-			return
-		}
-	}
-	
-	// Then execute global middleware AfterHandler (reverse order)
-	for i := len(rtr.middleware) - 1; i >= 0; i-- {
-		middlewareResp, err = rtr.middleware[i].AfterHandler(ctx, req, middlewareResp, info)
+	// Execute all middleware AfterHandler in reverse order (LIFO)
+	for i := len(allMiddleware) - 1; i >= 0; i-- {
+		middlewareResp, err = allMiddleware[i].AfterHandler(ctx, req, middlewareResp, info)
 		if err != nil {
 			rtr.handleMiddlewareError(w, ctx, req, err, info)
 			return
