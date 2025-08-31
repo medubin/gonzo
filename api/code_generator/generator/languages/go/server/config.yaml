@@ -79,7 +79,7 @@ templates:
     {{end}}}
 
     func Start{{.Name}}(s {{.Name}}, r *router.Router) {
-    {{$serverName := .Name}}{{range .Endpoints}}	r.RouteWithInfo("{{.Method}}", "{{.Path}}", handle.Handle[{{.BodyType | replace "*" ""}}, {{.ReturnType | replace "*" ""}}, {{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}](s.{{.Name}}), &middleware.RouteInfo{
+    {{$serverName := .Name}}{{range .Endpoints}}	r.RouteWithInfo("{{.Method}}", "{{.Path}}", handle.Handle(s.{{.Name}}), &middleware.RouteInfo{
     		Method: "{{.Method}}",
     		Path: "{{.Path}}",
     		Endpoint: "{{.Name}}",
