@@ -16,19 +16,13 @@ func TestConvertPathToRegex(t *testing.T) {
 	assert.Equal(t, regexp.MustCompile(`^/hello/test/woot/?$`), url.ConvertPathToRegex("/hello/test/woot"))
 }
 
-// func TestGetKeys(t *testing.T) {
-// 	assert.Equal(t, []string{"Message", "Test"}, url.GetKeys("/hello/{Message}/{Test}"))
-// 	assert.Equal(t, []string{"Message"}, url.GetKeys("/hello/{Message:[a-z]+}/"))
-// 	assert.Equal(t, []string{"Message", "Test"}, url.GetKeys("/hello/{Message:[a-z]+}/test/{Test}/"))
-// 	assert.Equal(t, []string{}, url.GetKeys("/hello/test/woot"))
-// }
 
 func TestTestGetKeys(t *testing.T) {
 	type X struct {
-		A     string
-		B     string
-		C     string
-		Empty string
+		A     string `url:"A"`
+		B     string `url:"B"`
+		C     string `url:"C"`
+		Empty string `url:"Empty"`
 	}
 	params := map[string]string{
 		"A": "A1",
