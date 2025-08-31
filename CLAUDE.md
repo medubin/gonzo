@@ -157,7 +157,33 @@ internal/                        # Main application entry point
 ```bash
 go test api/code_generator/generator/
 go test api/src/url/
+go test api/code_generator/fileio/
+go test api/code_generator/utils/
 ```
+
+**All Tests:**
+```bash
+go test ./...
+go test -v api/code_generator/...
+```
+
+**Snapshot Testing:**
+Gonzo uses [go-snaps](https://github.com/gkampitakis/go-snaps) for snapshot testing to ensure generated code consistency:
+
+```bash
+# Run snapshot tests (compares against existing snapshots)
+go test -v -run TestCoreGenerate
+go test -v -run TestJSONGenerate
+
+# Update snapshots when making intentional changes
+# Snapshots are auto-generated on first run or when missing
+```
+
+**Snapshot test files:**
+- `core_generator_test.go` - Tests Go server and TypeScript client generation
+- `json_generator_test.go` - Tests API parsing to JSON structure
+- Snapshots stored in `__snapshots__/` directories
+- Use `snaps.MatchSnapshot()` for text content, `snaps.MatchJSON()` for JSON data
 
 **Integration Tests:**
 ```bash
