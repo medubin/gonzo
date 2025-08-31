@@ -99,6 +99,18 @@ type TemplateEndpoint struct {
 	HasParams  bool
 }
 
+// RequiresBody determines if this endpoint requires a request body
+func (te *TemplateEndpoint) RequiresBody() bool {
+	// Body is required if:
+	// 1. Method is POST, PUT, or PATCH AND
+	// 2. Has a body type that is not the default empty struct
+	bodyRequiredMethods := map[string]bool{
+		"POST": true, "PUT": true, "PATCH": true,
+	}
+	
+	return bodyRequiredMethods[te.Method] && te.HasBody
+}
+
 type TemplatePathParam struct {
 	Name   string
 	Type   string

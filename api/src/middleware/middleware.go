@@ -27,12 +27,13 @@ type MiddlewareResponse struct {
 
 // RouteInfo provides information about the matched route
 type RouteInfo struct {
-	Method     string
-	Path       string
-	Endpoint   string // "CreateUser"
-	Server     string // "UserService"
-	BodyType   string // "CreateUserRequest"
-	ReturnType string // "User"
+	Method       string
+	Path         string
+	Endpoint     string // "CreateUser"
+	Server       string // "UserService"
+	BodyType     string // "CreateUserRequest"
+	ReturnType   string // "User"
+	RequiresBody bool   // Whether this endpoint requires a request body
 }
 
 // Middleware defines the interface for request/response middleware

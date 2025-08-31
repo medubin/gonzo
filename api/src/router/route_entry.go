@@ -8,10 +8,11 @@ import (
 )
 
 type RouteEntry struct {
-	Path        *regexp.Regexp
-	Method      string
-	HandlerFunc http.HandlerFunc
-	Info        *middleware.RouteInfo
+	Path            *regexp.Regexp
+	Method          string
+	HandlerFunc     http.HandlerFunc
+	Info            *middleware.RouteInfo
+	RouteMiddleware []middleware.Middleware
 }
 
 func (ent *RouteEntry) Match(r *http.Request) map[string]string {

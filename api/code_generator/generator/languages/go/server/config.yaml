@@ -106,6 +106,7 @@ templates:
       Path: "{{.Path}}",
       Endpoint: "{{.Name}}",
       Server: "{{$serverName}}",
+      RequiresBody: {{.RequiresBody}},
       })
     {{end}}}
     {{end}}
