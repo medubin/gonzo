@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/gerrors"
@@ -10,16 +9,12 @@ import (
 )
 
 // GET /user/{UserID}
-func (s *GonzoServerImpl) GetUser(ctx context.Context, body *any, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error) {
-	if url.Params.UserID == nil {
+func (s *GonzoServerImpl) GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserParams, GetUserUrl]) (*GetUserResponse, error) {
+	if url.PathParams.UserID == nil {
 		return nil, gerrors.MissingArgumentError("user id")
 	}
 
-	userID, err := strconv.Atoi(*url.Params.UserID)
-
-	if err != nil {
-		return nil, gerrors.InvalidArgumentError("user id")
-	}
+	userID := int32(*url.PathParams.UserID)
 
 	user, err := s.Queries.GetUser(ctx, int32(userID))
 	if err != nil {
@@ -33,5 +28,4 @@ func (s *GonzoServerImpl) GetUser(ctx context.Context, body *any, cookie cookies
 			Email: &user.Email,
 		},
 	}, nil
-
 }

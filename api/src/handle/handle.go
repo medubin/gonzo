@@ -11,7 +11,7 @@ import (
 	"github.com/medubin/gonzo/api/src/url"
 )
 
-func Handle[Body any, response any, URL any](handler func(ctx context.Context, b *Body, c cookies.Cookies, u url.URL[URL]) (response, error)) func(http.ResponseWriter, *http.Request) {
+func Handle[Body any, response any, Params any, PathParams any](handler func(ctx context.Context, b *Body, c cookies.Cookies, u url.URL[Params, PathParams]) (*response, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		var body *Body
@@ -25,9 +25,9 @@ func Handle[Body any, response any, URL any](handler func(ctx context.Context, b
 
 		cookies := cookies.New(r, w)
 
-		Url := url.URL[URL]{
-			Values: url.Values(r.URL.Query()),
-			Params: url.GetTypedParamsFromContext[URL](ctx),
+		Url := url.URL[Params, PathParams]{
+			Params:     url.GetTypedParamsFromQuery[Params](r.URL.Query()),
+			PathParams: url.GetTypedParamsFromContext[PathParams](ctx),
 		}
 
 		resp, err := handler(ctx, body, cookies, Url)

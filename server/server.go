@@ -11,18 +11,18 @@ import (
 
 
 type GonzoServer interface {
-	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignupResponse, error)
-	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignInResponse, error)
-	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[struct{}]) (*SignOutResponse, error)
-	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*GetUserResponse, error)
-	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}]) (*GetUsersResponse, error)
+	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignupResponse, error)
+	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignInResponse, error)
+	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignOutResponse, error)
+	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserParams, GetUserUrl]) (*GetUserResponse, error)
+	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*GetUsersResponse, error)
 }
 
 func StartGonzoServer(s GonzoServer, r *router.Router) {
-	r.Route("POST", "/user/new", handle.Handle(s.Signup))
-	r.Route("POST", "/session/new", handle.Handle(s.SignIn))
-	r.Route("DELETE", "/session", handle.Handle(s.SignOut))
-	r.Route("GET", "/user/{UserID}", handle.Handle(s.GetUser))
-	r.Route("GET", "/users/", handle.Handle(s.GetUsers))
+	r.Route("POST", "/user/new", handle.Handle[SignupBody, SignupResponse, struct{}, struct{}](s.Signup))
+	r.Route("POST", "/session/new", handle.Handle[SignInBody, SignInResponse, struct{}, struct{}](s.SignIn))
+	r.Route("DELETE", "/session", handle.Handle[SignOutBody, SignOutResponse, struct{}, struct{}](s.SignOut))
+	r.Route("GET", "/user/{UserID}", handle.Handle[struct{}, GetUserResponse, GetUserParams, GetUserUrl](s.GetUser))
+	r.Route("GET", "/users/", handle.Handle[GetUsersBody, GetUsersResponse, struct{}, struct{}](s.GetUsers))
 }
 

@@ -8,6 +8,6 @@ import (
 )
 
 // DELETE /users/{id}
-func (s *UserServiceImpl) DeleteUser(ctx context.Context, body *DeleteUserRequest, cookie cookies.Cookies, url url.URL[DeleteUserUrl]) (*User, error) {
+func (s *UserServiceImpl) DeleteUser(ctx context.Context, body *DeleteUserRequest, cookie cookies.Cookies, url url.URL[struct{}, DeleteUserUrl]) (*User, error) {
   return nil, gerrors.UnimplementedError("DeleteUser")
 }

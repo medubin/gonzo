@@ -17,36 +17,36 @@ import (
 type UserService interface {
 	// Endpoints can contain url parameters, which can be any primitive type or enum
 	// GET endpoints do not contain a body
-	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserUrl]) (*DetailedUser, error)
+	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, GetUserUrl]) (*DetailedUser, error)
 	// All other urls can contain a body
 	// body and return always refer to a struct type
-	CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}]) (*User, error)
-	UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[UpdateUserUrl]) (*User, error)
-	DeleteUser(ctx context.Context, body *DeleteUserRequest, cookie cookies.Cookies, url url.URL[DeleteUserUrl]) (*User, error)
-	PatchUserProfile(ctx context.Context, body *UserProfileUpdate, cookie cookies.Cookies, url url.URL[PatchUserProfileUrl]) (*UserProfile, error)
+	CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*User, error)
+	UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, UpdateUserUrl]) (*User, error)
+	DeleteUser(ctx context.Context, body *DeleteUserRequest, cookie cookies.Cookies, url url.URL[struct{}, DeleteUserUrl]) (*User, error)
+	PatchUserProfile(ctx context.Context, body *UserProfileUpdate, cookie cookies.Cookies, url url.URL[struct{}, PatchUserProfileUrl]) (*UserProfile, error)
 	// Endpoints can take a struct of parameters
-	ListUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}]) (*UserCollection, error)
-	SearchUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}]) (*UserCollection, error)
-	GetUsersByRole(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersByRoleUrl]) (*UserCollection, error)
+	ListUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[UserListParams, struct{}]) (*UserCollection, error)
+	SearchUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[UserSearchParams, struct{}]) (*UserCollection, error)
+	GetUsersByRole(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[UserListParams, GetUsersByRoleUrl]) (*UserCollection, error)
 }
 
 func StartUserService(s UserService, r *router.Router) {
-	r.Route("GET", "/users/{id}", handle.Handle(s.GetUser))
-	r.Route("POST", "/users", handle.Handle(s.CreateUser))
-	r.Route("PUT", "/users/{id}", handle.Handle(s.UpdateUser))
-	r.Route("DELETE", "/users/{id}", handle.Handle(s.DeleteUser))
-	r.Route("PATCH", "/users/{id}/profile", handle.Handle(s.PatchUserProfile))
-	r.Route("GET", "/users", handle.Handle(s.ListUsers))
-	r.Route("GET", "/users/search", handle.Handle(s.SearchUsers))
-	r.Route("GET", "/users/role/{role}", handle.Handle(s.GetUsersByRole))
+	r.Route("GET", "/users/{id}", handle.Handle[struct{}, DetailedUser, struct{}, GetUserUrl](s.GetUser))
+	r.Route("POST", "/users", handle.Handle[CreateUserRequest, User, struct{}, struct{}](s.CreateUser))
+	r.Route("PUT", "/users/{id}", handle.Handle[UpdateUserRequest, User, struct{}, UpdateUserUrl](s.UpdateUser))
+	r.Route("DELETE", "/users/{id}", handle.Handle[DeleteUserRequest, User, struct{}, DeleteUserUrl](s.DeleteUser))
+	r.Route("PATCH", "/users/{id}/profile", handle.Handle[UserProfileUpdate, UserProfile, struct{}, PatchUserProfileUrl](s.PatchUserProfile))
+	r.Route("GET", "/users", handle.Handle[struct{}, UserCollection, UserListParams, struct{}](s.ListUsers))
+	r.Route("GET", "/users/search", handle.Handle[struct{}, UserCollection, UserSearchParams, struct{}](s.SearchUsers))
+	r.Route("GET", "/users/role/{role}", handle.Handle[struct{}, UserCollection, UserListParams, GetUsersByRoleUrl](s.GetUsersByRole))
 }
 
 // multiple servers can be defined in a single file
 type NotificationService interface {
-	GetUserNotifications(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserNotificationsUrl]) (*[]Notification, error)
+	GetUserNotifications(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[UserListParams, GetUserNotificationsUrl]) (*[]Notification, error)
 }
 
 func StartNotificationService(s NotificationService, r *router.Router) {
-	r.Route("GET", "/users/{userId}/notifications", handle.Handle(s.GetUserNotifications))
+	r.Route("GET", "/users/{userId}/notifications", handle.Handle[struct{}, []Notification, UserListParams, GetUserNotificationsUrl](s.GetUserNotifications))
 }
 

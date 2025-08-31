@@ -8,6 +8,6 @@ import (
 )
 
 // PUT /users/{id}
-func (s *UserServiceImpl) UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[UpdateUserUrl]) (*User, error) {
+func (s *UserServiceImpl) UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, UpdateUserUrl]) (*User, error) {
   return nil, gerrors.UnimplementedError("UpdateUser")
 }
