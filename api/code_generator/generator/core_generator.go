@@ -328,10 +328,7 @@ func (tg *TemplateGenerator) convertType(typeDef *TypeDef) TemplateType {
 
 // convertField converts FieldDef to TemplateField
 func (tg *TemplateGenerator) convertField(field *FieldDef) TemplateField {
-	jsonTag := strings.ToLower(field.Name)
-	if !field.Required {
-		jsonTag += ",omitempty"
-	}
+	jsonTag := strings.ToLower(field.Name) + ",omitempty"
 
 	return TemplateField{
 		Name:     field.Name,

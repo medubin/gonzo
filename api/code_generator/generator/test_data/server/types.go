@@ -3,7 +3,6 @@ package server
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // enums can be defined like this
@@ -78,14 +77,14 @@ func (v User) Validate() error {
  */
 type DetailedUser struct {
 	// fields are optional unless marked with 'required'
-  ID UserID `json:"id"`
+  ID *UserID `json:"id,omitempty"`
   Usernames *[]string `json:"usernames,omitempty"`
   LoginCount *map[string]int32 `json:"logincount,omitempty"`
   Profile *UserProfile `json:"profile,omitempty"`
 }
 
 func (v DetailedUser) Validate() error {
-  if reflect.ValueOf(v.ID).IsZero() {
+  if v.ID == nil {
     return fmt.Errorf("field 'ID' is required")
   }
   return nil
@@ -137,21 +136,21 @@ func (v UserListParams) Validate() error {
 }
 
 type CreateUserRequest struct {
-  Username string `json:"username"`
-  Email Email `json:"email"`
-  Password string `json:"password"`
+  Username *string `json:"username,omitempty"`
+  Email *Email `json:"email,omitempty"`
+  Password *string `json:"password,omitempty"`
   Role *UserRole `json:"role,omitempty"`
   Profile *UserProfile `json:"profile,omitempty"`
 }
 
 func (v CreateUserRequest) Validate() error {
-  if v.Username == "" {
+  if v.Username == nil {
     return fmt.Errorf("field 'Username' is required")
   }
-  if reflect.ValueOf(v.Email).IsZero() {
+  if v.Email == nil {
     return fmt.Errorf("field 'Email' is required")
   }
-  if v.Password == "" {
+  if v.Password == nil {
     return fmt.Errorf("field 'Password' is required")
   }
   return nil
