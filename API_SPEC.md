@@ -73,6 +73,8 @@ enum UserStatus string {
 
 ### Collections
 
+Collections (arrays and maps) can be used anywhere in the API definition - as type definitions, struct fields, parameter types, return types, etc.
+
 #### Repeated Types (Arrays/Lists)
 
 ```api
@@ -85,13 +87,24 @@ type NestedUserGroups repeated(repeated(UserList))
 
 ```api
 type UserPermissions map(string: bool)
-type UserActivityByMonth map(string: map(int64: repeated(int32)))  // Nested maps
+type UserActivityByMonth map(string: map(int64: repeated(int32)))  // Complex nested maps
 ```
 
 **Map Rules:**
 - Key type is specified before the colon
 - Value type is specified after the colon
-- Both keys and values can be complex types
+- Value types can be any type (primitives, enums, structs, collections)
+- Key types must be comparable (see constraints below)
+
+**Map Key Type Constraints:**
+Map keys must be comparable types (based on Go language requirements):
+- ✅ **Allowed**: Primitives (`string`, `int32`, `int64`, `float32`, `float64`, `bool`)
+- ✅ **Allowed**: Enums (comparable since they're based on primitives)  
+- ✅ **Allowed**: Structs containing only comparable fields
+- ❌ **Not Allowed**: `repeated(Type)` (slices are not comparable)
+- ❌ **Not Allowed**: `map(KeyType: ValueType)` (maps are not comparable)
+
+*Note: The code generator does not currently enforce these constraints, but using non-comparable key types will result in invalid Go code that fails to compile.*
 
 ### Structs
 
@@ -235,11 +248,12 @@ type UserListParams {
 ```
 
 **Parameter Type Constraints:**
-For query parameters, the struct should contain:
+For query parameters, the struct can contain:
 - Primitives: `string`, `int32`, `int64`, `float32`, `float64`, `bool`
 - Enums (serialize to underlying primitive)
-- Simple arrays: `repeated(primitive)` or `repeated(enum)`
-- Simple maps: `map(string: primitive)`
+- Arrays: `repeated(Type)` of any type
+- Maps: `map(KeyType: ValueType)` with any key/value types
+- Any other defined types
 
 #### Return Types
 
