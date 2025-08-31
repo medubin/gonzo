@@ -119,7 +119,7 @@ func (g *GenerateCommand) Run() error {
 
 	}
 
-	lines, err := fileio.ParseFile(g.input + ".api")
+	lines, err := fileio.ParseFile(g.input)
 	if err != nil {
 		return err
 	}

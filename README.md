@@ -87,13 +87,13 @@ gonzo-api generate [flags]
 **Generate Go server code:**
 
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -output api/code_generator/generator/test_data/server -language go -stack server -package server
+go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server.api -output api/code_generator/generator/test_data/server -language go -stack server -package server
 ```
 
 **Generate TypeScript client code:**
 
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -output api/code_generator/generator/test_data/client -language typescript -stack client -package client
+go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server.api -output api/code_generator/generator/test_data/client -language typescript -stack client -package client
 ```
 
 **Generate from a different API file:**
@@ -122,7 +122,7 @@ When you run the generate command, Gonzo creates:
 1. Create your API definition file (e.g., `server.api`)
 2. Run the generator:
    ```bash
-   gonzo-api generate -input server -output ./server -language go -stack server
+   gonzo-api generate -input server.api -output ./server -language go -stack server
    ```
 3. Implement the generated interface methods in your server struct
 4. Build and run your application
