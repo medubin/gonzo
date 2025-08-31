@@ -17,6 +17,7 @@ import (
 // LanguageSettings holds language-specific settings
 type LanguageSettings struct {
 	PackageComment  string   `yaml:"package_comment"`
+	TypesImports    []string `yaml:"types_imports"`
 	EndpointImports []string `yaml:"endpoint_imports"`
 }
 
