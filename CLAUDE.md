@@ -84,7 +84,6 @@ make new-db-migration name=create_table  # Create new migration
 api/
 ├── bin/gonzo-api.go              # CLI tool entry point
 ├── code_generator/
-│   ├── character_reader/         # Lexer utilities
 │   ├── fileio/                   # File I/O operations
 │   ├── generator/
 │   │   ├── core_generator.go     # Core generation engine
