@@ -38,7 +38,32 @@ templates:
     {{end}}type {{.Name}} {{mapType .BaseType}}
     const (
     {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}
-    {{end}}){{end}}
+    {{end}})
+    
+    // {{.Name}}From{{capitalize .BaseType}} converts a {{.BaseType}} to {{.Name}} enum
+    func {{.Name}}From{{capitalize .BaseType}}(v {{mapType .BaseType}}) {{.Name}} {
+    	switch v {
+    {{range .Values}}	case {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}:
+    		return {{$enumName}}_{{.Key}}
+    {{end}}	default:
+    		return {{$enumName}}_{{(index .Values 0).Key}} // Return first value as default
+    	}
+    }
+    
+    // {{.Name}}To{{capitalize .BaseType}} converts {{.Name}} enum to {{.BaseType}}
+    func {{.Name}}To{{capitalize .BaseType}}(e {{.Name}}) {{mapType .BaseType}} {
+    	return {{mapType .BaseType}}(e)
+    }
+    
+    // {{.Name}}IsValid checks if the enum value is valid
+    func {{.Name}}IsValid(e {{.Name}}) bool {
+    	switch e {
+    {{range .Values}}	case {{$enumName}}_{{.Key}}:
+    		return true
+    {{end}}	default:
+    		return false
+    	}
+    }{{end}}
     {{range .Types}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.MappedType}}

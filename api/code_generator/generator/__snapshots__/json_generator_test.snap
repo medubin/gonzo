@@ -38,6 +38,15 @@
    "values": {
     "WELCOME": "Welcome to \"MyApp\""
    }
+  },
+  {
+   "baseType": "int32",
+   "name": "UserSomething",
+   "values": {
+    "ONE": "0",
+    "THREE": "2",
+    "TWO": "1"
+   }
   }
  ],
  "servers": [
@@ -45,7 +54,7 @@
    "comments": [
     {
      "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
-     "line": 134,
+     "line": 141,
      "type": "multi"
     }
    ],
@@ -54,12 +63,12 @@
      "comments": [
       {
        "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
-       "line": 138,
+       "line": 145,
        "type": "single"
       },
       {
        "content": "GET endpoints do not contain a body",
-       "line": 139,
+       "line": 146,
        "type": "single"
       }
      ],
@@ -85,12 +94,12 @@
      "comments": [
       {
        "content": "All other urls can contain a body",
-       "line": 142,
+       "line": 149,
        "type": "single"
       },
       {
        "content": "body and return always refer to a struct type",
-       "line": 143,
+       "line": 150,
        "type": "single"
       }
      ],
@@ -163,7 +172,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 149,
+       "line": 156,
        "type": "single"
       }
      ],
@@ -218,7 +227,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 155,
+     "line": 162,
      "type": "single"
     }
    ],
@@ -303,7 +312,7 @@
    "comments": [
     {
      "content": "you can defined lists this way",
-     "line": 31,
+     "line": 38,
      "type": "single"
     }
    ],
@@ -318,7 +327,7 @@
    "comments": [
     {
      "content": "you can use types before they are defined",
-     "line": 33,
+     "line": 40,
      "type": "single"
     }
    ],
@@ -330,7 +339,7 @@
    "comments": [
     {
      "content": "lists can be complex",
-     "line": 36,
+     "line": 43,
      "type": "single"
     }
    ],
@@ -359,7 +368,7 @@
    "comments": [
     {
      "content": "you can defined maps this way",
-     "line": 40,
+     "line": 47,
      "type": "single"
     }
    ],
@@ -378,7 +387,7 @@
    "comments": [
     {
      "content": "maps can be complex",
-     "line": 42,
+     "line": 49,
      "type": "single"
     }
    ],
@@ -407,7 +416,7 @@
    "comments": [
     {
      "content": "structs can be defined like this",
-     "line": 45,
+     "line": 52,
      "type": "single"
     }
    ],
@@ -452,7 +461,7 @@
    "comments": [
     {
      "content": "Struct fields can contain:\n** any primitives\n** repeated fields\n** map fields \n** any defined types\n** other structs",
-     "line": 53,
+     "line": 60,
      "type": "multi"
     }
    ],
@@ -461,7 +470,7 @@
      "comments": [
       {
        "content": "fields are optional unless marked with 'required'",
-       "line": 61,
+       "line": 68,
        "type": "single"
       }
      ],
@@ -552,7 +561,7 @@
    "comments": [
     {
      "content": "both lists and maps can contain structs",
-     "line": 75,
+     "line": 82,
      "type": "single"
     }
    ],
@@ -579,7 +588,7 @@
    "comments": [
     {
      "content": "Allowed in parameter structs:\n- Primitives: string, int32, int64, float32, float64, bool\n- Enums (serialize to underlying primitive)\n- Simple arrays: repeated(primitive) or repeated(enum)\n- Maybe simple maps: map(string: primitive)",
-     "line": 79,
+     "line": 86,
      "type": "multi"
     }
    ],

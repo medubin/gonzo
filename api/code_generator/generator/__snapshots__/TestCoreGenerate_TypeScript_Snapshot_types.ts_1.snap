@@ -19,6 +19,12 @@ export enum WelcomeMessage {
   WELCOME = "Welcome to \"MyApp\"",
 }
 
+export enum UserSomething {
+  ONE = 0,
+  THREE = 2,
+  TWO = 1,
+}
+
 
 
 // this is a comment

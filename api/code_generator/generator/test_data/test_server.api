@@ -28,6 +28,13 @@ enum WelcomeMessage string {
   WELCOME = "Welcome to \"MyApp\""
 }
 
+
+enum UserSomething int32 {
+  ONE = 0
+  TWO = 1
+  THREE = 2
+}
+
 // you can defined lists this way
 type UserList repeated(User)
 // you can use types before they are defined
