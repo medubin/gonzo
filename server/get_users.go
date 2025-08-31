@@ -8,6 +8,6 @@ import (
 )
 
 // GET /users/
-func (s *GonzoServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[interface{}]) (*GetUsersResponse, error) {
+func (s *GonzoServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*GetUsersResponse, error) {
   return nil, gerrors.UnimplementedError("GetUsers")
 }

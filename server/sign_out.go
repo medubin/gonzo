@@ -11,7 +11,7 @@ import (
 )
 
 // DELETE /session
-func (s *GonzoServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[interface{}]) (*SignOutResponse, error) {
+func (s *GonzoServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignOutResponse, error) {
 	if body == nil {
 		return nil, gerrors.MissingArgumentError("body")
 	}
@@ -44,5 +44,4 @@ func (s *GonzoServerImpl) SignOut(ctx context.Context, body *SignOutBody, cookie
 	})
 
 	return &SignOutResponse{}, nil
-
 }

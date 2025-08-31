@@ -12,7 +12,7 @@ import (
 )
 
 // POST /user/new
-func (s *GonzoServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[interface{}]) (*SignupResponse, error) {
+func (s *GonzoServerImpl) Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignupResponse, error) {
 	if body == nil {
 		return nil, errors.New("missing body")
 	}
