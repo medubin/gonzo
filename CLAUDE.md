@@ -55,10 +55,69 @@ make new-db-migration name=create_table  # Create new migration
 - **Go**: Follow standard Go conventions, use `gofmt`
 - **Template syntax**: Use Go template syntax in `.yaml` config files
 - **File structure**: Generated files should not be manually edited
-- **Error handling**: Use the `gerrors` package for consistent error responses
+- **Error handling**: Use the `gerrors` package for structured error responses (see Error Handling section below)
 - **Imports**: Only import packages that are actually used to avoid unused import errors
 - **Field types**: All struct fields should be pointers with `omitempty` JSON tags
 - **Validation**: Required fields validated with simple `== nil` checks
+
+## Error Handling
+
+**Always use the `gerrors` package instead of generic Go errors for consistent HTTP status codes and structured error responses.**
+
+### Available Error Types
+
+| Function | HTTP Status | Use Case |
+|----------|-------------|----------|
+| `gerrors.MissingArgumentError()` | 400 Bad Request | Missing required fields, parameters, or request body |
+| `gerrors.InvalidArgumentError()` | 400 Bad Request | Invalid input format or values |
+| `gerrors.UnauthenticatedError()` | 401 Unauthorized | Invalid credentials or missing authentication |
+| `gerrors.NotFoundError()` | 404 Not Found | Resource doesn't exist |
+| `gerrors.AlreadyExistsError()` | 409 Conflict | Resource already exists |
+| `gerrors.InternalError()` | 500 Internal Server Error | Database errors, system failures |
+| `gerrors.UnimplementedError()` | 501 Not Implemented | Placeholder for unfinished endpoints |
+
+### Error Handling Examples
+
+**✅ Correct - Use gerrors:**
+```go
+// Missing required parameter
+if userID == nil {
+    return nil, gerrors.MissingArgumentError("missing user ID")
+}
+
+// Resource not found
+if err == sql.ErrNoRows {
+    return nil, gerrors.NotFoundError("user not found")
+}
+
+// Invalid credentials
+if !auth.CheckPassword(password, hash) {
+    return nil, gerrors.UnauthenticatedError("invalid email or password")
+}
+
+// Database error
+if err != nil {
+    return nil, gerrors.InternalError("database error")
+}
+```
+
+**❌ Incorrect - Don't use generic errors:**
+```go
+// Don't do this - no HTTP status code info
+return nil, errors.New("user not found")
+return nil, fmt.Errorf("missing user ID")
+```
+
+### Generated Code
+
+- **Validation methods** automatically use `gerrors.MissingArgumentError()` for required fields
+- **Middleware** uses appropriate gerrors types (e.g., RequireBody uses `MissingArgumentError`)
+- **Handler templates** should be updated to use gerrors for consistent error responses
+- **Enum conversion functions** automatically generated for all enum types:
+  - `EnumFromType()` - Convert primitive values to enum constants  
+  - `EnumToType()` - Convert enum constants to primitive values
+  - `EnumIsValid()` - Validate enum values
+  - Supports all primitive types (string, int32, int64, float32, float64, bool)
 
 ## Workflow Instructions
 
@@ -77,6 +136,11 @@ make new-db-migration name=create_table  # Create new migration
 - Use `RouteWithInfo()` for generated routes to provide proper endpoint metadata
 - Test middleware with example server in `api/code_generator/generator/test_data/main.go`
 - Middleware should avoid HTTP primitives, use abstracted request/response types
+
+**Automatic middleware features:**
+- **RequireBody middleware**: Automatically applied to POST/PUT/PATCH endpoints based on `RequiresBody: true/false` in RouteInfo
+- **Unified execution**: All routes follow the same middleware order: BeforeRouting → RequireBody → BeforeHandler → Handler → AfterHandler
+- **Error handling**: Middleware uses gerrors package for consistent HTTP status codes
 
 ## Project Structure
 

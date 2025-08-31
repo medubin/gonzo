@@ -2,7 +2,7 @@
 package server
 
 import (
-	"fmt"
+	"github.com/medubin/gonzo/api/src/gerrors"
 )
 
 // enums can be defined like this
@@ -215,7 +215,7 @@ type DetailedUser struct {
 
 func (v DetailedUser) Validate() error {
   if v.ID == nil {
-    return fmt.Errorf("field 'ID' is required")
+    return gerrors.MissingArgumentError("field 'ID' is required")
   }
   return nil
 }
@@ -275,13 +275,13 @@ type CreateUserRequest struct {
 
 func (v CreateUserRequest) Validate() error {
   if v.Username == nil {
-    return fmt.Errorf("field 'Username' is required")
+    return gerrors.MissingArgumentError("field 'Username' is required")
   }
   if v.Email == nil {
-    return fmt.Errorf("field 'Email' is required")
+    return gerrors.MissingArgumentError("field 'Email' is required")
   }
   if v.Password == nil {
-    return fmt.Errorf("field 'Password' is required")
+    return gerrors.MissingArgumentError("field 'Password' is required")
   }
   return nil
 }

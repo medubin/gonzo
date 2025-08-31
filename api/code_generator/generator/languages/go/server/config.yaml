@@ -29,9 +29,9 @@ templates:
   types: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}
-    {{$needsFmt := false}}{{range .Types}}{{if eq .Kind "struct"}}{{range .Fields}}{{if .Required}}{{$needsFmt = true}}{{end}}{{end}}{{end}}{{end}}{{if $needsFmt}}
+    {{$needsValidation := false}}{{range .Types}}{{if eq .Kind "struct"}}{{range .Fields}}{{if .Required}}{{$needsValidation = true}}{{end}}{{end}}{{end}}{{end}}{{if $needsValidation}}
     import (
-    	"fmt"
+    	"github.com/medubin/gonzo/api/src/gerrors"
     ){{end}}
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
@@ -74,7 +74,7 @@ templates:
 
     func (v {{.Name}}) Validate() error {
     {{range .Fields}}{{if .Required}}  if v.{{capitalize .Name}} == nil {
-        return fmt.Errorf("field '{{.Name}}' is required")
+        return gerrors.MissingArgumentError("field '{{.Name}}' is required")
       }
     {{end}}{{end}}  return nil
     }

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
@@ -12,5 +11,5 @@ import (
 // GET endpoints do not contain a body
 // GET /users/{id}
 func (s *UserServiceImpl) GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, GetUserUrl]) (*DetailedUser, error) {
-	return nil, gerrors.UnimplementedError("GetUser")
+  return nil, gerrors.UnimplementedError("GetUser")
 }
