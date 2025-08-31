@@ -1,0 +1,14 @@
+
+[TestParseFile/API_file_parsing - 1]
+// Test API definition
+enum UserRole string {
+    ADMIN = "admin"
+    USER = "user"
+}
+
+type User struct {
+    id required UserID
+    username required string
+    role UserRole
+}
+---
