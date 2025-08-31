@@ -15,6 +15,7 @@ default_imports:
   - context
   - github.com/medubin/gonzo/api/src/cookies
   - github.com/medubin/gonzo/api/src/handle
+  - github.com/medubin/gonzo/api/src/middleware
   - github.com/medubin/gonzo/api/src/router
   - github.com/medubin/gonzo/api/src/url
 settings:
@@ -78,7 +79,12 @@ templates:
     {{end}}}
 
     func Start{{.Name}}(s {{.Name}}, r *router.Router) {
-    {{range .Endpoints}}	r.Route("{{.Method}}", "{{.Path}}", handle.Handle[{{.BodyType | replace "*" ""}}, {{.ReturnType | replace "*" ""}}, {{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}](s.{{.Name}}))
+    {{$serverName := .Name}}{{range .Endpoints}}	r.RouteWithInfo("{{.Method}}", "{{.Path}}", handle.Handle[{{.BodyType | replace "*" ""}}, {{.ReturnType | replace "*" ""}}, {{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}](s.{{.Name}}), &middleware.RouteInfo{
+    		Method: "{{.Method}}",
+    		Path: "{{.Path}}",
+    		Endpoint: "{{.Name}}",
+    		Server: "{{$serverName}}",
+    	})
     {{end}}}
     {{end}}
 

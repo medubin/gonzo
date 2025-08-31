@@ -92,16 +92,13 @@ func (v DetailedUser) Validate() error {
 }
 
 type UserProfile struct {
-  FirstName string `json:"firstname"`
+  FirstName *string `json:"firstname,omitempty"`
   LastName *string `json:"lastname,omitempty"`
   Bio *string `json:"bio,omitempty"`
   AvatarUrl *string `json:"avatarurl,omitempty"`
 }
 
 func (v UserProfile) Validate() error {
-  if v.FirstName == "" {
-    return fmt.Errorf("field 'FirstName' is required")
-  }
   return nil
 }
 

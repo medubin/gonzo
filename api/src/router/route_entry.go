@@ -3,12 +3,15 @@ package router
 import (
 	"net/http"
 	"regexp"
+	
+	"github.com/medubin/gonzo/api/src/middleware"
 )
 
 type RouteEntry struct {
 	Path        *regexp.Regexp
 	Method      string
 	HandlerFunc http.HandlerFunc
+	Info        *middleware.RouteInfo
 }
 
 func (ent *RouteEntry) Match(r *http.Request) map[string]string {

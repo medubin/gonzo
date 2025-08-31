@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/handle"
+	"github.com/medubin/gonzo/api/src/middleware"
 	"github.com/medubin/gonzo/api/src/router"
 	"github.com/medubin/gonzo/api/src/url"
 )
@@ -31,14 +32,54 @@ type UserService interface {
 }
 
 func StartUserService(s UserService, r *router.Router) {
-	r.Route("GET", "/users/{id}", handle.Handle[struct{}, DetailedUser, struct{}, GetUserUrl](s.GetUser))
-	r.Route("POST", "/users", handle.Handle[CreateUserRequest, User, struct{}, struct{}](s.CreateUser))
-	r.Route("PUT", "/users/{id}", handle.Handle[UpdateUserRequest, User, struct{}, UpdateUserUrl](s.UpdateUser))
-	r.Route("DELETE", "/users/{id}", handle.Handle[DeleteUserRequest, User, struct{}, DeleteUserUrl](s.DeleteUser))
-	r.Route("PATCH", "/users/{id}/profile", handle.Handle[UserProfileUpdate, UserProfile, struct{}, PatchUserProfileUrl](s.PatchUserProfile))
-	r.Route("GET", "/users", handle.Handle[struct{}, UserCollection, UserListParams, struct{}](s.ListUsers))
-	r.Route("GET", "/users/search", handle.Handle[struct{}, UserCollection, UserSearchParams, struct{}](s.SearchUsers))
-	r.Route("GET", "/users/role/{role}", handle.Handle[struct{}, UserCollection, UserListParams, GetUsersByRoleUrl](s.GetUsersByRole))
+	r.RouteWithInfo("GET", "/users/{id}", handle.Handle[struct{}, DetailedUser, struct{}, GetUserUrl](s.GetUser), &middleware.RouteInfo{
+		Method: "GET",
+		Path: "/users/{id}",
+		Endpoint: "GetUser",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("POST", "/users", handle.Handle[CreateUserRequest, User, struct{}, struct{}](s.CreateUser), &middleware.RouteInfo{
+		Method: "POST",
+		Path: "/users",
+		Endpoint: "CreateUser",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("PUT", "/users/{id}", handle.Handle[UpdateUserRequest, User, struct{}, UpdateUserUrl](s.UpdateUser), &middleware.RouteInfo{
+		Method: "PUT",
+		Path: "/users/{id}",
+		Endpoint: "UpdateUser",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("DELETE", "/users/{id}", handle.Handle[DeleteUserRequest, User, struct{}, DeleteUserUrl](s.DeleteUser), &middleware.RouteInfo{
+		Method: "DELETE",
+		Path: "/users/{id}",
+		Endpoint: "DeleteUser",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("PATCH", "/users/{id}/profile", handle.Handle[UserProfileUpdate, UserProfile, struct{}, PatchUserProfileUrl](s.PatchUserProfile), &middleware.RouteInfo{
+		Method: "PATCH",
+		Path: "/users/{id}/profile",
+		Endpoint: "PatchUserProfile",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("GET", "/users", handle.Handle[struct{}, UserCollection, UserListParams, struct{}](s.ListUsers), &middleware.RouteInfo{
+		Method: "GET",
+		Path: "/users",
+		Endpoint: "ListUsers",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("GET", "/users/search", handle.Handle[struct{}, UserCollection, UserSearchParams, struct{}](s.SearchUsers), &middleware.RouteInfo{
+		Method: "GET",
+		Path: "/users/search",
+		Endpoint: "SearchUsers",
+		Server: "UserService",
+	})
+	r.RouteWithInfo("GET", "/users/role/{role}", handle.Handle[struct{}, UserCollection, UserListParams, GetUsersByRoleUrl](s.GetUsersByRole), &middleware.RouteInfo{
+		Method: "GET",
+		Path: "/users/role/{role}",
+		Endpoint: "GetUsersByRole",
+		Server: "UserService",
+	})
 }
 
 // multiple servers can be defined in a single file
@@ -47,6 +88,11 @@ type NotificationService interface {
 }
 
 func StartNotificationService(s NotificationService, r *router.Router) {
-	r.Route("GET", "/users/{userId}/notifications", handle.Handle[struct{}, []Notification, UserListParams, GetUserNotificationsUrl](s.GetUserNotifications))
+	r.RouteWithInfo("GET", "/users/{userId}/notifications", handle.Handle[struct{}, []Notification, UserListParams, GetUserNotificationsUrl](s.GetUserNotifications), &middleware.RouteInfo{
+		Method: "GET",
+		Path: "/users/{userId}/notifications",
+		Endpoint: "GetUserNotifications",
+		Server: "NotificationService",
+	})
 }
 

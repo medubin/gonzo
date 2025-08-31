@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/url"
@@ -12,5 +11,5 @@ import (
 // body and return always refer to a struct type
 // POST /users
 func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*User, error) {
-	return nil, gerrors.UnimplementedError("CreateUser")
+  return nil, gerrors.UnimplementedError("CreateUser")
 }
