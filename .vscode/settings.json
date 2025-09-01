@@ -1,0 +1,77 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnType": false,
+  // autoformat the filetypes we format with Prettier
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
+  },
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "files.eol": "\n",
+  "files.exclude": {
+    "_site": true,
+    ".cache-loader": true,
+    ".npmrc": true,
+    "**/__snapshots__": true,
+    "**/.DS_Store": true,
+    "**/.git": true,
+    "coverage": true,
+    "dist": true,
+    "node_modules": true,
+    "tmp": true,
+    "src/core/graphql/schema-cache.json": true
+  },
+  "files.insertFinalNewline": true,
+  "search.exclude": {
+    "**/messages.json": true,
+    "yarn-error.log": true
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "telemetry.enableTelemetry": false,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "editor.trimAutoWhitespace": false,
+  "git.ignoreLimitWarning": true,
+  "typescript.tsserver.maxTsServerMemory": 6144
+}
