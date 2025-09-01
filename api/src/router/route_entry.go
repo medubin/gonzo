@@ -5,13 +5,14 @@ import (
 	"regexp"
 	
 	"github.com/medubin/gonzo/api/src/middleware"
+	"github.com/medubin/gonzo/api/src/types"
 )
 
 type RouteEntry struct {
 	Path            *regexp.Regexp
 	Method          string
 	HandlerFunc     http.HandlerFunc
-	Info            *middleware.RouteInfo
+	Info            *types.RouteInfo
 	RouteMiddleware []middleware.Middleware
 }
 

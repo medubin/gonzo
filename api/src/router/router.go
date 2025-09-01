@@ -9,6 +9,7 @@ import (
 
 	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/middleware"
+	"github.com/medubin/gonzo/api/src/types"
 	"github.com/medubin/gonzo/api/src/url"
 )
 
@@ -17,23 +18,23 @@ type Router struct {
 	middleware []middleware.Middleware
 }
 
-func (rtr *Router) Route(method, path string, handlerFunc http.HandlerFunc) {
-	rtr.RouteWithInfo(method, path, handlerFunc, nil)
-}
+func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) {
+	if info == nil {
+		panic("RouteInfo is required")
+	}
 
-func (rtr *Router) RouteWithInfo(method, path string, handlerFunc http.HandlerFunc, info *middleware.RouteInfo) {
-	exactPath := url.ConvertPathToRegex(path)
+	exactPath := url.ConvertPathToRegex(info.Path)
 
 	// Create route-specific middleware based on route info
 	var routeMiddleware []middleware.Middleware
 	
 	// Auto-add RequireBody middleware if route requires a body
-	if info != nil && info.RequiresBody {
+	if info.RequiresBody {
 		routeMiddleware = append(routeMiddleware, middleware.NewRequireBody())
 	}
 
 	e := RouteEntry{
-		Method:           method,
+		Method:           info.Method,
 		Path:             exactPath,
 		HandlerFunc:      handlerFunc,
 		Info:             info,
@@ -138,10 +139,12 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		middlewareReq.PathParams = params
 
 		// Get route info for middleware
-		routeInfo := e.Info
-		if routeInfo == nil {
+		var routeInfo *types.RouteInfo
+		if e.Info != nil {
+			routeInfo = e.Info
+		} else {
 			// Fallback for manually registered routes
-			routeInfo = &middleware.RouteInfo{
+			routeInfo = &types.RouteInfo{
 				Method:   method,
 				Path:     path,
 				Endpoint: "Unknown",
@@ -172,7 +175,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	gerrors.JSONError(w, gerrors.BadRouteError(fmt.Sprintf("%s: %s", method, path)))
 }
 
-func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, err error, info *middleware.RouteInfo) {
+func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, err error, info *types.RouteInfo) {
 	for _, errorM := range rtr.middleware {
 		if errorResp, errorErr := errorM.OnError(ctx, req, err, info); errorErr == nil && errorResp != nil {
 			rtr.writeMiddlewareResponse(w, errorResp)
@@ -182,7 +185,7 @@ func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Cont
 	gerrors.JSONError(w, err)
 }
 
-func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, responseCapture *responseWriter, info *middleware.RouteInfo, allMiddleware []middleware.Middleware) {
+func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, responseCapture *responseWriter, info *types.RouteInfo, allMiddleware []middleware.Middleware) {
 	// Parse captured body for middleware access
 	var bodyForMiddleware any
 	if len(responseCapture.body) > 0 {

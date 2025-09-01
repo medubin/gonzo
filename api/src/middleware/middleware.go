@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/medubin/gonzo/api/src/cookies"
+	"github.com/medubin/gonzo/api/src/types"
 )
 
 // MiddlewareRequest represents the abstracted request available to middleware
@@ -25,16 +26,6 @@ type MiddlewareResponse struct {
 	Headers map[string]string
 }
 
-// RouteInfo provides information about the matched route
-type RouteInfo struct {
-	Method       string
-	Path         string
-	Endpoint     string // "CreateUser"
-	Server       string // "UserService"
-	BodyType     string // "CreateUserRequest"
-	ReturnType   string // "User"
-	RequiresBody bool   // Whether this endpoint requires a request body
-}
 
 // Middleware defines the interface for request/response middleware
 type Middleware interface {
@@ -44,15 +35,15 @@ type Middleware interface {
 
 	// BeforeHandler is called after routing, before the handler
 	// Can modify both context and request
-	BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *RouteInfo) (context.Context, *MiddlewareRequest, error)
+	BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error)
 
 	// AfterHandler is called after successful handler execution
 	// Can modify the response
-	AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *RouteInfo) (*MiddlewareResponse, error)
+	AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *types.RouteInfo) (*MiddlewareResponse, error)
 
 	// OnError is called only when handler returns an error
 	// Can provide custom error response or let error propagate
-	OnError(ctx context.Context, req *MiddlewareRequest, err error, info *RouteInfo) (*MiddlewareResponse, error)
+	OnError(ctx context.Context, req *MiddlewareRequest, err error, info *types.RouteInfo) (*MiddlewareResponse, error)
 }
 
 // BaseMiddleware provides default implementations for all middleware methods
@@ -63,15 +54,15 @@ func (m *BaseMiddleware) BeforeRouting(req *MiddlewareRequest) (*MiddlewareReque
 	return req, nil
 }
 
-func (m *BaseMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *RouteInfo) (context.Context, *MiddlewareRequest, error) {
+func (m *BaseMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error) {
 	return ctx, req, nil
 }
 
-func (m *BaseMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *BaseMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	return resp, nil
 }
 
-func (m *BaseMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *BaseMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	return nil, err // Let error propagate
 }
 

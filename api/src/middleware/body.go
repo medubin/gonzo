@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"github.com/medubin/gonzo/api/src/gerrors"
+	"github.com/medubin/gonzo/api/src/types"
 )
 
 // RequireBodyMiddleware ensures the request has a body
@@ -16,7 +17,7 @@ func NewRequireBody() *RequireBodyMiddleware {
 }
 
 // BeforeHandler checks if body is required and present
-func (m *RequireBodyMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *RouteInfo) (context.Context, *MiddlewareRequest, error) {
+func (m *RequireBodyMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error) {
 	if req.Body == nil {
 		return ctx, req, gerrors.MissingArgumentError("request body required")
 	}

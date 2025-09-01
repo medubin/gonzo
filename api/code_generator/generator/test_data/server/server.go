@@ -5,8 +5,8 @@ import (
 	"context"
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/handle"
-	"github.com/medubin/gonzo/api/src/middleware"
 	"github.com/medubin/gonzo/api/src/router"
+	"github.com/medubin/gonzo/api/src/types"
 	"github.com/medubin/gonzo/api/src/url"
 )
 
@@ -32,56 +32,56 @@ type UserService interface {
 }
 
 func StartUserService(s UserService, r *router.Router) {
-	r.RouteWithInfo("GET", "/users/{id}", handle.Handle(s.GetUser), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.GetUser), &types.RouteInfo{
   Method: "GET",
   Path: "/users/{id}",
   Endpoint: "GetUser",
   Server: "UserService",
   RequiresBody: false,
   })
-	r.RouteWithInfo("POST", "/users", handle.Handle(s.CreateUser), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.CreateUser), &types.RouteInfo{
   Method: "POST",
   Path: "/users",
   Endpoint: "CreateUser",
   Server: "UserService",
   RequiresBody: true,
   })
-	r.RouteWithInfo("PUT", "/users/{id}", handle.Handle(s.UpdateUser), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.UpdateUser), &types.RouteInfo{
   Method: "PUT",
   Path: "/users/{id}",
   Endpoint: "UpdateUser",
   Server: "UserService",
   RequiresBody: true,
   })
-	r.RouteWithInfo("DELETE", "/users/{id}", handle.Handle(s.DeleteUser), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.DeleteUser), &types.RouteInfo{
   Method: "DELETE",
   Path: "/users/{id}",
   Endpoint: "DeleteUser",
   Server: "UserService",
   RequiresBody: false,
   })
-	r.RouteWithInfo("PATCH", "/users/{id}/profile", handle.Handle(s.PatchUserProfile), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.PatchUserProfile), &types.RouteInfo{
   Method: "PATCH",
   Path: "/users/{id}/profile",
   Endpoint: "PatchUserProfile",
   Server: "UserService",
   RequiresBody: true,
   })
-	r.RouteWithInfo("GET", "/users", handle.Handle(s.ListUsers), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.ListUsers), &types.RouteInfo{
   Method: "GET",
   Path: "/users",
   Endpoint: "ListUsers",
   Server: "UserService",
   RequiresBody: false,
   })
-	r.RouteWithInfo("GET", "/users/search", handle.Handle(s.SearchUsers), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.SearchUsers), &types.RouteInfo{
   Method: "GET",
   Path: "/users/search",
   Endpoint: "SearchUsers",
   Server: "UserService",
   RequiresBody: false,
   })
-	r.RouteWithInfo("GET", "/users/role/{role}", handle.Handle(s.GetUsersByRole), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.GetUsersByRole), &types.RouteInfo{
   Method: "GET",
   Path: "/users/role/{role}",
   Endpoint: "GetUsersByRole",
@@ -96,7 +96,7 @@ type NotificationService interface {
 }
 
 func StartNotificationService(s NotificationService, r *router.Router) {
-	r.RouteWithInfo("GET", "/users/{userId}/notifications", handle.Handle(s.GetUserNotifications), &middleware.RouteInfo{
+	r.Route(handle.Handle(s.GetUserNotifications), &types.RouteInfo{
   Method: "GET",
   Path: "/users/{userId}/notifications",
   Endpoint: "GetUserNotifications",

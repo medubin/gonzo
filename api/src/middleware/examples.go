@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/medubin/gonzo/api/src/types"
 )
 
 // LoggingMiddleware logs request and response information
@@ -17,14 +19,14 @@ func NewLoggingMiddleware() *LoggingMiddleware {
 	return &LoggingMiddleware{}
 }
 
-func (m *LoggingMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *RouteInfo) (context.Context, *MiddlewareRequest, error) {
+func (m *LoggingMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error) {
 	// Add start time to context for duration calculation
 	ctx = context.WithValue(ctx, "middleware_start_time", time.Now())
 	log.Printf("→ %s %s (%s.%s)", req.Method, req.Path, info.Server, info.Endpoint)
 	return ctx, req, nil
 }
 
-func (m *LoggingMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *LoggingMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	if startTime, ok := ctx.Value("middleware_start_time").(time.Time); ok {
 		duration := time.Since(startTime)
 		log.Printf("← %s %s -> %d (%v)", req.Method, req.Path, resp.Status, duration)
@@ -32,7 +34,7 @@ func (m *LoggingMiddleware) AfterHandler(ctx context.Context, req *MiddlewareReq
 	return resp, nil
 }
 
-func (m *LoggingMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *LoggingMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	if startTime, ok := ctx.Value("middleware_start_time").(time.Time); ok {
 		duration := time.Since(startTime)
 		log.Printf("✗ %s %s -> ERROR (%v): %v", req.Method, req.Path, duration, err)
@@ -54,7 +56,7 @@ func NewAuthMiddleware(requiredPaths ...string) *AuthMiddleware {
 	return &AuthMiddleware{RequiredPaths: pathMap}
 }
 
-func (m *AuthMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *RouteInfo) (context.Context, *MiddlewareRequest, error) {
+func (m *AuthMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error) {
 	// Check if this path requires authentication
 	if !m.RequiredPaths[req.Path] && len(m.RequiredPaths) > 0 {
 		return ctx, req, nil // Path doesn't require auth
@@ -130,7 +132,7 @@ func (m *CORSMiddleware) BeforeRouting(req *MiddlewareRequest) (*MiddlewareReque
 	return req, nil
 }
 
-func (m *CORSMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *CORSMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	if resp.Headers == nil {
 		resp.Headers = make(map[string]string)
 	}
@@ -165,7 +167,7 @@ func NewErrorHandlerMiddleware(includeStackTrace bool) *ErrorHandlerMiddleware {
 	return &ErrorHandlerMiddleware{IncludeStackTrace: includeStackTrace}
 }
 
-func (m *ErrorHandlerMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *RouteInfo) (*MiddlewareResponse, error) {
+func (m *ErrorHandlerMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *types.RouteInfo) (*MiddlewareResponse, error) {
 	// Log the error
 	log.Printf("Error in %s.%s: %v", info.Server, info.Endpoint, err)
 
