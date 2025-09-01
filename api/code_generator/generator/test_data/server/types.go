@@ -16,35 +16,35 @@ const (
 
 // UserRoleFromString converts a string to UserRole enum
 func UserRoleFromString(v string) UserRole {
-	switch v {
+  switch v {
 	case "admin":
-		return UserRole_ADMIN
+  return UserRole_ADMIN
 	case "moderator":
-		return UserRole_MODERATOR
+  return UserRole_MODERATOR
 	case "user":
-		return UserRole_USER
+  return UserRole_USER
 	default:
 		return UserRole_ADMIN // Return first value as default
-	}
+  }
 }
 
 // UserRoleToString converts UserRole enum to string
 func UserRoleToString(e UserRole) string {
-	return string(e)
+  return string(e)
 }
 
 // UserRoleIsValid checks if the enum value is valid
 func UserRoleIsValid(e UserRole) bool {
-	switch e {
+  switch e {
 	case UserRole_ADMIN:
-		return true
+  return true
 	case UserRole_MODERATOR:
-		return true
+  return true
 	case UserRole_USER:
-		return true
+  return true
 	default:
-		return false
-	}
+  return false
+}
 }
 type UserStatus string
 const (
@@ -55,35 +55,35 @@ const (
 
 // UserStatusFromString converts a string to UserStatus enum
 func UserStatusFromString(v string) UserStatus {
-	switch v {
+  switch v {
 	case "active":
-		return UserStatus_ACTIVE
+  return UserStatus_ACTIVE
 	case "pending":
-		return UserStatus_PENDING
+  return UserStatus_PENDING
 	case "suspended":
-		return UserStatus_SUSPENDED
+  return UserStatus_SUSPENDED
 	default:
 		return UserStatus_ACTIVE // Return first value as default
-	}
+  }
 }
 
 // UserStatusToString converts UserStatus enum to string
 func UserStatusToString(e UserStatus) string {
-	return string(e)
+  return string(e)
 }
 
 // UserStatusIsValid checks if the enum value is valid
 func UserStatusIsValid(e UserStatus) bool {
-	switch e {
+  switch e {
 	case UserStatus_ACTIVE:
-		return true
+  return true
 	case UserStatus_PENDING:
-		return true
+  return true
 	case UserStatus_SUSPENDED:
-		return true
+  return true
 	default:
-		return false
-	}
+  return false
+}
 }
 type WelcomeMessage string
 const (
@@ -92,27 +92,27 @@ const (
 
 // WelcomeMessageFromString converts a string to WelcomeMessage enum
 func WelcomeMessageFromString(v string) WelcomeMessage {
-	switch v {
+  switch v {
 	case "Welcome to \"MyApp\"":
-		return WelcomeMessage_WELCOME
+  return WelcomeMessage_WELCOME
 	default:
 		return WelcomeMessage_WELCOME // Return first value as default
-	}
+  }
 }
 
 // WelcomeMessageToString converts WelcomeMessage enum to string
 func WelcomeMessageToString(e WelcomeMessage) string {
-	return string(e)
+  return string(e)
 }
 
 // WelcomeMessageIsValid checks if the enum value is valid
 func WelcomeMessageIsValid(e WelcomeMessage) bool {
-	switch e {
+  switch e {
 	case WelcomeMessage_WELCOME:
-		return true
+  return true
 	default:
-		return false
-	}
+  return false
+}
 }
 type UserSomething int32
 const (
@@ -123,35 +123,35 @@ const (
 
 // UserSomethingFromInt32 converts a int32 to UserSomething enum
 func UserSomethingFromInt32(v int32) UserSomething {
-	switch v {
+  switch v {
 	case 0:
-		return UserSomething_ONE
+  return UserSomething_ONE
 	case 2:
-		return UserSomething_THREE
+  return UserSomething_THREE
 	case 1:
-		return UserSomething_TWO
+  return UserSomething_TWO
 	default:
 		return UserSomething_ONE // Return first value as default
-	}
+  }
 }
 
 // UserSomethingToInt32 converts UserSomething enum to int32
 func UserSomethingToInt32(e UserSomething) int32 {
-	return int32(e)
+  return int32(e)
 }
 
 // UserSomethingIsValid checks if the enum value is valid
 func UserSomethingIsValid(e UserSomething) bool {
-	switch e {
+  switch e {
 	case UserSomething_ONE:
-		return true
+  return true
 	case UserSomething_THREE:
-		return true
+  return true
 	case UserSomething_TWO:
-		return true
+  return true
 	default:
-		return false
-	}
+  return false
+}
 }
 
 // this is a comment
