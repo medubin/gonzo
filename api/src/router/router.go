@@ -1,9 +1,11 @@
 package router
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -104,12 +106,37 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	// Parse request body for middleware if it exists
+	var body any
+	if r.ContentLength > 0 && r.Header.Get("Content-Type") == "application/json" {
+		// Read the body into a buffer so we can use it for both middleware and handler
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			gerrors.JSONError(w, gerrors.MalformedError("failed to read request body"))
+			return
+		}
+		
+		// Replace the body with a new reader for the handler to use
+		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		
+		// Parse JSON for middleware
+		if len(bodyBytes) > 0 {
+			var bodyData any
+			if err := json.Unmarshal(bodyBytes, &bodyData); err != nil {
+				gerrors.JSONError(w, gerrors.MalformedError("invalid JSON: "+err.Error()))
+				return
+			}
+			body = bodyData
+		}
+	}
+
 	// Always create middleware request (lightweight operation)
 	middlewareReq := &middleware.MiddlewareRequest{
 		Method:  r.Method,
 		Path:    r.URL.Path,
 		Headers: middleware.ConvertHeadersFromHTTP(r.Header),
 		Params:  r.URL.Query(),
+		Body:    body,
 	}
 
 	// Execute BeforeRouting middleware
