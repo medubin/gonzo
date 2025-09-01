@@ -17,3 +17,14 @@ RETURNING *;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
+
+-- name: GetUserByEmail :one
+SELECT * FROM users
+WHERE email = $1 LIMIT 1;
+
+-- name: UpdateUser :one
+UPDATE users
+SET username = COALESCE($2, username),
+    email = COALESCE($3, email)
+WHERE id = $1
+RETURNING *;

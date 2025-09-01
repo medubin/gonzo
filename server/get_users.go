@@ -7,7 +7,7 @@ import (
 	"github.com/medubin/gonzo/api/src/url"
 )
 
-// GET /users/
-func (s *GonzoServerImpl) GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*GetUsersResponse, error) {
+// GET /users
+func (s *GonzoServerImpl) GetUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersQuery, struct{}]) (*GetUsersResponse, error) {
   return nil, gerrors.UnimplementedError("GetUsers")
 }

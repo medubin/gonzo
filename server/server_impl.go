@@ -4,5 +4,5 @@ package server
 import "github.com/medubin/gonzo/db/queries"
 
 type GonzoServerImpl struct {
-	Queries queries.Queries
+	Queries *queries.Queries
 }

@@ -15,7 +15,7 @@ INSERT INTO users (
 ) VALUES (
   $1, $2, $3
 )
-RETURNING id, username, password, email, created_at
+RETURNING id, username, password, email, created_at, role
 `
 
 type CreateUserParams struct {
@@ -33,6 +33,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Password,
 		&i.Email,
 		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
@@ -48,7 +49,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, password, email, created_at FROM users
+SELECT id, username, password, email, created_at, role FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -61,12 +62,32 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 		&i.Password,
 		&i.Email,
 		&i.CreatedAt,
+		&i.Role,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, password, email, created_at, role FROM users
+WHERE email = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.Email,
+		&i.CreatedAt,
+		&i.Role,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, password, email, created_at FROM users
+SELECT id, username, password, email, created_at, role FROM users
 ORDER BY name
 `
 
@@ -85,6 +106,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Password,
 			&i.Email,
 			&i.CreatedAt,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
@@ -97,4 +119,32 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET username = COALESCE($2, username),
+    email = COALESCE($3, email)
+WHERE id = $1
+RETURNING id, username, password, email, created_at, role
+`
+
+type UpdateUserParams struct {
+	ID       int32
+	Username string
+	Email    string
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.Email,
+		&i.CreatedAt,
+		&i.Role,
+	)
+	return i, err
 }

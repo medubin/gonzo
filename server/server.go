@@ -6,23 +6,64 @@ import (
 	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/handle"
 	"github.com/medubin/gonzo/api/src/router"
+	"github.com/medubin/gonzo/api/src/types"
 	"github.com/medubin/gonzo/api/src/url"
 )
 
 
 type GonzoServer interface {
-	Signup(ctx context.Context, body *SignupBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignupResponse, error)
-	SignIn(ctx context.Context, body *SignInBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignInResponse, error)
-	SignOut(ctx context.Context, body *SignOutBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignOutResponse, error)
-	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUserParams, GetUserUrl]) (*GetUserResponse, error)
-	GetUsers(ctx context.Context, body *GetUsersBody, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*GetUsersResponse, error)
+	// Authentication endpoints
+	Signup(ctx context.Context, body *SignupRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignupResponse, error)
+	SignIn(ctx context.Context, body *SignInRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignInResponse, error)
+	SignOut(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignOutResponse, error)
+	// User management endpoints (require authentication)
+	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, GetUserUrl]) (*GetUserResponse, error)
+	GetUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersQuery, struct{}]) (*GetUsersResponse, error)
+	UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, UpdateUserUrl]) (*UpdateUserResponse, error)
 }
 
 func StartGonzoServer(s GonzoServer, r *router.Router) {
-	r.Route("POST", "/user/new", handle.Handle[SignupBody, SignupResponse, struct{}, struct{}](s.Signup))
-	r.Route("POST", "/session/new", handle.Handle[SignInBody, SignInResponse, struct{}, struct{}](s.SignIn))
-	r.Route("DELETE", "/session", handle.Handle[SignOutBody, SignOutResponse, struct{}, struct{}](s.SignOut))
-	r.Route("GET", "/user/{UserID}", handle.Handle[struct{}, GetUserResponse, GetUserParams, GetUserUrl](s.GetUser))
-	r.Route("GET", "/users/", handle.Handle[GetUsersBody, GetUsersResponse, struct{}, struct{}](s.GetUsers))
+	r.Route(handle.Handle(s.Signup), &types.RouteInfo{
+  Method: "POST",
+  Path: "/auth/signup",
+  Endpoint: "Signup",
+  Server: "GonzoServer",
+  RequiresBody: true,
+  })
+	r.Route(handle.Handle(s.SignIn), &types.RouteInfo{
+  Method: "POST",
+  Path: "/auth/signin",
+  Endpoint: "SignIn",
+  Server: "GonzoServer",
+  RequiresBody: true,
+  })
+	r.Route(handle.Handle(s.SignOut), &types.RouteInfo{
+  Method: "POST",
+  Path: "/auth/signout",
+  Endpoint: "SignOut",
+  Server: "GonzoServer",
+  RequiresBody: false,
+  })
+	r.Route(handle.Handle(s.GetUser), &types.RouteInfo{
+  Method: "GET",
+  Path: "/user/{UserID}",
+  Endpoint: "GetUser",
+  Server: "GonzoServer",
+  RequiresBody: false,
+  })
+	r.Route(handle.Handle(s.GetUsers), &types.RouteInfo{
+  Method: "GET",
+  Path: "/users",
+  Endpoint: "GetUsers",
+  Server: "GonzoServer",
+  RequiresBody: false,
+  })
+	r.Route(handle.Handle(s.UpdateUser), &types.RouteInfo{
+  Method: "PUT",
+  Path: "/user/{UserID}",
+  Endpoint: "UpdateUser",
+  Server: "GonzoServer",
+  RequiresBody: true,
+  })
 }
 

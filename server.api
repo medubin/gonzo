@@ -1,62 +1,89 @@
+// User authentication and management API
 type UserID int32
 
+enum UserRole string {
+    USER = "user"
+    ADMIN = "admin"
+}
+
 type User {
-  ID UserID
-  Name string
-  Email string
+    required ID UserID
+    required Username string
+    required Email string
+    Role UserRole
+    CreatedAt int64
 }
 
 type Session {
-  UserID UserID
-  Token string
+    required UserID UserID
+    required Token string
+    ExpiresAt int64
 }
 
-type SignupBody {
-  User User
-  Password string
+type SignupRequest {
+    required Username string
+    required Email string
+    required Password string
 }
 
 type SignupResponse {
-  User User
+    required User User
+    required Session Session
 }
 
-type SignInBody {
-  UserID UserID
-  Password string
+type SignInRequest {
+    required Email string
+    required Password string
 }
 
 type SignInResponse {
-  Session Session
+    required User User
+    required Session Session
 }
 
 type GetUserResponse {
-  User User
+    required User User
 }
 
-type GetUsersBody {
-  UserIDs repeated(UserID)
+type GetUsersQuery {
+    Limit int32
+    Offset int32
+    Role UserRole
 }
 
 type GetUsersResponse {
-  Users map(UserID: User)
+    required Users repeated(User)
+    Total int32
 }
 
-type SignOutBody {
-  Session Session
+type UpdateUserRequest {
+    Username string
+    Email string
+    Role UserRole
+}
+
+type UpdateUserResponse {
+    required User User
 }
 
 type SignOutResponse {
+    required Success bool
 }
 
-type GetUserParams {
-
+// Error response type
+type ErrorResponse {
+    required Error string
+    required Code string
 }
 
 server GonzoServer {
-  Signup POST /user/new body(SignupBody) returns(SignupResponse)
-  SignIn POST /session/new body(SignInBody) returns(SignInResponse)
-  SignOut DELETE /session body(SignOutBody) returns(SignOutResponse)
+    // Authentication endpoints
+    Signup POST /auth/signup body(SignupRequest) returns(SignupResponse)
+    SignIn POST /auth/signin body(SignInRequest) returns(SignInResponse)
+    SignOut POST /auth/signout returns(SignOutResponse)
 
-  GetUser GET /user/{UserID UserID} parameters(GetUserParams) returns(GetUserResponse)
-  GetUsers GET /users/ body(GetUsersBody) returns(GetUsersResponse)
+    // User management endpoints (require authentication)
+    GetUser GET /user/{UserID UserID} returns(GetUserResponse)
+    GetUsers GET /users parameters(GetUsersQuery) returns(GetUsersResponse)
+    UpdateUser PUT /user/{UserID UserID} body(UpdateUserRequest) returns(UpdateUserResponse)
 }
