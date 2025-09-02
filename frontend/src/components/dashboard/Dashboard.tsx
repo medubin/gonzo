@@ -34,7 +34,7 @@ export const Dashboard = () => {
               <ColorModeButton />
               <Button
                 variant="outline"
-                colorScheme="red"
+                colorPalette="red"
                 onClick={handleSignOut}
                 loading={signOutMutation.isPending}
                 disabled={signOutMutation.isPending}

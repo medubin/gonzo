@@ -225,6 +225,15 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, err error, info *types.RouteInfo) {
 	for _, errorM := range rtr.middleware {
 		if errorResp, errorErr := errorM.OnError(ctx, req, err, info); errorErr == nil && errorResp != nil {
+			// Run AfterHandler middleware on error responses too (for CORS, etc.)
+			var middlewareErr error
+			for i := len(rtr.middleware) - 1; i >= 0; i-- {
+				errorResp, middlewareErr = rtr.middleware[i].AfterHandler(ctx, req, errorResp, info)
+				if middlewareErr != nil {
+					gerrors.JSONError(w, middlewareErr)
+					return
+				}
+			}
 			rtr.writeMiddlewareResponse(w, errorResp)
 			return
 		}

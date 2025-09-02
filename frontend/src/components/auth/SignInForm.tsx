@@ -30,14 +30,14 @@ export const SignInForm = ({ onSwitchToSignUp }: SignInFormProps) => {
     signInMutation.mutate(formData);
   };
 
-  const handleChange = (field: keyof SignInRequest) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
+  const handleChange =
+    (field: keyof SignInRequest) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    };
 
   return (
     <Card.Root maxW="md" mx="auto" p="6">
@@ -82,7 +82,8 @@ export const SignInForm = ({ onSwitchToSignUp }: SignInFormProps) => {
 
               <Button
                 type="submit"
-                colorScheme="blue"
+                variant="outline"
+                colorPalette="blue"
                 width="full"
                 loading={signInMutation.isPending}
                 disabled={signInMutation.isPending}

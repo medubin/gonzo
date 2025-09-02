@@ -27,7 +27,7 @@ export const useCurrentUser = () => {
         const userData = await apiClient.getCurrentUser();
         return userData;
       } catch (error) {
-        throw new Error("No user session found");
+        throw new Error(`No user session found ${error}`);
       }
     },
     retry: false, // Don't retry on auth failures
