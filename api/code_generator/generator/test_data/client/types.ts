@@ -3,27 +3,13 @@
 
 // enums can be defined like this
 // enums can be any primitive type
-export enum UserRole {
-  ADMIN = "admin",
-  MODERATOR = "moderator",
-  USER = "user",
-}
+export type UserRole = "admin" | "moderator" | "user";
 
-export enum UserStatus {
-  ACTIVE = "active",
-  PENDING = "pending",
-  SUSPENDED = "suspended",
-}
+export type UserStatus = "active" | "pending" | "suspended";
 
-export enum WelcomeMessage {
-  WELCOME = "Welcome to \"MyApp\"",
-}
+export type WelcomeMessage = "Welcome to \"MyApp\"";
 
-export enum UserSomething {
-  ONE = 0,
-  THREE = 2,
-  TWO = 1,
-}
+export type UserSomething = 0 | 2 | 1;
 
 
 
