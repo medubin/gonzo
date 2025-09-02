@@ -21,9 +21,7 @@ templates:
 
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
-    {{end}}export enum {{.Name}} {
-    {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}  {{.Key}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}},
-    {{end}}}
+    {{end}}export type {{.Name}} = {{$enumName := .Name}}{{$baseType := .BaseType}}{{range $i, $val := .Values}}{{if $i}} | {{end}}{{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}{{end}};
     {{end}}
 
     {{range .Types}}
@@ -85,6 +83,7 @@ templates:
             'Content-Type': 'application/json',
             ...options?.headers
           },{{else}}headers: options?.headers,{{end}}
+          credentials: 'include',
           signal: options?.timeout ? AbortSignal.timeout(options.timeout) : undefined
         });
 

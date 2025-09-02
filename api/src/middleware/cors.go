@@ -47,6 +47,9 @@ func (m *CORSMiddleware) AfterHandler(ctx context.Context, req *MiddlewareReques
 	if len(m.AllowedHeaders) > 0 {
 		resp.Headers["Access-Control-Allow-Headers"] = strings.Join(m.AllowedHeaders, ", ")
 	}
+	
+	// Enable credentials for cookie-based authentication
+	resp.Headers["Access-Control-Allow-Credentials"] = "true"
 
 	// Handle preflight requests
 	if req.Method == "OPTIONS" {
