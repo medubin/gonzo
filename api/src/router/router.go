@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/medubin/gonzo/api/src/cookies"
 	"github.com/medubin/gonzo/api/src/gerrors"
 	"github.com/medubin/gonzo/api/src/middleware"
 	"github.com/medubin/gonzo/api/src/types"
@@ -135,6 +136,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Method:  r.Method,
 		Path:    r.URL.Path,
 		Headers: middleware.ConvertHeadersFromHTTP(r.Header),
+		Cookies: cookies.New(r, w),
 		Params:  r.URL.Query(),
 		Body:    body,
 	}
@@ -199,7 +201,25 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gerrors.JSONError(w, gerrors.BadRouteError(fmt.Sprintf("%s: %s", method, path)))
+	// Handle unmatched routes, but still allow CORS middleware to process
+	// Create a fake route info for middleware
+	routeInfo := &types.RouteInfo{
+		Method:   method,
+		Path:     path,
+		Endpoint: "NotFound",
+		Server:   "Router",
+	}
+
+	// Create a 404 response but let middleware process it (especially CORS)
+	responseCapture := &responseWriter{statusCode: 404}
+	errorMsg := map[string]string{"error": fmt.Sprintf("bad_route: %s: %s", method, path)}
+	if bodyBytes, err := json.Marshal(errorMsg); err == nil {
+		responseCapture.body = bodyBytes
+		responseCapture.Header().Set("Content-Type", "application/json")
+	}
+
+	// Handle response through middleware (this will add CORS headers)
+	rtr.handleMiddlewareResponse(w, r.Context(), middlewareReq, responseCapture, routeInfo, rtr.middleware)
 }
 
 func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, err error, info *types.RouteInfo) {
