@@ -8,8 +8,9 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/medubin/gonzo/api/src/router"
+	"github.com/medubin/gonzo/api/src/middleware"
 	"github.com/medubin/gonzo/db/queries"
-	"github.com/medubin/gonzo/internal/middleware"
+	internalMiddleware "github.com/medubin/gonzo/internal/middleware"
 	"github.com/medubin/gonzo/server"
 )
 
@@ -29,8 +30,16 @@ func run() error {
 	queries := queries.New(db)
 	r := &router.Router{}
 	
+	// Setup CORS middleware (should be first)
+	corsMiddleware := middleware.NewCORSMiddleware(
+		[]string{"http://localhost:5173"}, // Allow frontend origin
+		[]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		[]string{"Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"},
+	)
+	r.Use(corsMiddleware)
+	
 	// Setup auth middleware
-	authMiddleware := middleware.NewAuthMiddleware(db)
+	authMiddleware := internalMiddleware.NewAuthMiddleware(db)
 	r.Use(authMiddleware)
 	
 	s := &server.GonzoServerImpl{

@@ -1,35 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Box, Spinner, Center, Text } from "@chakra-ui/react";
+import { useAuth } from "@/hooks/auth";
+import { AuthPage } from "@/components/auth/AuthPage";
+import { Dashboard } from "@/components/dashboard/Dashboard";
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading spinner while checking auth status
+  if (isLoading) {
+    return (
+      <Box minH="100vh" bg="bg">
+        <Center h="100vh">
+          <Box textAlign="center">
+            <Spinner size="xl" color="blue.500" mb="4" />
+            <Text color="fg.muted">Loading...</Text>
+          </Box>
+        </Center>
+      </Box>
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Box minH="100vh" bg="bg">
+      {isAuthenticated ? (
+        <Dashboard />
+      ) : (
+        <AuthPage />
+      )}
+      <Toaster />
+    </Box>
+  );
 }
 
-export default App
+export default App;

@@ -81,6 +81,7 @@ server GonzoServer {
     Signup POST /auth/signup body(SignupRequest) returns(SignupResponse)
     SignIn POST /auth/signin body(SignInRequest) returns(SignInResponse)
     SignOut POST /auth/signout returns(SignOutResponse)
+    GetCurrentUser GET /auth/me returns(GetUserResponse)
 
     // User management endpoints (require authentication)
     GetUser GET /user/{UserID UserID} returns(GetUserResponse)

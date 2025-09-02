@@ -48,7 +48,7 @@ type User struct {
   Username *string `json:"username,omitempty"`
   Email *string `json:"email,omitempty"`
   Role *UserRole `json:"role,omitempty"`
-  CreatedAt *int64 `json:"createdat,omitempty"`
+  CreatedAt *int64 `json:"createdAt,omitempty"`
 }
 
 func (v User) Validate() error {
@@ -65,9 +65,9 @@ func (v User) Validate() error {
 }
 
 type Session struct {
-  UserID *UserID `json:"userid,omitempty"`
+  UserID *UserID `json:"userId,omitempty"`
   Token *string `json:"token,omitempty"`
-  ExpiresAt *int64 `json:"expiresat,omitempty"`
+  ExpiresAt *int64 `json:"expiresAt,omitempty"`
 }
 
 func (v Session) Validate() error {

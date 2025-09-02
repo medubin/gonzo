@@ -16,6 +16,7 @@ type GonzoServer interface {
 	Signup(ctx context.Context, body *SignupRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignupResponse, error)
 	SignIn(ctx context.Context, body *SignInRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignInResponse, error)
 	SignOut(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*SignOutResponse, error)
+	GetCurrentUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*GetUserResponse, error)
 	// User management endpoints (require authentication)
 	GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, GetUserUrl]) (*GetUserResponse, error)
 	GetUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[GetUsersQuery, struct{}]) (*GetUsersResponse, error)
@@ -41,6 +42,13 @@ func StartGonzoServer(s GonzoServer, r *router.Router) {
   Method: "POST",
   Path: "/auth/signout",
   Endpoint: "SignOut",
+  Server: "GonzoServer",
+  RequiresBody: false,
+  })
+	r.Route(handle.Handle(s.GetCurrentUser), &types.RouteInfo{
+  Method: "GET",
+  Path: "/auth/me",
+  Endpoint: "GetCurrentUser",
   Server: "GonzoServer",
   RequiresBody: false,
   })

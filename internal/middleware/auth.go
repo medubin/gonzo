@@ -51,14 +51,17 @@ func (m *AuthMiddleware) BeforeHandler(ctx context.Context, req *middleware.Midd
 	}
 
 	// Extract session token from cookie or Authorization header
+	// This gracefully handles missing cookies and other cookie errors
 	token := m.extractToken(req)
 	if token == "" {
-		return ctx, req, errors.New("authentication required: no token provided")
+		// Provide a clear, user-friendly error message
+		return ctx, req, errors.New("authentication required: no valid session token or authorization header found")
 	}
 
 	// Validate session and get user info
 	authInfo, err := m.validateSession(ctx, token)
 	if err != nil {
+		// Wrap the error with context but don't expose internal details
 		return ctx, req, fmt.Errorf("authentication failed: %v", err)
 	}
 
@@ -94,23 +97,27 @@ func (m *AuthMiddleware) OnError(ctx context.Context, req *middleware.Middleware
 // isAuthEndpoint checks if the endpoint requires authentication
 func (m *AuthMiddleware) isAuthEndpoint(endpoint string) bool {
 	authEndpoints := map[string]bool{
-		"Signup": true,
-		"SignIn": true,
+		"Signup":  true,
+		"SignIn":  true,
+		"SignOut": true,
 	}
 	return authEndpoints[endpoint]
 }
 
 // extractToken gets the session token from cookies or Authorization header
 func (m *AuthMiddleware) extractToken(req *middleware.MiddlewareRequest) string {
-	// Try cookie first (preferred)
+	// Try cookie first (preferred) - gracefully handle any cookie errors
 	if sessionCookie, err := req.Cookies.Get("session_token"); err == nil && sessionCookie != nil {
 		return sessionCookie.Value
 	}
+	// Note: cookie errors (including missing cookies) are expected and handled gracefully
 
 	// Try Authorization header as fallback
-	if authHeader, exists := req.Headers["Authorization"]; exists {
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			return strings.TrimPrefix(authHeader, "Bearer ")
+	if req.Headers != nil {
+		if authHeader, exists := req.Headers["Authorization"]; exists {
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				return strings.TrimPrefix(authHeader, "Bearer ")
+			}
 		}
 	}
 
