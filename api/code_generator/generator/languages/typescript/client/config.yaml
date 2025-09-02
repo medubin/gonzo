@@ -31,7 +31,7 @@ templates:
     {{end}}{{if eq .Kind "alias"}}export type {{.Name}} = {{.MappedType}};
     {{else if eq .Kind "struct"}}export interface {{.Name}} {
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}  {{.Name}}{{if not .Required}}?{{end}}: {{.Type}};
+    {{end}}  {{camelCase .Name}}{{if not .Required}}?{{end}}: {{.Type}};
     {{end}}}
     {{else if eq .Kind "repeated"}}export type {{.Name}} = {{.MappedType}};
     {{else if eq .Kind "map"}}export type {{.Name}} = {{.MappedType}};
@@ -46,7 +46,7 @@ templates:
   client: |
     {{.Settings.PackageComment}}
     {{$usedTypes := getUsedTypes .}}
-    {{if $usedTypes}}import { {{range $i, $type := $usedTypes}}{{if $i}}, {{end}}{{$type.Name}}{{end}} } from './types';{{end}}
+    {{if $usedTypes}}import type { {{range $i, $type := $usedTypes}}{{if $i}}, {{end}}{{$type.Name}}{{end}} } from './types';{{end}}
 
     export interface RequestOptions {
       headers?: Record<string, string>;
@@ -55,11 +55,14 @@ templates:
     {{range .Servers}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}export class {{.Name}}Client {
-      constructor(private baseUrl: string) {}
+      private baseUrl: string
+      constructor(baseUrl: string) {
+        this.baseUrl = baseUrl;
+      }
 
     {{range .Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
     {{end}}  async {{camelCase .Name}}({{if .HasBody}}body: {{.BodyType | replace "*" ""}}, {{end}}{{if .PathParams}}params: {{.Name}}Params, {{end}}{{if .HasParams}}parameters: {{.Parameters}}, {{end}}options?: RequestOptions): Promise<{{.ReturnType | replace "*" ""}}> {
-        let url = `${this.baseUrl}{{.Path}}`;
+        {{if or .PathParams .HasParams}}let{{else}}const{{end}} url = `${this.baseUrl}{{.Path}}`;
         {{if .PathParams}}
         // Replace path parameters
         {{range .PathParams}}url = url.replace('{{printf "{%s}" .Name}}', String(params.{{.Name}}));{{end}}{{end}}

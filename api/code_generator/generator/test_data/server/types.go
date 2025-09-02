@@ -2,7 +2,7 @@
 package server
 
 import (
-	"github.com/medubin/gonzo/api/src/gerrors"
+  "github.com/medubin/gonzo/api/src/gerrors"
 )
 
 // enums can be defined like this
@@ -209,7 +209,7 @@ type DetailedUser struct {
 	// fields are optional unless marked with 'required'
   ID *UserID `json:"id,omitempty"`
   Usernames *[]string `json:"usernames,omitempty"`
-  LoginCount *map[string]int32 `json:"logincount,omitempty"`
+  LoginCount *map[string]int32 `json:"loginCount,omitempty"`
   Profile *UserProfile `json:"profile,omitempty"`
 }
 
@@ -221,10 +221,10 @@ func (v DetailedUser) Validate() error {
 }
 
 type UserProfile struct {
-  FirstName *string `json:"firstname,omitempty"`
-  LastName *string `json:"lastname,omitempty"`
+  FirstName *string `json:"firstName,omitempty"`
+  LastName *string `json:"lastName,omitempty"`
   Bio *string `json:"bio,omitempty"`
-  AvatarUrl *string `json:"avatarurl,omitempty"`
+  AvatarUrl *string `json:"avatarUrl,omitempty"`
 }
 
 func (v UserProfile) Validate() error {
@@ -246,7 +246,7 @@ type UsersByDepartment map[string]User
 type UserSearchParams struct {
   Query *string `json:"query,omitempty"`
   Roles *[]UserRole `json:"roles,omitempty"`
-  IsActive *bool `json:"isactive,omitempty"`
+  IsActive *bool `json:"isActive,omitempty"`
   Limit *int32 `json:"limit,omitempty"`
 }
 
@@ -256,9 +256,9 @@ func (v UserSearchParams) Validate() error {
 
 type UserListParams struct {
   Page *int32 `json:"page,omitempty"`
-  PageSize *int32 `json:"pagesize,omitempty"`
-  SortBy *string `json:"sortby,omitempty"`
-  SortOrder *string `json:"sortorder,omitempty"`
+  PageSize *int32 `json:"pageSize,omitempty"`
+  SortBy *string `json:"sortBy,omitempty"`
+  SortOrder *string `json:"sortOrder,omitempty"`
 }
 
 func (v UserListParams) Validate() error {
@@ -299,7 +299,7 @@ func (v UpdateUserRequest) Validate() error {
 
 type DeleteUserRequest struct {
   Reason *string `json:"reason,omitempty"`
-  TransferDataTo *UserID `json:"transferdatato,omitempty"`
+  TransferDataTo *UserID `json:"transferDataTo,omitempty"`
 }
 
 func (v DeleteUserRequest) Validate() error {
@@ -307,10 +307,10 @@ func (v DeleteUserRequest) Validate() error {
 }
 
 type UserProfileUpdate struct {
-  FirstName *string `json:"firstname,omitempty"`
-  LastName *string `json:"lastname,omitempty"`
+  FirstName *string `json:"firstName,omitempty"`
+  LastName *string `json:"lastName,omitempty"`
   Bio *string `json:"bio,omitempty"`
-  AvatarUrl *string `json:"avatarurl,omitempty"`
+  AvatarUrl *string `json:"avatarUrl,omitempty"`
 }
 
 func (v UserProfileUpdate) Validate() error {
@@ -321,8 +321,8 @@ type Notification struct {
   ID *NotificationID `json:"id,omitempty"`
   Title *string `json:"title,omitempty"`
   Message *string `json:"message,omitempty"`
-  CreatedAt *Timestamp `json:"createdat,omitempty"`
-  IsRead *bool `json:"isread,omitempty"`
+  CreatedAt *Timestamp `json:"createdAt,omitempty"`
+  IsRead *bool `json:"isRead,omitempty"`
 }
 
 func (v Notification) Validate() error {

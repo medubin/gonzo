@@ -37,7 +37,7 @@ export class UserServiceClient {
 	// All other urls can contain a body
 	// body and return always refer to a struct type
   async createUser(body: CreateUserRequest, options?: RequestOptions): Promise<User> {
-    let url = `${this.baseUrl}/users`;
+    const url = `${this.baseUrl}/users`;
     
     
     const response = await fetch(url, {
@@ -242,3 +242,4 @@ export class NotificationServiceClient {
     return response.json();
   }
 }
+

@@ -19,6 +19,12 @@ export enum WelcomeMessage {
   WELCOME = "Welcome to \"MyApp\"",
 }
 
+export enum UserSomething {
+  ONE = 0,
+  THREE = 2,
+  TWO = 1,
+}
+
 
 
 // this is a comment
@@ -65,10 +71,10 @@ export type UserActivityByMonth = Record<string, Record<number, Array<number>>>;
 
 // structs can be defined like this
 export interface User {
-  ID?: UserID;
-  Username?: string;
-  Email?: Email;
-  Role?: UserRole;
+  id?: UserID;
+  username?: string;
+  email?: Email;
+  role?: UserRole;
 }
 
 
@@ -82,18 +88,18 @@ export interface User {
  */
 export interface DetailedUser {
 	// fields are optional unless marked with 'required'
-  ID: UserID;
-  Usernames?: Array<string>;
-  LoginCount?: Record<string, number>;
-  Profile?: UserProfile;
+  id: UserID;
+  usernames?: Array<string>;
+  loginCount?: Record<string, number>;
+  profile?: UserProfile;
 }
 
 
 export interface UserProfile {
-  FirstName?: string;
-  LastName?: string;
-  Bio?: string;
-  AvatarUrl?: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 
@@ -128,19 +134,19 @@ export interface UserListParams {
 
 
 export interface CreateUserRequest {
-  Username: string;
-  Email: Email;
-  Password: string;
-  Role?: UserRole;
-  Profile?: UserProfile;
+  username: string;
+  email: Email;
+  password: string;
+  role?: UserRole;
+  profile?: UserProfile;
 }
 
 
 export interface UpdateUserRequest {
-  Username?: string;
-  Email?: Email;
-  Role?: UserRole;
-  Status?: UserStatus;
+  username?: string;
+  email?: Email;
+  role?: UserRole;
+  status?: UserStatus;
 }
 
 
@@ -151,19 +157,19 @@ export interface DeleteUserRequest {
 
 
 export interface UserProfileUpdate {
-  FirstName?: string;
-  LastName?: string;
-  Bio?: string;
-  AvatarUrl?: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 
 export interface Notification {
-  ID?: NotificationID;
-  Title?: string;
-  Message?: string;
-  CreatedAt?: Timestamp;
-  IsRead?: boolean;
+  id?: NotificationID;
+  title?: string;
+  message?: string;
+  createdAt?: Timestamp;
+  isRead?: boolean;
 }
 
 
