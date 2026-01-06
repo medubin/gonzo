@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api";
 import type { SignupRequest, SignInRequest, GetUserResponse } from "@/lib/api";
 import { toaster } from "@/lib/toaster";
@@ -58,19 +59,23 @@ export const useAuth = () => {
 // Signup mutation
 export const useSignup = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: (data: SignupRequest) => apiClient.signup(data),
     onSuccess: (response) => {
       // Set user data in cache
       queryClient.setQueryData(authKeys.currentUser(), { user: response.user });
-      
+
       // Show success message
       toaster.create({
         title: "Account created successfully!",
         description: `Welcome, ${response.user.username}!`,
         type: "success",
       });
+
+      // Navigate to dashboard
+      navigate("/dashboard");
     },
     onError: (error) => {
       toaster.create({
@@ -85,6 +90,7 @@ export const useSignup = () => {
 // Sign in mutation
 export const useSignIn = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: (data: SignInRequest) => apiClient.signIn(data),
@@ -98,6 +104,9 @@ export const useSignIn = () => {
         description: `Welcome back, ${response.user.username}!`,
         type: "success",
       });
+
+      // Navigate to dashboard
+      navigate("/dashboard");
     },
     onError: (error) => {
       toaster.create({
@@ -112,13 +121,14 @@ export const useSignIn = () => {
 // Sign out mutation
 export const useSignOut = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: () => apiClient.signOut(),
     onSuccess: () => {
       // Explicitly set the current user data to null
       queryClient.setQueryData(authKeys.currentUser(), null);
-      
+
       // Clear all auth data
       queryClient.removeQueries({ queryKey: authKeys.currentUser() });
       queryClient.removeQueries({ queryKey: authKeys.users() });
@@ -129,6 +139,9 @@ export const useSignOut = () => {
         description: "See you later!",
         type: "info",
       });
+
+      // Navigate to login
+      navigate("/login");
     },
     onError: (error) => {
       toaster.create({
