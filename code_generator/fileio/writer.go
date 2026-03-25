@@ -3,6 +3,7 @@ package fileio
 import (
 	"errors"
 	"os"
+	"path/filepath"
 )
 
 func WriteToFile(directory string, name string, output string, safe bool) error {
@@ -10,7 +11,7 @@ func WriteToFile(directory string, name string, output string, safe bool) error 
 		return err
 	}
 
-	filename := directory + "/" + name
+	filename := filepath.Join(directory, name)
 
 	if safe {
 		if fileExists(filename) {
