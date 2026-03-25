@@ -1,0 +1,13 @@
+package server
+
+import (
+	"context"
+	"github.com/medubin/gonzo/runtime/cookies"
+	"github.com/medubin/gonzo/runtime/gerrors"
+	"github.com/medubin/gonzo/runtime/url"
+)
+
+// PUT /users/{id}
+func (s *UserServiceImpl) UpdateUser(ctx context.Context, body *UpdateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, UpdateUserUrl]) (*User, error) {
+  return nil, gerrors.UnimplementedError("UpdateUser")
+}

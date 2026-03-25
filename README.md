@@ -96,10 +96,10 @@ Gonzo takes API definitions written in a custom Domain Specific Language (DSL) a
 
 ## Project Structure
 
-- `api/code_generator/generator/` - Core code generation engine (lexer, parser, generators)  
-- `api/code_generator/generator/languages/` - Language-specific templates (Go, TypeScript)
-- `api/src/` - Runtime libraries for generated servers (routing, error handling, URL parsing)
-- `api/bin/` - CLI tool for code generation
+- `code_generator/generator/` - Core code generation engine (lexer, parser, generators)  
+- `code_generator/generator/languages/` - Language-specific templates (Go, TypeScript)
+- `runtume/` - Runtime libraries for generated servers (routing, error handling, URL parsing)
+- `bin/` - CLI tool for code generation
 - `server/` - Generated server code and manual implementations
 - `db/` - Database migrations and queries (using sqlc)
 - `internal/` - Main application entry point
@@ -182,6 +182,95 @@ When you run the generate command, Gonzo creates:
        http.ListenAndServe(":8080", router)
    }
    ```
+
+## Database Setup and Migrations
+
+Gonzo includes database support with migrations using [golang-migrate](https://github.com/golang-migrate/migrate) and [sqlc](https://sqlc.dev/) for type-safe SQL queries.
+
+### Prerequisites
+
+Install PostgreSQL on your system:
+
+**macOS:**
+```bash
+brew install postgresql@14
+brew services start postgresql@14
+```
+
+**Or use [Postgres.app](https://postgresapp.com/)** for a GUI-based option.
+
+### Initial Database Setup
+
+1. **Create the database:**
+   ```bash
+   psql postgres -c "CREATE DATABASE gonzo;"
+   ```
+
+2. **Create the postgres user** (if it doesn't exist):
+   ```bash
+   psql postgres -c "CREATE USER postgres WITH PASSWORD 'postgres' SUPERUSER;"
+   ```
+
+3. **Run migrations:**
+   ```bash
+   make db-migration
+   ```
+
+   If you're using `mise` for Go version management:
+   ```bash
+   mise exec -- make db-migration
+   ```
+
+4. **Verify tables were created:**
+   ```bash
+   psql gonzo -c "\dt"
+   ```
+
+### Migration Commands
+
+The Makefile includes several migration-related commands:
+
+- `make db-migration` - Run all pending migrations
+- `make db-migration-down` - Rollback the last migration
+- `make new-db-migration name=your_migration_name` - Create a new migration file
+- `make generate-sqlc` - Generate Go code from SQL queries (using sqlc)
+
+### Database Configuration
+
+The default database connection string is:
+```
+postgres://postgres:postgres@localhost:5432/gonzo?sslmode=disable
+```
+
+To modify this, update the connection string in [db/db-migrations.go](db/db-migrations.go).
+
+### Creating New Migrations
+
+1. **Create a new migration file:**
+   ```bash
+   make new-db-migration name=add_user_profile
+   ```
+
+2. This creates two files in `db/migrations/`:
+   - `NNNN_add_user_profile.up.sql` - Migration to apply changes
+   - `NNNN_add_user_profile.down.sql` - Migration to rollback changes
+
+3. **Edit the files** with your SQL changes
+
+4. **Run the migration:**
+   ```bash
+   make db-migration
+   ```
+
+### Working with sqlc
+
+After creating or modifying SQL queries in `db/query/`, regenerate the Go code:
+
+```bash
+make generate-sqlc
+```
+
+This updates the type-safe query functions in `db/queries/`.
 
 # TODO
 

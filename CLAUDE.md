@@ -218,8 +218,8 @@ internal/                        # Main application entry point
 
 **Unit Tests:**
 ```bash
-go test api/code_generator/generator/
-go test api/src/url/
+go test code_generator/generator/
+go test runtime/url/
 go test api/code_generator/fileio/
 go test api/code_generator/utils/
 ```
