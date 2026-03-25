@@ -1,10 +1,10 @@
 # Gonzo
 
-Gonzo is a modern code generation tool that creates type-safe web API servers and clients from a custom API definition language. It enables developers to define their complete API structure using a simple, declarative syntax and automatically generates consistent, type-safe code across multiple languages.
+Gonzo is a code generation library and CLI tool that creates type-safe web API servers and clients from a custom API definition language. Define your API once and generate consistent, type-safe code across multiple languages.
 
 ## What Gonzo Does
 
-Gonzo takes API definitions written in a custom Domain Specific Language (DSL) and generates:
+Gonzo takes API definitions written in a custom DSL and generates:
 
 - **Go server code** with type-safe handlers, routing, and parameter extraction
 - **TypeScript client code** for frontend applications with full type safety
@@ -17,17 +17,14 @@ Gonzo takes API definitions written in a custom Domain Specific Language (DSL) a
 1. **Define your API** using Gonzo's `.api` format:
 
    ```api
-   // Type aliases and primitives
    type UserID int64
    type Email string
 
-   // Enums with underlying types
    enum UserRole string {
      ADMIN = "admin"
      USER = "user"
    }
 
-   // Structured types
    type User {
      required ID UserID
      Username string
@@ -41,70 +38,49 @@ Gonzo takes API definitions written in a custom Domain Specific Language (DSL) a
      Role UserRole
    }
 
-   // Query parameter types
    type UserListParams {
      page int32
      pageSize int32
-     sortBy string
    }
 
-   // Server definition with multiple endpoint types
    server UserService {
-     // Path parameters and response types
      GetUser GET /users/{id UserID} returns(User)
-     
-     // Request bodies
      CreateUser POST /users body(CreateUserRequest) returns(User)
-     
-     // Query parameters
      ListUsers GET /users parameters(UserListParams) returns(repeated(User))
-     
-     // Combined path and query parameters
-     GetUsersByRole GET /users/role/{role UserRole} parameters(UserListParams) returns(repeated(User))
    }
    ```
 
 2. **Generate code** using the Gonzo CLI:
 
    ```bash
-   go run api/bin/gonzo-api.go generate -input server -language go -stack server -output server -package server
+   go run bin/gonzo-api.go generate -input server.api -language go -stack server -output ./server -package server
    ```
 
 3. **Implement your business logic** by satisfying the generated interface:
+
    ```go
    func (s *UserServiceImpl) GetUser(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, GetUserUrl]) (*User, error) {
      userID := *url.PathParams.Id
      // Your business logic here
      return &User{ID: &userID, Username: &username}, nil
    }
-
-   func (s *UserServiceImpl) ListUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[UserListParams, struct{}]) (*[]User, error) {
-     page := *url.Params.Page
-     pageSize := *url.Params.PageSize
-     // Your pagination logic here
-   }
    ```
-
-## Features
-
-- **Type Safety**: Generated code ensures type consistency between API definitions and implementations
-- **Multiple Language Support**: Generate Go servers and TypeScript clients from the same definition
-- **Custom DSL**: Simple, readable syntax for defining APIs
-- **Built-in HTTP Handling**: Automatic routing, request/response marshaling, and error handling
-- **Database Integration**: Works with SQL databases using tools like sqlc
-- **Authentication Support**: Built-in patterns for session management and user authentication
 
 ## Project Structure
 
-- `code_generator/generator/` - Core code generation engine (lexer, parser, generators)  
-- `code_generator/generator/languages/` - Language-specific templates (Go, TypeScript)
-- `runtume/` - Runtime libraries for generated servers (routing, error handling, URL parsing)
-- `bin/` - CLI tool for code generation
-- `server/` - Generated server code and manual implementations
-- `db/` - Database migrations and queries (using sqlc)
-- `internal/` - Main application entry point
-
-This project includes a complete example implementation of a user authentication API with signup, signin, signout, and user management endpoints.
+```
+bin/                          # CLI tool
+code_generator/               # Parser, generator, and templates
+runtime/                      # Runtime libraries imported by generated code
+  ├── cookies/                # Cookie handling
+  ├── gerrors/                # Structured error handling with HTTP status codes
+  ├── handle/                 # Generic type-safe request handler
+  ├── middleware/             # Middleware system
+  ├── router/                 # HTTP routing
+  ├── types/                  # Shared types
+  └── url/                    # URL parameter parsing
+api-definition-language/      # VSCode syntax highlighting for .api files
+```
 
 ## Language Specification
 
@@ -112,17 +88,15 @@ For detailed information about the API definition language syntax, see [API_SPEC
 
 ## CLI Usage
 
-The Gonzo CLI provides a `generate` command to create code from your API definitions:
-
 ### Basic Syntax
 
 ```bash
-gonzo-api generate [flags]
+go run bin/gonzo-api.go generate [flags]
 ```
 
-### Available Flags
+### Flags
 
-- `-input <name>`: Input file name (without .api extension). Required.
+- `-input <path>`: Path to the `.api` file. Required.
 - `-output <directory>`: Output directory for generated files. Required.
 - `-language <lang>`: Target language (`go` or `typescript`). Required.
 - `-stack <type>`: Generate for `server` or `client`. Required.
@@ -131,161 +105,59 @@ gonzo-api generate [flags]
 ### Examples
 
 **Generate Go server code:**
-
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -language go -stack server -output api/code_generator/generator/test_data/server -package server
+go run bin/gonzo-api.go generate -input server.api -language go -stack server -output ./server -package server
 ```
 
 **Generate TypeScript client code:**
-
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -language typescript -stack client -output api/code_generator/generator/test_data/client -package client
-```
-
-**Generate from your own API file:**
-
-```bash
-go run api/bin/gonzo-api.go generate -input server -language go -stack server -output ./generated -package myapi
+go run bin/gonzo-api.go generate -input server.api -language typescript -stack client -output ./client -package client
 ```
 
 ### What Gets Generated
 
-When you run the generate command, Gonzo creates:
-
 **For Go servers (`-stack server`):**
-
 - `types.go` - Type definitions, enums, and URL parameter structs
-- `server.go` - Server interface and router setup with type-safe handlers
+- `server.go` - Server interface and router setup
 - `server_impl.go` - Implementation struct (generated once, not overwritten)
-- Individual endpoint files (e.g., `get_user.go`, `create_user.go`) - Implementation stubs with proper signatures
+- Individual endpoint files (e.g., `get_user.go`) - Implementation stubs
 
 **For TypeScript clients (`-stack client`):**
-
 - `types.ts` - Type definitions, interfaces, and enums
-- `client.ts` - Client classes with methods for each endpoint
-- Full type safety with request/response types
+- `client.ts` - Client class with methods for each endpoint
 
-### Example Workflow
+## Using as a Library
 
-1. Create your API definition file (e.g., `server.api`)
-2. Run the generator:
-   ```bash
-   go run api/bin/gonzo-api.go generate -input server -language go -stack server -output ./server -package server
-   ```
-3. Implement the generated interface methods in your `*ServerImpl` struct
-4. Start your server using the generated router:
-   ```go
-   func main() {
-       impl := &MyServerImpl{}
-       router := &router.Router{}
-       StartMyServer(impl, router)
-       http.ListenAndServe(":8080", router)
-   }
-   ```
-
-## Database Setup and Migrations
-
-Gonzo includes database support with migrations using [golang-migrate](https://github.com/golang-migrate/migrate) and [sqlc](https://sqlc.dev/) for type-safe SQL queries.
-
-### Prerequisites
-
-Install PostgreSQL on your system:
-
-**macOS:**
-```bash
-brew install postgresql@14
-brew services start postgresql@14
-```
-
-**Or use [Postgres.app](https://postgresapp.com/)** for a GUI-based option.
-
-### Initial Database Setup
-
-1. **Create the database:**
-   ```bash
-   psql postgres -c "CREATE DATABASE gonzo;"
-   ```
-
-2. **Create the postgres user** (if it doesn't exist):
-   ```bash
-   psql postgres -c "CREATE USER postgres WITH PASSWORD 'postgres' SUPERUSER;"
-   ```
-
-3. **Run migrations:**
-   ```bash
-   make db-migration
-   ```
-
-   If you're using `mise` for Go version management:
-   ```bash
-   mise exec -- make db-migration
-   ```
-
-4. **Verify tables were created:**
-   ```bash
-   psql gonzo -c "\dt"
-   ```
-
-### Migration Commands
-
-The Makefile includes several migration-related commands:
-
-- `make db-migration` - Run all pending migrations
-- `make db-migration-down` - Rollback the last migration
-- `make new-db-migration name=your_migration_name` - Create a new migration file
-- `make generate-sqlc` - Generate Go code from SQL queries (using sqlc)
-
-### Database Configuration
-
-The default database connection string is:
-```
-postgres://postgres:postgres@localhost:5432/gonzo?sslmode=disable
-```
-
-To modify this, update the connection string in [db/db-migrations.go](db/db-migrations.go).
-
-### Creating New Migrations
-
-1. **Create a new migration file:**
-   ```bash
-   make new-db-migration name=add_user_profile
-   ```
-
-2. This creates two files in `db/migrations/`:
-   - `NNNN_add_user_profile.up.sql` - Migration to apply changes
-   - `NNNN_add_user_profile.down.sql` - Migration to rollback changes
-
-3. **Edit the files** with your SQL changes
-
-4. **Run the migration:**
-   ```bash
-   make db-migration
-   ```
-
-### Working with sqlc
-
-After creating or modifying SQL queries in `db/query/`, regenerate the Go code:
+Add Gonzo as a dependency in your app:
 
 ```bash
-make generate-sqlc
+go get github.com/medubin/gonzo
 ```
 
-This updates the type-safe query functions in `db/queries/`.
+Generated server code imports from the runtime packages:
+
+```go
+import "github.com/medubin/gonzo/runtime/gerrors"
+import "github.com/medubin/gonzo/runtime/router"
+import "github.com/medubin/gonzo/runtime/middleware"
+```
+
+For local development of both Gonzo and your app simultaneously, use Go workspaces:
+
+```bash
+go work init
+go work use ../gonzo
+go work use .
+```
 
 # TODO
-
-## service
-
-- [ ] finish auth
-- [ ] dockerize
-- [ ] cdk
 
 ## api
 
 - [x] error to http code handling
 - [x] export to typescript
 - [x] remove line removal
-- [x] add generated to files  
+- [x] add generated to files
 - [x] prevent duplicate types
 - [x] use templates
 - [x] handle nested maps and arrays
@@ -296,10 +168,8 @@ This updates the type-safe query functions in `db/queries/`.
 - [ ] nested routes
 - [ ] add file splitting
 - [ ] add options
-- [ ] add imports
-- [ ] middleware
 - [ ] validate types and fields
-- [ ] type cookies?
+- [ ] type cookies
 
 ## New Features
 
@@ -307,9 +177,4 @@ This updates the type-safe query functions in `db/queries/`.
 - [ ] Generate mock implementations
 - [ ] Add validation decorators
 - [ ] Support for streaming endpoints
-- [ ] Add rate limiting templates
 - [ ] Support for WebSocket endpoints
-
-## frontend
-
-- [ ] react

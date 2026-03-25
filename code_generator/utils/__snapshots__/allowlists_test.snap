@@ -1,4 +1,4 @@
 
 [TestGetLanguageStackConfig/all_supported_combinations_snapshot - 1]
-map[string]string{"go+server":"api/code_generator/generator/languages/go/server/config.yaml", "typescript+client":"api/code_generator/generator/languages/typescript/client/config.yaml"}
+map[string]string{"go+server":"code_generator/generator/languages/go/server/config.yaml", "typescript+client":"code_generator/generator/languages/typescript/client/config.yaml"}
 ---

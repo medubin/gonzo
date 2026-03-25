@@ -4,50 +4,41 @@ This guide helps Claude AI effectively work with the Gonzo code generation proje
 
 ## About Gonzo
 
-Gonzo is a modern code generation tool that creates type-safe web API servers and clients from a custom API definition language. It consists of:
+Gonzo is a standalone Go library and CLI tool that creates type-safe web API servers and clients from a custom API definition language. It consists of:
 
 - **Core Parser/Generator**: Lexer, parser, and code generation engine
-- **Language Templates**: Go server and TypeScript client templates  
+- **Language Templates**: Go server and TypeScript client templates
 - **Runtime Libraries**: HTTP routing, middleware, error handling, URL parsing
 - **CLI Tool**: Command-line interface for code generation
-- **Example Implementation**: Complete user authentication API
+
+Gonzo is designed to be imported as a library by app repos. The runtime packages (`runtime/`) are imported by generated server code. The CLI (`bin/gonzo-api.go`) is run from the consuming app to generate code.
 
 ## Common Bash Commands
 
 **Generate Go server code from API definition:**
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -language go -stack server -output api/code_generator/generator/test_data/server -package server
+go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_server.api -language go -stack server -output code_generator/generator/test_data/server -package server
 ```
 
 **Generate TypeScript client code:**
 ```bash
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -language typescript -stack client -output api/code_generator/generator/test_data/client -package client
+go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_server.api -language typescript -stack client -output code_generator/generator/test_data/client -package client
 ```
 
 **Run the example server:**
 ```bash
-go run api/code_generator/generator/test_data/main.go
-```
-
-**Run the main application:**
-```bash
-make run
-# OR
-go run internal/main.go
+go run code_generator/generator/test_data/main.go
 ```
 
 **Run tests:**
 ```bash
 go test ./...
-go test -v api/code_generator/generator/...
+go test -v code_generator/generator/...
 ```
 
-**Database operations:**
+**Update snapshots after intentional changes:**
 ```bash
-make db-migration          # Run migrations
-make db-migration-down     # Rollback migrations
-make generate-sqlc         # Generate database code
-make new-db-migration name=create_table  # Create new migration
+UPDATE_SNAPS=true go test -v -run TestCoreGenerate ./code_generator/generator/...
 ```
 
 ## Code Style Guidelines
@@ -114,7 +105,7 @@ return nil, fmt.Errorf("missing user ID")
 - **Middleware** uses appropriate gerrors types (e.g., RequireBody uses `MissingArgumentError`)
 - **Handler templates** should be updated to use gerrors for consistent error responses
 - **Enum conversion functions** automatically generated for all enum types:
-  - `EnumFromType()` - Convert primitive values to enum constants  
+  - `EnumFromType()` - Convert primitive values to enum constants
   - `EnumToType()` - Convert enum constants to primitive values
   - `EnumIsValid()` - Validate enum values
   - Supports all primitive types (string, int32, int64, float32, float64, bool)
@@ -122,19 +113,21 @@ return nil, fmt.Errorf("missing user ID")
 ## Workflow Instructions
 
 **When modifying code generation:**
-1. Update templates in `api/code_generator/generator/languages/`
-2. Test with: `rm -rf api/code_generator/generator/test_data/server && [generate command]`
-3. Verify generated code compiles: `go build api/code_generator/generator/test_data/server`
-4. Run tests to ensure no regressions
+1. Update templates in `code_generator/generator/languages/`
+2. Test with: `rm -rf code_generator/generator/test_data/server && [generate command]`
+3. Verify generated code compiles: `go build code_generator/generator/test_data/server`
+4. Run tests to ensure no regressions: `go test ./...`
+5. Update snapshots if output changed intentionally: `UPDATE_SNAPS=true go test -v -run TestCoreGenerate ./code_generator/generator/...`
 
 **When adding new language support:**
-1. Create new directory in `api/code_generator/generator/languages/[language]/`
+1. Create new directory in `code_generator/generator/languages/[language]/`
 2. Add `config.yaml` with templates and type mappings
-3. Update core generator to handle language-specific patterns
+3. Update `code_generator/utils/allowlists.go` to register the new language/stack path
+4. Update core generator to handle language-specific patterns
 
 **When working with middleware:**
 - Use `RouteWithInfo()` for generated routes to provide proper endpoint metadata
-- Test middleware with example server in `api/code_generator/generator/test_data/main.go`
+- Test middleware with example server in `code_generator/generator/test_data/main.go`
 - Middleware should avoid HTTP primitives, use abstracted request/response types
 
 **Automatic middleware features:**
@@ -145,37 +138,53 @@ return nil, fmt.Errorf("missing user ID")
 ## Project Structure
 
 ```
-api/
-├── bin/gonzo-api.go              # CLI tool entry point
-├── code_generator/
-│   ├── fileio/                   # File I/O operations
-│   ├── generator/
-│   │   ├── core_generator.go     # Core generation engine
-│   │   ├── json_generator.go     # JSON parsing
-│   │   ├── languages/
-│   │   │   ├── go/server/        # Go templates and config
-│   │   │   └── typescript/client/ # TypeScript templates
-│   │   └── test_data/            # Test API definitions and generated code
-│   └── utils/                    # Language configuration utilities
-└── src/                          # Runtime libraries
-    ├── cookies/                  # Cookie handling
-    ├── gerrors/                  # Error handling
-    ├── handle/                   # Generic request handler
-    ├── middleware/               # Middleware system
-    ├── router/                   # HTTP routing
-    └── url/                      # URL parameter parsing
+bin/
+└── gonzo-api.go              # CLI tool entry point
 
-server/                           # Generated server implementation
-db/                              # Database migrations and queries (sqlc)
-internal/                        # Main application entry point
+code_generator/
+├── fileio/                   # File I/O operations
+├── generator/
+│   ├── core_generator.go     # Core generation engine
+│   ├── json_generator.go     # Lexer and parser for .api files
+│   ├── languages/
+│   │   ├── go/server/        # Go server templates and config
+│   │   └── typescript/client/ # TypeScript client templates
+│   └── test_data/            # Test API definitions and generated code
+└── utils/                    # Language/stack config path registry
+
+runtime/                      # Runtime libraries imported by generated code
+├── cookies/                  # Cookie handling
+├── gerrors/                  # Structured error handling with HTTP status codes
+├── handle/                   # Generic type-safe request handler
+├── middleware/               # Middleware system
+├── router/                   # HTTP routing
+├── types/                    # Shared types (RouteInfo, etc.)
+└── url/                      # URL parameter parsing
+
+api-definition-language/      # VSCode syntax highlighting for .api files
 ```
 
 ## Development Environment
 
-- **Go Version**: 1.18+ (see go.mod)
-- **Database**: PostgreSQL (for example app)
+- **Go Version**: 1.22+ (see go.mod)
 - **Dependencies**: Uses Go modules, run `go mod tidy` if needed
-- **Templates**: YAML-based Go templates in `languages/` directories
+- **Templates**: YAML-based Go templates in `code_generator/generator/languages/` directories
+
+## Using Gonzo from an App Repo
+
+Consuming repos import gonzo as a Go module:
+
+```go
+import "github.com/medubin/gonzo/runtime/gerrors"
+import "github.com/medubin/gonzo/runtime/router"
+```
+
+During local development of both gonzo and an app simultaneously, use Go workspaces:
+```bash
+go work init
+go work use ../gonzo
+go work use .
+```
 
 ## Repository Etiquette
 
@@ -191,7 +200,7 @@ internal/                        # Main application entry point
 
 - **File Extension**: `.api`
 - **Syntax**: See `API_SPEC.md` for complete language specification
-- **Test Files**: Use `api/code_generator/generator/test_data/test_server.api` as reference
+- **Test Files**: Use `code_generator/generator/test_data/test_server.api` as reference
 - **Types**: All struct fields are pointers with `omitempty` for proper JSON semantics
 - **Validation**: Required fields use simple `nil` checks
 - **Collections**: Arrays (`repeated(Type)`) and maps (`map(Key: Value)`) work anywhere
@@ -200,7 +209,7 @@ internal/                        # Main application entry point
 ## Debugging Tips
 
 **Generation Issues:**
-- Check template syntax in `languages/[lang]/[stack]/config.yaml`
+- Check template syntax in `code_generator/generator/languages/[lang]/[stack]/config.yaml`
 - Verify template data structure matches what templates expect
 - Use `rm -rf [output]` before regenerating to avoid stale files
 
@@ -209,7 +218,7 @@ internal/                        # Main application entry point
 - Verify route registration uses `RouteWithInfo` for proper metadata
 - Test with curl or example client calls
 
-**Type Issues:**  
+**Type Issues:**
 - Ensure all fields are pointers for proper JSON unmarshaling
 - Check that required field validation uses `== nil`
 - Verify imports are only added when actually needed
@@ -218,16 +227,13 @@ internal/                        # Main application entry point
 
 **Unit Tests:**
 ```bash
-go test code_generator/generator/
-go test runtime/url/
-go test api/code_generator/fileio/
-go test api/code_generator/utils/
+go test ./code_generator/...
+go test ./runtime/...
 ```
 
 **All Tests:**
 ```bash
 go test ./...
-go test -v api/code_generator/...
 ```
 
 **Snapshot Testing:**
@@ -235,11 +241,11 @@ Gonzo uses [go-snaps](https://github.com/gkampitakis/go-snaps) for snapshot test
 
 ```bash
 # Run snapshot tests (compares against existing snapshots)
-go test -v -run TestCoreGenerate
-go test -v -run TestJSONGenerate
+go test -v -run TestCoreGenerate ./code_generator/generator/...
+go test -v -run TestJSONGenerate ./code_generator/generator/...
 
 # Update snapshots when making intentional changes
-# Snapshots are auto-generated on first run or when missing
+UPDATE_SNAPS=true go test -v -run TestCoreGenerate ./code_generator/generator/...
 ```
 
 **Snapshot test files:**
@@ -251,11 +257,11 @@ go test -v -run TestJSONGenerate
 **Integration Tests:**
 ```bash
 # Generate code and test compilation
-rm -rf api/code_generator/generator/test_data/server
-go run api/bin/gonzo-api.go generate -input api/code_generator/generator/test_data/test_server -language go -stack server -output api/code_generator/generator/test_data/server -package server
-go build api/code_generator/generator/test_data/server
+rm -rf code_generator/generator/test_data/server
+go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_server.api -language go -stack server -output code_generator/generator/test_data/server -package server
+go build ./code_generator/generator/test_data/server/...
 
 # Test server functionality
-go run api/code_generator/generator/test_data/main.go &
+go run code_generator/generator/test_data/main.go &
 curl -X POST http://localhost:8080/users -H "Content-Type: application/json" -d '{"username":"test","email":"test@example.com","password":"password"}'
 ```

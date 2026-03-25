@@ -12,13 +12,13 @@ import (
 func TestGetLanguageStackConfig(t *testing.T) {
 	t.Run("supported Go server configuration", func(t *testing.T) {
 		result := utils.GetLanguageStackConfig("go", "server")
-		expected := "api/code_generator/generator/languages/go/server/config.yaml"
+		expected := "code_generator/generator/languages/go/server/config.yaml"
 		assert.Equal(t, expected, result)
 	})
 
 	t.Run("supported TypeScript client configuration", func(t *testing.T) {
 		result := utils.GetLanguageStackConfig("typescript", "client")
-		expected := "api/code_generator/generator/languages/typescript/client/config.yaml"
+		expected := "code_generator/generator/languages/typescript/client/config.yaml"
 		assert.Equal(t, expected, result)
 	})
 
@@ -149,8 +149,8 @@ func TestGetLanguageStackConfig(t *testing.T) {
 		for _, tc := range testCases {
 			result := utils.GetLanguageStackConfig(tc.language, tc.stack)
 			if result != "" {
-				// Verify path format: api/code_generator/generator/languages/{language}/{stack}/config.yaml
-				assert.Contains(t, result, "api/code_generator/generator/languages/")
+				// Verify path format: code_generator/generator/languages/{language}/{stack}/config.yaml
+				assert.Contains(t, result, "code_generator/generator/languages/")
 				assert.Contains(t, result, tc.language)
 				assert.Contains(t, result, tc.stack)
 				assert.True(t, strings.HasSuffix(result, "config.yaml"))

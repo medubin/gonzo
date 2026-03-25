@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/medubin/gonzo/api/code_generator/fileio"
+	"github.com/medubin/gonzo/code_generator/fileio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
