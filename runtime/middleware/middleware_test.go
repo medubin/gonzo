@@ -1,0 +1,201 @@
+package middleware_test
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	"github.com/medubin/gonzo/runtime/middleware"
+	"github.com/medubin/gonzo/runtime/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// --- BaseMiddleware ---
+
+type baseOnlyMiddleware struct {
+	middleware.BaseMiddleware
+}
+
+func TestBaseMiddleware_BeforeRouting(t *testing.T) {
+	m := &baseOnlyMiddleware{}
+	req := &middleware.MiddlewareRequest{Method: "GET", Path: "/"}
+	result, err := m.BeforeRouting(req)
+	require.NoError(t, err)
+	assert.Equal(t, req, result)
+}
+
+func TestBaseMiddleware_BeforeHandler(t *testing.T) {
+	m := &baseOnlyMiddleware{}
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "GET", Path: "/"}
+	info := &types.RouteInfo{}
+
+	outCtx, outReq, err := m.BeforeHandler(ctx, req, info)
+	require.NoError(t, err)
+	assert.Equal(t, ctx, outCtx)
+	assert.Equal(t, req, outReq)
+}
+
+func TestBaseMiddleware_AfterHandler(t *testing.T) {
+	m := &baseOnlyMiddleware{}
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, resp, outResp)
+}
+
+func TestBaseMiddleware_OnError(t *testing.T) {
+	m := &baseOnlyMiddleware{}
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{}
+	info := &types.RouteInfo{}
+	inputErr := assert.AnError
+
+	outResp, err := m.OnError(ctx, req, inputErr, info)
+	assert.Nil(t, outResp)
+	assert.Equal(t, inputErr, err)
+}
+
+// --- Header conversion ---
+
+func TestConvertHeadersFromHTTP(t *testing.T) {
+	h := http.Header{}
+	h.Set("Content-Type", "application/json")
+	h.Set("Authorization", "Bearer token")
+
+	result := middleware.ConvertHeadersFromHTTP(h)
+
+	assert.Equal(t, "application/json", result["Content-Type"])
+	assert.Equal(t, "Bearer token", result["Authorization"])
+}
+
+func TestConvertHeadersFromHTTP_Empty(t *testing.T) {
+	result := middleware.ConvertHeadersFromHTTP(http.Header{})
+	assert.Empty(t, result)
+}
+
+func TestConvertHeadersToHTTP(t *testing.T) {
+	m := map[string]string{
+		"Content-Type": "application/json",
+		"X-Custom":     "value",
+	}
+	result := middleware.ConvertHeadersToHTTP(m)
+	assert.Equal(t, "application/json", result.Get("Content-Type"))
+	assert.Equal(t, "value", result.Get("X-Custom"))
+}
+
+func TestConvertHeadersToHTTP_Empty(t *testing.T) {
+	result := middleware.ConvertHeadersToHTTP(map[string]string{})
+	assert.Empty(t, result)
+}
+
+func TestConvertHeadersRoundTrip(t *testing.T) {
+	original := http.Header{}
+	original.Set("Accept", "application/json")
+	original.Set("X-Request-ID", "abc123")
+
+	converted := middleware.ConvertHeadersFromHTTP(original)
+	restored := middleware.ConvertHeadersToHTTP(converted)
+
+	assert.Equal(t, original.Get("Accept"), restored.Get("Accept"))
+	assert.Equal(t, original.Get("X-Request-ID"), restored.Get("X-Request-ID"))
+}
+
+// --- RequireBodyMiddleware ---
+
+func TestRequireBody_NilBody_ReturnsError(t *testing.T) {
+	m := middleware.NewRequireBody()
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Body: nil}
+	info := &types.RouteInfo{}
+
+	_, _, err := m.BeforeHandler(ctx, req, info)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "body")
+}
+
+func TestRequireBody_WithBody_PassesThrough(t *testing.T) {
+	m := middleware.NewRequireBody()
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Body: map[string]any{"key": "val"}}
+	info := &types.RouteInfo{}
+
+	outCtx, outReq, err := m.BeforeHandler(ctx, req, info)
+	require.NoError(t, err)
+	assert.Equal(t, ctx, outCtx)
+	assert.Equal(t, req, outReq)
+}
+
+// --- CORSMiddleware ---
+
+func TestCORSMiddleware_AfterHandler_AddsHeaders(t *testing.T) {
+	m := middleware.NewCORSMiddleware(
+		[]string{"https://example.com"},
+		[]string{"GET", "POST"},
+		[]string{"Content-Type", "Authorization"},
+	)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "GET"}
+	resp := &middleware.MiddlewareResponse{Status: 200, Headers: map[string]string{}}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com", outResp.Headers["Access-Control-Allow-Origin"])
+	assert.Equal(t, "GET, POST", outResp.Headers["Access-Control-Allow-Methods"])
+	assert.Equal(t, "Content-Type, Authorization", outResp.Headers["Access-Control-Allow-Headers"])
+	assert.Equal(t, "true", outResp.Headers["Access-Control-Allow-Credentials"])
+}
+
+func TestCORSMiddleware_AfterHandler_InitializesNilHeaders(t *testing.T) {
+	m := middleware.NewCORSMiddleware([]string{"*"}, nil, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "GET"}
+	resp := &middleware.MiddlewareResponse{Status: 200, Headers: nil}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.NotNil(t, outResp.Headers)
+	assert.Equal(t, "*", outResp.Headers["Access-Control-Allow-Origin"])
+}
+
+func TestCORSMiddleware_Preflight_Sets204(t *testing.T) {
+	m := middleware.NewCORSMiddleware([]string{"*"}, []string{"GET"}, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "OPTIONS"}
+	resp := &middleware.MiddlewareResponse{Status: 200, Body: "should be cleared"}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, 204, outResp.Status)
+	assert.Nil(t, outResp.Body)
+}
+
+func TestCORSMiddleware_BeforeRouting_PassesThrough(t *testing.T) {
+	m := middleware.NewCORSMiddleware(nil, nil, nil)
+	req := &middleware.MiddlewareRequest{Method: "GET", Path: "/"}
+
+	result, err := m.BeforeRouting(req)
+	require.NoError(t, err)
+	assert.Equal(t, req, result)
+}
+
+func TestCORSMiddleware_EmptySlices_NoHeaders(t *testing.T) {
+	m := middleware.NewCORSMiddleware(nil, nil, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "GET"}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Empty(t, outResp.Headers["Access-Control-Allow-Origin"])
+	assert.Empty(t, outResp.Headers["Access-Control-Allow-Methods"])
+}
