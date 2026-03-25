@@ -15,21 +15,13 @@ func Handle[Body any, response any, Params any, PathParams any](handler func(ctx
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		var body *Body
-		
-		// Only attempt to decode if there might be JSON content
-		if r.ContentLength != 0 {
-			err := json.NewDecoder(r.Body).Decode(&body)
-			if err != nil {
-				if err == io.EOF {
-					// Empty body, body remains nil
-				} else {
-					gerr := gerrors.MalformedError(err.Error())
-					gerrors.JSONError(w, gerr)
-					return
-				}
-			}
+
+		err := json.NewDecoder(r.Body).Decode(&body)
+		if err != nil && err != io.EOF {
+			gerr := gerrors.MalformedError(err.Error())
+			gerrors.JSONError(w, gerr)
+			return
 		}
-		// If no content or EOF, body remains nil
 
 		cookies := cookies.New(r, w)
 
@@ -44,6 +36,7 @@ func Handle[Body any, response any, Params any, PathParams any](handler func(ctx
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			gerrors.JSONError(w, err)

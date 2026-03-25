@@ -140,7 +140,10 @@ func TestCORSMiddleware_AfterHandler_AddsHeaders(t *testing.T) {
 		[]string{"Content-Type", "Authorization"},
 	)
 	ctx := context.Background()
-	req := &middleware.MiddlewareRequest{Method: "GET"}
+	req := &middleware.MiddlewareRequest{
+		Method:  "GET",
+		Headers: map[string]string{"Origin": "https://example.com"},
+	}
 	resp := &middleware.MiddlewareResponse{Status: 200, Headers: map[string]string{}}
 	info := &types.RouteInfo{}
 
@@ -155,7 +158,7 @@ func TestCORSMiddleware_AfterHandler_AddsHeaders(t *testing.T) {
 func TestCORSMiddleware_AfterHandler_InitializesNilHeaders(t *testing.T) {
 	m := middleware.NewCORSMiddleware([]string{"*"}, nil, nil)
 	ctx := context.Background()
-	req := &middleware.MiddlewareRequest{Method: "GET"}
+	req := &middleware.MiddlewareRequest{Method: "GET", Headers: map[string]string{}}
 	resp := &middleware.MiddlewareResponse{Status: 200, Headers: nil}
 	info := &types.RouteInfo{}
 
@@ -168,7 +171,7 @@ func TestCORSMiddleware_AfterHandler_InitializesNilHeaders(t *testing.T) {
 func TestCORSMiddleware_Preflight_Sets204(t *testing.T) {
 	m := middleware.NewCORSMiddleware([]string{"*"}, []string{"GET"}, nil)
 	ctx := context.Background()
-	req := &middleware.MiddlewareRequest{Method: "OPTIONS"}
+	req := &middleware.MiddlewareRequest{Method: "OPTIONS", Headers: map[string]string{}}
 	resp := &middleware.MiddlewareResponse{Status: 200, Body: "should be cleared"}
 	info := &types.RouteInfo{}
 
@@ -176,6 +179,73 @@ func TestCORSMiddleware_Preflight_Sets204(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 204, outResp.Status)
 	assert.Nil(t, outResp.Body)
+}
+
+func TestCORSMiddleware_MultipleOrigins_EchosMatchingOrigin(t *testing.T) {
+	m := middleware.NewCORSMiddleware(
+		[]string{"https://a.com", "https://b.com"},
+		nil, nil,
+	)
+	ctx := context.Background()
+	info := &types.RouteInfo{}
+
+	// Request from b.com — should echo b.com, not a joined string
+	req := &middleware.MiddlewareRequest{
+		Method:  "GET",
+		Headers: map[string]string{"Origin": "https://b.com"},
+	}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, "https://b.com", outResp.Headers["Access-Control-Allow-Origin"])
+}
+
+func TestCORSMiddleware_DisallowedOrigin_NoOriginHeader(t *testing.T) {
+	m := middleware.NewCORSMiddleware([]string{"https://allowed.com"}, nil, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{
+		Method:  "GET",
+		Headers: map[string]string{"Origin": "https://evil.com"},
+	}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Empty(t, outResp.Headers["Access-Control-Allow-Origin"])
+	assert.Empty(t, outResp.Headers["Access-Control-Allow-Credentials"])
+}
+
+func TestCORSMiddleware_WildcardOrigin_NoCredentials(t *testing.T) {
+	// Access-Control-Allow-Credentials must not be set when origin is "*"
+	// — browsers block credentialed requests to wildcard origins.
+	m := middleware.NewCORSMiddleware([]string{"*"}, nil, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{Method: "GET", Headers: map[string]string{}}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, "*", outResp.Headers["Access-Control-Allow-Origin"])
+	assert.Empty(t, outResp.Headers["Access-Control-Allow-Credentials"])
+}
+
+func TestCORSMiddleware_SpecificOrigin_SetsCredentials(t *testing.T) {
+	m := middleware.NewCORSMiddleware([]string{"https://app.com"}, nil, nil)
+	ctx := context.Background()
+	req := &middleware.MiddlewareRequest{
+		Method:  "GET",
+		Headers: map[string]string{"Origin": "https://app.com"},
+	}
+	resp := &middleware.MiddlewareResponse{Status: 200}
+	info := &types.RouteInfo{}
+
+	outResp, err := m.AfterHandler(ctx, req, resp, info)
+	require.NoError(t, err)
+	assert.Equal(t, "https://app.com", outResp.Headers["Access-Control-Allow-Origin"])
+	assert.Equal(t, "true", outResp.Headers["Access-Control-Allow-Credentials"])
 }
 
 func TestCORSMiddleware_BeforeRouting_PassesThrough(t *testing.T) {

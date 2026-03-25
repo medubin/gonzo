@@ -105,6 +105,44 @@ func TestHandle_HandlerError(t *testing.T) {
 	assert.Contains(t, errResp["error"], "thing not found")
 }
 
+func TestHandle_UnknownContentLength_BodyParsed(t *testing.T) {
+	// ContentLength == -1 (chunked / unknown) must not prevent body parsing.
+	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
+			require.NotNil(t, b)
+			return &testResponse{Greeting: "hello " + b.Name}, nil
+		},
+	)
+
+	body := `{"name":"chunked"}`
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.ContentLength = -1 // unknown / chunked
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp testResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.Equal(t, "hello chunked", resp.Greeting)
+}
+
+func TestHandle_SuccessResponse_HasJSONContentType(t *testing.T) {
+	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
+			return &testResponse{Greeting: "ok"}, nil
+		},
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestHandle_QueryParamsParsed(t *testing.T) {
 	type qParams struct {
 		Page *string `json:"page,omitempty"`

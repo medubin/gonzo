@@ -37,19 +37,36 @@ func (m *CORSMiddleware) AfterHandler(ctx context.Context, req *MiddlewareReques
 		resp.Headers = make(map[string]string)
 	}
 
-	// Add CORS headers
-	if len(m.AllowedOrigins) > 0 {
-		resp.Headers["Access-Control-Allow-Origin"] = strings.Join(m.AllowedOrigins, ", ")
+	// Match the request's Origin against the allowed list and echo back only
+	// the matching value. Access-Control-Allow-Origin must be a single origin
+	// or "*" — joining multiple values into one header is not valid per spec.
+	requestOrigin := req.Headers["Origin"]
+	allowedOrigin := ""
+	for _, origin := range m.AllowedOrigins {
+		if origin == "*" {
+			allowedOrigin = "*"
+			break
+		}
+		if origin == requestOrigin {
+			allowedOrigin = requestOrigin
+			break
+		}
 	}
+
+	if allowedOrigin != "" {
+		resp.Headers["Access-Control-Allow-Origin"] = allowedOrigin
+		// Credentials require a specific origin — not allowed with "*"
+		if allowedOrigin != "*" {
+			resp.Headers["Access-Control-Allow-Credentials"] = "true"
+		}
+	}
+
 	if len(m.AllowedMethods) > 0 {
 		resp.Headers["Access-Control-Allow-Methods"] = strings.Join(m.AllowedMethods, ", ")
 	}
 	if len(m.AllowedHeaders) > 0 {
 		resp.Headers["Access-Control-Allow-Headers"] = strings.Join(m.AllowedHeaders, ", ")
 	}
-	
-	// Enable credentials for cookie-based authentication
-	resp.Headers["Access-Control-Allow-Credentials"] = "true"
 
 	// Handle preflight requests
 	if req.Method == "OPTIONS" {
