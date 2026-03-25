@@ -217,6 +217,33 @@ func TestWriteToFile(t *testing.T) {
 		assert.Contains(t, err.Error(), "permission denied")
 	})
 
+	t.Run("returns error when parent directory does not exist", func(t *testing.T) {
+		tempDir := t.TempDir()
+		nestedDir := filepath.Join(tempDir, "a", "b", "c")
+
+		err := fileio.WriteToFile(nestedDir, "out.go", "content", false)
+		require.Error(t, err)
+
+		// No file should have been created — the error came from mkdir, not os.Create
+		_, statErr := os.Stat(filepath.Join(nestedDir, "out.go"))
+		assert.True(t, os.IsNotExist(statErr))
+	})
+
+	t.Run("succeeds when directory already exists", func(t *testing.T) {
+		// os.Mkdir returns ErrExist for an existing directory; the fix explicitly ignores
+		// that error so repeated writes to the same directory don't fail.
+		tempDir := t.TempDir()
+		fileName := "repeat.go"
+		content := "package main"
+
+		err := fileio.WriteToFile(tempDir, fileName, content, false)
+		require.NoError(t, err)
+
+		// Write again to the same (now-existing) directory
+		err = fileio.WriteToFile(tempDir, fileName, content, false)
+		require.NoError(t, err)
+	})
+
 	t.Run("generated code file writing", func(t *testing.T) {
 		// Test scenario matching actual usage in code generator
 		tempDir := t.TempDir()

@@ -6,7 +6,9 @@ import (
 )
 
 func WriteToFile(directory string, name string, output string, safe bool) error {
-	_ = os.Mkdir(directory, os.ModePerm)
+	if err := os.Mkdir(directory, os.ModePerm); err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
 
 	filename := directory + "/" + name
 
@@ -21,13 +23,10 @@ func WriteToFile(directory string, name string, output string, safe bool) error 
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	_, err = file.WriteString(output)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func fileExists(filename string) bool {
