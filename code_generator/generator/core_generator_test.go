@@ -2,13 +2,61 @@ package generator_test
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/medubin/gonzo/code_generator/fileio"
 	"github.com/medubin/gonzo/code_generator/generator"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestTypeScript_ImportOnlyDirectlyReferencedTypes guards against a regression
+// where getUsedTypes recurses into struct fields, causing types that are only
+// used as fields of other types (never directly by an endpoint) to appear in
+// the generated import statement.
+func TestTypeScript_ImportOnlyDirectlyReferencedTypes(t *testing.T) {
+	const api = `
+type NestedType {
+  Value string
+}
+
+type ParentType {
+  Nested NestedType
+}
+
+server TestServer {
+  GetParent GET /parent returns(ParentType)
+}
+`
+	parser := generator.NewParser(api)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+	require.NoError(t, err)
+
+	results, err := g.Generate(parsed, "client")
+	require.NoError(t, err)
+
+	client := results["client.ts"]
+	require.NotEmpty(t, client)
+
+	// ParentType is the direct return type — it must be imported.
+	assert.Contains(t, client, "ParentType")
+
+	// NestedType is only a field of ParentType, never directly referenced by
+	// an endpoint. It must NOT appear in the import statement.
+	importLine := ""
+	for _, line := range strings.Split(client, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "import type") {
+			importLine = line
+			break
+		}
+	}
+	assert.NotContains(t, importLine, "NestedType")
+}
 
 func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	// Parse the test API
