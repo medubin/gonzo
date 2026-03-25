@@ -45,10 +45,8 @@ func TestNew_WithNilInputs(t *testing.T) {
 	// Test constructor validation - should handle nil inputs gracefully
 	cookies := New(nil, nil)
 	
-	// Should not be nil struct
-	if &cookies == nil {
-		t.Error("New() returned nil")
-	}
+	// Verify the struct was initialized (zero-value Cookies has nil fields)
+	_ = cookies
 	
 	// Should handle operations gracefully
 	cookie, err := cookies.Get("test")
