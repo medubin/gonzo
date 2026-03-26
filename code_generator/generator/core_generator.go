@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -13,6 +14,20 @@ import (
 	"github.com/iancoleman/strcase"
 	"gopkg.in/yaml.v2"
 )
+
+// multipleBlankLines matches a newline followed by 2+ lines that are empty or whitespace-only.
+var multipleBlankLines = regexp.MustCompile(`\n([ \t]*\n){2,}`)
+
+// collapseBlankLines strips trailing whitespace from every line, then reduces any run of
+// 3+ consecutive blank lines to exactly one blank line.
+func collapseBlankLines(s string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " \t")
+	}
+	s = strings.Join(lines, "\n")
+	return multipleBlankLines.ReplaceAllString(s, "\n\n")
+}
 
 // LanguageSettings holds language-specific settings
 type LanguageSettings struct {
@@ -231,7 +246,7 @@ func (tg *TemplateGenerator) Generate(api *APIDefinition, packageName string) (m
 			}
 
 			filename := templateName + tg.config.FileExt
-			files[filename] = buf.String()
+			files[filename] = collapseBlankLines(buf.String())
 		}
 	}
 
@@ -262,7 +277,7 @@ func (tg *TemplateGenerator) generateEndpointFiles(tmpl *template.Template, data
 
 			// Use endpoint name for filename (snake case)
 			filename := fmt.Sprintf("%s%s", strcase.ToSnake(endpoint.Name), tg.config.FileExt)
-			files[filename] = buf.String()
+			files[filename] = collapseBlankLines(buf.String())
 		}
 	}
 

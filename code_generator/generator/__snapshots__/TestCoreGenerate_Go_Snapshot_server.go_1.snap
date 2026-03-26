@@ -10,7 +10,6 @@ import (
     "github.com/medubin/gonzo/runtime/url"
 )
 
-
 /*
  * Servers contain endpoints.
  * Each endpoint is defined as a name, verb url, optional body and optional returns

@@ -21,10 +21,10 @@ export class UserServiceClient {
 	// GET endpoints do not contain a body
   async getUser(params: GetUserParams, options?: RequestOptions): Promise<DetailedUser> {
     let url = `${this.baseUrl}/users/{id}`;
-    
+
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -42,8 +42,7 @@ export class UserServiceClient {
 	// body and return always refer to a struct type
   async createUser(body: CreateUserRequest, options?: RequestOptions): Promise<User> {
     const url = `${this.baseUrl}/users`;
-    
-    
+
     const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -63,10 +62,10 @@ export class UserServiceClient {
   }
   async updateUser(body: UpdateUserRequest, params: UpdateUserParams, options?: RequestOptions): Promise<User> {
     let url = `${this.baseUrl}/users/{id}`;
-    
+
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
-    
+
     const response = await fetch(url, {
       method: 'PUT',
       body: JSON.stringify(body),
@@ -86,10 +85,10 @@ export class UserServiceClient {
   }
   async deleteUser(body: DeleteUserRequest, params: DeleteUserParams, options?: RequestOptions): Promise<User> {
     let url = `${this.baseUrl}/users/{id}`;
-    
+
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
-    
+
     const response = await fetch(url, {
       method: 'DELETE',
       body: JSON.stringify(body),
@@ -109,10 +108,10 @@ export class UserServiceClient {
   }
   async patchUserProfile(body: UserProfileUpdate, params: PatchUserProfileParams, options?: RequestOptions): Promise<UserProfile> {
     let url = `${this.baseUrl}/users/{id}/profile`;
-    
+
     // Replace path parameters
     url = url.replace('{id}', String(params.id));
-    
+
     const response = await fetch(url, {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -133,8 +132,7 @@ export class UserServiceClient {
 	// Endpoints can take a struct of parameters
   async listUsers(parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users`;
-    
-    
+
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -145,7 +143,7 @@ export class UserServiceClient {
     if (searchParams.toString()) {
       url += '?' + searchParams.toString();
     }
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -161,8 +159,7 @@ export class UserServiceClient {
   }
   async searchUsers(parameters: UserSearchParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users/search`;
-    
-    
+
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -173,7 +170,7 @@ export class UserServiceClient {
     if (searchParams.toString()) {
       url += '?' + searchParams.toString();
     }
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -189,10 +186,10 @@ export class UserServiceClient {
   }
   async getUsersByRole(params: GetUsersByRoleParams, parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users/role/{role}`;
-    
+
     // Replace path parameters
     url = url.replace('{role}', String(params.role));
-    
+
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -203,7 +200,7 @@ export class UserServiceClient {
     if (searchParams.toString()) {
       url += '?' + searchParams.toString();
     }
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
@@ -228,10 +225,10 @@ export class NotificationServiceClient {
 
   async getUserNotifications(params: GetUserNotificationsParams, parameters: UserListParams, options?: RequestOptions): Promise<Array<Notification>> {
     let url = `${this.baseUrl}/users/{userId}/notifications`;
-    
+
     // Replace path parameters
     url = url.replace('{userId}', String(params.userId));
-    
+
     // Add query parameters
     const searchParams = new URLSearchParams();
     Object.entries(parameters).forEach(([key, value]) => {
@@ -242,7 +239,7 @@ export class NotificationServiceClient {
     if (searchParams.toString()) {
       url += '?' + searchParams.toString();
     }
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: options?.headers,
