@@ -165,16 +165,49 @@ go work use .
 - [x] upcase first letter for the getter function
 - [x] flip the typing so that golang complains about the incorrect endpoint function instead of complaining in main
 - [x] simplify server parameters (now uses URL[params, pathParams])
-- [ ] nested routes
-- [ ] add file splitting
-- [ ] add options
-- [ ] validate types and fields
-- [ ] type cookies
 
-## New Features
+## Language & API Definition
 
-- [ ] OpenAPI/Swagger export
-- [ ] Generate mock implementations
-- [ ] Add validation decorators
-- [ ] Support for streaming endpoints
-- [ ] Support for WebSocket endpoints
+- [ ] **Nested routes** — Allow grouping endpoints under a common path prefix (e.g., `/users/{id}/...`) so related endpoints share path parameters without repeating them on every definition.
+
+- [ ] **Import/module system** — Enable splitting large API definitions across multiple `.api` files and importing shared types. Right now everything must live in a single monolithic file, which becomes unwieldy for large APIs.
+
+- [ ] **Options/decorators syntax** — Add metadata annotations to endpoints and types (e.g., caching directives, rate limiting hints, deprecation markers). Currently there is no way to attach structured configuration to definitions.
+
+- [ ] **Deprecation markers** — Allow marking endpoints and types as deprecated in the API definition, so generators can emit deprecation warnings in generated code.
+
+- [ ] **API versioning** — Add first-class versioning support to the API definition language so that multiple versions of an API can be defined and generated from a single source.
+
+- [ ] **Request/response header definitions** — Add syntax for specifying required or custom request/response headers as part of an endpoint definition. Currently headers can only be handled through middleware with no type-safe contract.
+
+- [ ] **HEAD and OPTIONS HTTP methods** — The parser only recognizes GET, POST, PUT, DELETE, and PATCH. HEAD and OPTIONS are standard HTTP methods with practical uses (health checks, CORS preflight) and should be supported.
+
+- [ ] **Custom HTTP success status codes** — Endpoints currently always return 200. There should be a way to declare a different success code (e.g., 201 for resource creation, 204 for deletion) in the API definition, which the generator then uses in both server and client output.
+
+- [ ] **Type and field validation** — Add constraint syntax for fields (e.g., min/max length for strings, numeric ranges, regex patterns). The generator would emit validation logic in the target language rather than requiring manual validation in every handler.
+
+- [ ] **Typed cookies** — The runtime `cookies` package exists but there is no way to declare typed cookies in the `.api` language. Add syntax so cookie shapes are part of the API contract and generated code is type-safe.
+
+- [ ] **Map key type validation** — The spec documents that non-comparable map key types produce invalid Go code, but the generator does not catch this. Add a validation pass that rejects non-comparable key types at generation time rather than at Go compile time.
+
+## Code Generation
+
+- [ ] **File splitting / modularization** — Currently all types land in a single `types.go`/`types.ts` file and all client methods in a single `client.ts`. For large APIs this becomes hard to navigate. Add an option to split output across multiple files organized by resource or service group.
+
+- [ ] **TypeScript structured error types** — The Go server uses the `gerrors` package to return typed errors with distinct HTTP status codes (400/401/404/409/500). The TypeScript client throws a generic `Error` with only the status code as a string, so callers cannot distinguish error types. Generate typed error classes that mirror the `gerrors` hierarchy.
+
+- [ ] **TypeScript enum helpers** — Go generates `EnumFromType`, `EnumToType`, and `EnumIsValid` conversion functions for every enum. TypeScript only generates a string-union type with no validation or conversion utilities. Generate equivalent helper functions in TypeScript.
+
+- [ ] **TypeScript request validation** — Go generates a `Validate()` method on request types that checks required fields. TypeScript generates no equivalent, so invalid requests are only caught server-side. Generate TypeScript validation helpers to enable client-side validation before a request is sent.
+
+- [ ] **OpenAPI/Swagger export** — Generate an OpenAPI 3.x spec from the `.api` definition. This would enable integration with API explorers (Swagger UI, Redoc), auto-generated docs, and third-party tooling that consumes OpenAPI specs.
+
+- [ ] **Mock implementation generation** — Generate mock server implementations and stub client instances for use in tests. Currently every consumer must hand-roll their own mocks.
+
+## Runtime & Middleware
+
+- [ ] **Streaming endpoints** — Add support for endpoints that stream a sequence of values rather than returning a single response. This likely requires both new API definition syntax and new runtime plumbing for server-sent events or chunked transfer encoding.
+
+- [ ] **WebSocket endpoints** — Add support for declaring WebSocket endpoints in the API definition and generating the corresponding connection-handling scaffolding on server and client.
+
+- [ ] **Validation decorators / middleware** — Add built-in middleware for enforcing schema-level constraints (field lengths, value ranges, enum membership) automatically, without requiring manual validation in each handler.

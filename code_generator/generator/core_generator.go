@@ -31,9 +31,10 @@ func collapseBlankLines(s string) string {
 
 // LanguageSettings holds language-specific settings
 type LanguageSettings struct {
-	PackageComment  string   `yaml:"package_comment"`
-	TypesImports    []string `yaml:"types_imports"`
-	EndpointImports []string `yaml:"endpoint_imports"`
+	PackageComment   string   `yaml:"package_comment"`
+	TypesImports     []string `yaml:"types_imports"`
+	EndpointImports  []string `yaml:"endpoint_imports"`
+	ErrorCodesSource string   `yaml:"error_codes_source"`
 }
 
 // LanguageConfig defines language-specific configuration
@@ -56,6 +57,7 @@ type TemplateData struct {
 	Enums       []TemplateEnum
 	Servers     []TemplateServer
 	Settings    LanguageSettings
+	ErrorCodes  []TemplateErrorCode
 }
 
 // TemplateComment represents a comment with its type for templates
@@ -134,6 +136,7 @@ type TemplatePathParam struct {
 // TemplateGenerator generates code using templates
 type TemplateGenerator struct {
 	config    LanguageConfig
+	configDir string
 	templates map[string]*template.Template
 	funcMap   template.FuncMap
 }
@@ -147,6 +150,7 @@ func NewTemplateGenerator(configPath string) (*TemplateGenerator, error) {
 
 	tg := &TemplateGenerator{
 		config:    config,
+		configDir: filepath.Dir(configPath),
 		templates: make(map[string]*template.Template),
 		funcMap:   make(template.FuncMap),
 	}
@@ -223,7 +227,10 @@ func (tg *TemplateGenerator) loadTemplates() error {
 
 // Generate generates code from API definition
 func (tg *TemplateGenerator) Generate(api *APIDefinition, packageName string) (map[string]string, error) {
-	data := tg.prepareTemplateData(api, packageName)
+	data, err := tg.prepareTemplateData(api, packageName)
+	if err != nil {
+		return nil, err
+	}
 
 	files := make(map[string]string)
 
@@ -285,7 +292,7 @@ func (tg *TemplateGenerator) generateEndpointFiles(tmpl *template.Template, data
 }
 
 // prepareTemplateData converts API definition to template data
-func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName string) TemplateData {
+func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName string) (TemplateData, error) {
 	data := TemplateData{
 		PackageName: packageName,
 		Language:    tg.config.Language,
@@ -308,7 +315,20 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 		data.Servers = append(data.Servers, tg.convertServer(&serverDef))
 	}
 
-	return data
+	// Parse error codes from Go source if configured
+	if tg.config.Settings.ErrorCodesSource != "" {
+		sourcePath := tg.config.Settings.ErrorCodesSource
+		if !filepath.IsAbs(sourcePath) {
+			sourcePath = filepath.Join(tg.configDir, sourcePath)
+		}
+		errorCodes, err := parseErrorCodesFromFile(sourcePath)
+		if err != nil {
+			return data, fmt.Errorf("failed to parse error codes from %s: %v", sourcePath, err)
+		}
+		data.ErrorCodes = errorCodes
+	}
+
+	return data, nil
 }
 
 // convertType converts TypeDef to TemplateType
