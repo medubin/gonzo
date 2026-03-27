@@ -182,7 +182,7 @@ go work use .
 
 - [ ] **HEAD and OPTIONS HTTP methods** — The parser only recognizes GET, POST, PUT, DELETE, and PATCH. HEAD and OPTIONS are standard HTTP methods with practical uses (health checks, CORS preflight) and should be supported.
 
-- [ ] **Custom HTTP success status codes** — Endpoints currently always return 200. There should be a way to declare a different success code (e.g., 201 for resource creation, 204 for deletion) in the API definition, which the generator then uses in both server and client output.
+- [x] **Custom HTTP success status codes** — Handlers return `*handle.Response[T]` which carries an optional `Status int` field. Omitting it defaults to 200. The runtime rejects status codes ≥ 400 to prevent accidentally returning error codes as successes.
 
 - [ ] **Type and field validation** — Add constraint syntax for fields (e.g., min/max length for strings, numeric ranges, regex patterns). The generator would emit validation logic in the target language rather than requiring manual validation in every handler.
 

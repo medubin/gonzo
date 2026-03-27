@@ -29,8 +29,8 @@ type testPathParams struct{}
 
 func TestHandle_SuccessfulRequest(t *testing.T) {
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
-			return &testResponse{Greeting: "hello " + b.Name}, nil
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "hello " + b.Name}}, nil
 		},
 	)
 
@@ -51,9 +51,9 @@ func TestHandle_NilBody_WhenNoContent(t *testing.T) {
 	var receivedBody *testBody
 
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
 			receivedBody = b
-			return &testResponse{Greeting: "ok"}, nil
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "ok"}}, nil
 		},
 	)
 
@@ -69,8 +69,8 @@ func TestHandle_NilBody_WhenNoContent(t *testing.T) {
 
 func TestHandle_MalformedJSON(t *testing.T) {
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
-			return &testResponse{}, nil
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			return &handle.Response[testResponse]{Body: &testResponse{}}, nil
 		},
 	)
 
@@ -89,7 +89,7 @@ func TestHandle_MalformedJSON(t *testing.T) {
 
 func TestHandle_HandlerError(t *testing.T) {
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
 			return nil, gerrors.NotFoundError("thing not found")
 		},
 	)
@@ -108,9 +108,9 @@ func TestHandle_HandlerError(t *testing.T) {
 func TestHandle_UnknownContentLength_BodyParsed(t *testing.T) {
 	// ContentLength == -1 (chunked / unknown) must not prevent body parsing.
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
 			require.NotNil(t, b)
-			return &testResponse{Greeting: "hello " + b.Name}, nil
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "hello " + b.Name}}, nil
 		},
 	)
 
@@ -129,8 +129,8 @@ func TestHandle_UnknownContentLength_BodyParsed(t *testing.T) {
 
 func TestHandle_SuccessResponse_HasJSONContentType(t *testing.T) {
 	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*testResponse, error) {
-			return &testResponse{Greeting: "ok"}, nil
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "ok"}}, nil
 		},
 	)
 
@@ -150,9 +150,9 @@ func TestHandle_QueryParamsParsed(t *testing.T) {
 
 	var receivedParams url.URL[qParams, testPathParams]
 	handler := handle.Handle[testBody, testResponse, qParams, testPathParams](
-		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[qParams, testPathParams]) (*testResponse, error) {
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[qParams, testPathParams]) (*handle.Response[testResponse], error) {
 			receivedParams = u
-			return &testResponse{Greeting: "ok"}, nil
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "ok"}}, nil
 		},
 	)
 
@@ -164,4 +164,56 @@ func TestHandle_QueryParamsParsed(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	require.NotNil(t, receivedParams.Params.Page)
 	assert.Equal(t, "3", *receivedParams.Params.Page)
+}
+
+func TestHandle_CustomSuccessStatus(t *testing.T) {
+	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "created"}, Status: http.StatusCreated}, nil
+		},
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	require.Equal(t, http.StatusCreated, w.Code)
+	var resp testResponse
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&resp))
+	assert.Equal(t, "created", resp.Greeting)
+}
+
+func TestHandle_ErrorStatusInSuccessResponse_Returns500(t *testing.T) {
+	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			// Programmer mistake: setting a 4xx code on a success response
+			return &handle.Response[testResponse]{Body: &testResponse{}, Status: http.StatusNotFound}, nil
+		},
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	var errResp map[string]string
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&errResp))
+	assert.Contains(t, errResp["error"], "error status code")
+}
+
+func TestHandle_ZeroStatus_DefaultsTo200(t *testing.T) {
+	handler := handle.Handle[testBody, testResponse, testParams, testPathParams](
+		func(ctx context.Context, b *testBody, c cookies.Cookies, u url.URL[testParams, testPathParams]) (*handle.Response[testResponse], error) {
+			return &handle.Response[testResponse]{Body: &testResponse{Greeting: "ok"}}, nil
+		},
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }

@@ -11,7 +11,15 @@ import (
 	"github.com/medubin/gonzo/runtime/url"
 )
 
-func Handle[Body any, response any, Params any, PathParams any](handler func(ctx context.Context, b *Body, c cookies.Cookies, u url.URL[Params, PathParams]) (*response, error)) func(http.ResponseWriter, *http.Request) {
+// Response wraps a handler's return value with an optional HTTP success status code.
+// If Status is 0 or unset, the handler defaults to 200. Status codes >= 400 are
+// rejected at runtime to prevent accidentally returning error codes as successes.
+type Response[T any] struct {
+	Body   *T
+	Status int
+}
+
+func Handle[Body any, response any, Params any, PathParams any](handler func(ctx context.Context, b *Body, c cookies.Cookies, u url.URL[Params, PathParams]) (*Response[response], error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		var body *Body
@@ -36,8 +44,23 @@ func Handle[Body any, response any, Params any, PathParams any](handler func(ctx
 			return
 		}
 
+		statusCode := http.StatusOK
+		if resp != nil && resp.Status != 0 {
+			if resp.Status >= 400 {
+				gerrors.JSONError(w, gerrors.InternalError("handler set an error status code on a success response"))
+				return
+			}
+			statusCode = resp.Status
+		}
+
+		var respBody *response
+		if resp != nil {
+			respBody = resp.Body
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		err = json.NewEncoder(w).Encode(resp)
+		w.WriteHeader(statusCode)
+		err = json.NewEncoder(w).Encode(respBody)
 		if err != nil {
 			gerrors.JSONError(w, err)
 			return

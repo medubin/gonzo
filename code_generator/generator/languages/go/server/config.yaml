@@ -24,6 +24,7 @@ settings:
     - context
     - github.com/medubin/gonzo/runtime/cookies
     - github.com/medubin/gonzo/runtime/gerrors
+    - github.com/medubin/gonzo/runtime/handle
     - github.com/medubin/gonzo/runtime/url
 templates:
   types: |
@@ -97,7 +98,7 @@ templates:
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}type {{.Name}} interface {
     {{range .Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}	{{.Name}}(ctx context.Context, body {{.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}]) ({{.ReturnType}}, error)
+    {{end}}	{{.Name}}(ctx context.Context, body {{.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}]) (*handle.Response[{{.ReturnType | replace "*" ""}}], error)
     {{end}}}
 
     func Start{{.Name}}(s {{.Name}}, r *router.Router) {
@@ -120,7 +121,7 @@ templates:
 
     {{if .Endpoint.Comments}}{{formatComments .Endpoint.Comments}}
     {{end}}// {{.Endpoint.Method}} {{.Endpoint.Path}}
-    func (s *{{.Server.Name}}Impl) {{.Endpoint.Name}}(ctx context.Context, body {{.Endpoint.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .Endpoint.HasParams}}{{.Endpoint.Parameters}}{{else}}struct{}{{end}}, {{.Endpoint.URLType}}]) ({{.Endpoint.ReturnType}}, error) {
+    func (s *{{.Server.Name}}Impl) {{.Endpoint.Name}}(ctx context.Context, body {{.Endpoint.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .Endpoint.HasParams}}{{.Endpoint.Parameters}}{{else}}struct{}{{end}}, {{.Endpoint.URLType}}]) (*handle.Response[{{.Endpoint.ReturnType | replace "*" ""}}], error) {
       return nil, gerrors.UnimplementedError("{{.Endpoint.Name}}")
     }
   server_impl: |

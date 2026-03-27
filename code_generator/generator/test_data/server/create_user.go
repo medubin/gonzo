@@ -4,12 +4,13 @@ import (
 	"context"
 	"github.com/medubin/gonzo/runtime/cookies"
 	"github.com/medubin/gonzo/runtime/gerrors"
+	"github.com/medubin/gonzo/runtime/handle"
 	"github.com/medubin/gonzo/runtime/url"
 )
 
 // All other urls can contain a body
 // body and return always refer to a struct type
 // POST /users
-func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*User, error) {
+func (s *UserServiceImpl) CreateUser(ctx context.Context, body *CreateUserRequest, cookie cookies.Cookies, url url.URL[struct{}, struct{}]) (*handle.Response[User], error) {
   return nil, gerrors.UnimplementedError("CreateUser")
 }

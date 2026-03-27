@@ -774,7 +774,7 @@ func (p *Parser) parseEndpoint() (*EndpointDef, error) {
 				return nil, err
 			}
 			endpoint.Returns = returnType
-		}
+}
 	}
 
 	return endpoint, nil
