@@ -4,11 +4,63 @@
 // enums can be any primitive type
 export type UserRole = "admin" | "moderator" | "user";
 
+const userRoleValues = ["admin", "moderator", "user"] as const;
+
+export function isValidUserRole(v: unknown): v is UserRole {
+  return (userRoleValues as readonly unknown[]).includes(v);
+}
+
+export function parseUserRole(v: string): UserRole {
+  if (!isValidUserRole(v)) {
+    throw new Error(`Invalid UserRole value: ${String(v)}`);
+  }
+  return v;
+}
+
 export type UserStatus = "active" | "pending" | "suspended";
+
+const userStatusValues = ["active", "pending", "suspended"] as const;
+
+export function isValidUserStatus(v: unknown): v is UserStatus {
+  return (userStatusValues as readonly unknown[]).includes(v);
+}
+
+export function parseUserStatus(v: string): UserStatus {
+  if (!isValidUserStatus(v)) {
+    throw new Error(`Invalid UserStatus value: ${String(v)}`);
+  }
+  return v;
+}
 
 export type WelcomeMessage = "Welcome to \"MyApp\"";
 
+const welcomeMessageValues = ["Welcome to \"MyApp\""] as const;
+
+export function isValidWelcomeMessage(v: unknown): v is WelcomeMessage {
+  return (welcomeMessageValues as readonly unknown[]).includes(v);
+}
+
+export function parseWelcomeMessage(v: string): WelcomeMessage {
+  if (!isValidWelcomeMessage(v)) {
+    throw new Error(`Invalid WelcomeMessage value: ${String(v)}`);
+  }
+  return v;
+}
+
 export type UserSomething = 0 | 2 | 1;
+
+const userSomethingValues = [0, 2, 1] as const;
+
+export function isValidUserSomething(v: unknown): v is UserSomething {
+  return (userSomethingValues as readonly unknown[]).includes(v);
+}
+
+export function parseUserSomething(v: number): UserSomething {
+  if (!isValidUserSomething(v)) {
+    throw new Error(`Invalid UserSomething value: ${String(v)}`);
+  }
+  return v;
+}
 
 // this is a comment
 /* this is a multiline comment */

@@ -196,7 +196,7 @@ go work use .
 
 - [x] **TypeScript structured error types** — Generates `errors.ts` with typed error classes derived at generation time by parsing `runtime/gerrors/errors.go`. The client throws typed errors (e.g. `NotFoundError`, `UnauthenticatedError`) instead of a generic `Error`, and adding a new error type to gerrors automatically updates the TypeScript output.
 
-- [ ] **TypeScript enum helpers** — Go generates `EnumFromType`, `EnumToType`, and `EnumIsValid` conversion functions for every enum. TypeScript only generates a string-union type with no validation or conversion utilities. Generate equivalent helper functions in TypeScript.
+- [x] **TypeScript enum helpers** — Each enum now generates a `const {name}Values` array, an `isValid{Name}(v: unknown): v is {Name}` type guard, and a `parse{Name}(v: baseType): {Name}` function that throws on invalid input. The parse function's parameter type matches the enum's base type (`string` or `number`).
 
 - [ ] **TypeScript request validation** — Go generates a `Validate()` method on request types that checks required fields. TypeScript generates no equivalent, so invalid requests are only caught server-side. Generate TypeScript validation helpers to enable client-side validation before a request is sent.
 

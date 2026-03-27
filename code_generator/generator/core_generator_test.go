@@ -58,6 +58,56 @@ server TestServer {
 	assert.NotContains(t, importLine, "NestedType")
 }
 
+// TestTypeScript_EnumHelpers verifies that isValid and parse helpers are generated
+// for every enum, with the correct base type on the parse function.
+func TestTypeScript_EnumHelpers(t *testing.T) {
+	const api = `
+enum Color string {
+  RED = "red"
+  GREEN = "green"
+  BLUE = "blue"
+}
+
+enum Priority int32 {
+  LOW = 0
+  MEDIUM = 1
+  HIGH = 2
+}
+
+server TestServer { GetFoo GET /foo }
+`
+	parser := generator.NewParser(api)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+	require.NoError(t, err)
+
+	results, err := g.Generate(parsed, "client")
+	require.NoError(t, err)
+
+	types := results["types.ts"]
+	require.NotEmpty(t, types)
+
+	// String enum — values array contains all values, type guard, parse with string param
+	assert.Contains(t, types, `const colorValues = [`)
+	assert.Contains(t, types, `"red"`)
+	assert.Contains(t, types, `"green"`)
+	assert.Contains(t, types, `"blue"`)
+	assert.Contains(t, types, `] as const`)
+	assert.Contains(t, types, `export function isValidColor(v: unknown): v is Color`)
+	assert.Contains(t, types, `export function parseColor(v: string): Color`)
+	assert.Contains(t, types, `throw new Error`)
+
+	// Numeric enum — parse takes number, not string
+	assert.Contains(t, types, `const priorityValues = [`)
+	assert.Contains(t, types, `export function isValidPriority(v: unknown): v is Priority`)
+	assert.Contains(t, types, `export function parsePriority(v: number): Priority`)
+
+	// isValid uses the values array with the unknown cast pattern
+	assert.Contains(t, types, `(colorValues as readonly unknown[]).includes(v)`)
+}
+
 // TestTypeScript_ErrorsFileMirrorsGerrors verifies that the generated errors.ts
 // contains a class and ErrorCode entry for every exported error type in gerrors.
 // This test catches drift between the Go error definitions and the TypeScript output.

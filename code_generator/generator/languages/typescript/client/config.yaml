@@ -72,6 +72,19 @@ templates:
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}export type {{.Name}} = {{$enumName := .Name}}{{$baseType := .BaseType}}{{range $i, $val := .Values}}{{if $i}} | {{end}}{{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}{{end}};
+
+    const {{camelCase .Name}}Values = [{{$bt := .BaseType}}{{range $i, $val := .Values}}{{if $i}}, {{end}}{{if eq $bt "string"}}{{quote $val.Value}}{{else}}{{$val.Value}}{{end}}{{end}}] as const;
+
+    export function isValid{{.Name}}(v: unknown): v is {{.Name}} {
+      return ({{camelCase .Name}}Values as readonly unknown[]).includes(v);
+    }
+
+    export function parse{{.Name}}(v: {{mapType .BaseType}}): {{.Name}} {
+      if (!isValid{{.Name}}(v)) {
+        throw new Error(`Invalid {{.Name}} value: ${String(v)}`);
+      }
+      return v;
+    }
     {{end}}
 
     {{range .Types}}
