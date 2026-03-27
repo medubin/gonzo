@@ -1,4 +1,4 @@
-package server
+package user_service
 
 import (
     "context"
@@ -6,9 +6,10 @@ import (
     "github.com/medubin/gonzo/runtime/gerrors"
     "github.com/medubin/gonzo/runtime/handle"
     "github.com/medubin/gonzo/runtime/url"
+    server "github.com/test/server"
 )
 
 // PATCH /users/{id}/profile
-func (s *UserServiceImpl) PatchUserProfile(ctx context.Context, body *UserProfileUpdate, cookie cookies.Cookies, url url.URL[struct{}, PatchUserProfileUrl]) (*handle.Response[UserProfile], error) {
+func (s *UserServiceImpl) PatchUserProfile(ctx context.Context, body *server.UserProfileUpdate, cookie cookies.Cookies, url url.URL[struct{}, server.PatchUserProfileUrl]) (*handle.Response[server.UserProfile], error) {
   return nil, gerrors.UnimplementedError("PatchUserProfile")
 }

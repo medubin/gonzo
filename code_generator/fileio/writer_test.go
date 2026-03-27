@@ -56,20 +56,24 @@ func TestWriteToFile(t *testing.T) {
 		assert.Equal(t, content, string(result))
 	})
 
-	t.Run("fails to create nested directories", func(t *testing.T) {
+	t.Run("creates nested directories", func(t *testing.T) {
 		tempDir := t.TempDir()
 		nestedDir := filepath.Join(tempDir, "subdir", "nested")
 		fileName := "test.txt"
 		content := "test content"
-		
-		// Nested directory doesn't exist
+
+		// Nested directory doesn't exist initially
 		_, err := os.Stat(nestedDir)
 		assert.True(t, os.IsNotExist(err))
-		
-		// WriteToFile should fail because it only creates one directory level
+
+		// WriteToFile should create all intermediate directories
 		err = fileio.WriteToFile(nestedDir, fileName, content, false)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no such file or directory")
+		require.NoError(t, err)
+
+		// Verify the file was written
+		result, err := os.ReadFile(filepath.Join(nestedDir, fileName))
+		require.NoError(t, err)
+		assert.Equal(t, content, string(result))
 	})
 
 	t.Run("safe mode - doesn't overwrite existing file", func(t *testing.T) {
@@ -217,16 +221,16 @@ func TestWriteToFile(t *testing.T) {
 		assert.Contains(t, err.Error(), "permission denied")
 	})
 
-	t.Run("returns error when parent directory does not exist", func(t *testing.T) {
+	t.Run("creates deeply nested directories", func(t *testing.T) {
 		tempDir := t.TempDir()
 		nestedDir := filepath.Join(tempDir, "a", "b", "c")
 
 		err := fileio.WriteToFile(nestedDir, "out.go", "content", false)
-		require.Error(t, err)
+		require.NoError(t, err)
 
-		// No file should have been created — the error came from mkdir, not os.Create
-		_, statErr := os.Stat(filepath.Join(nestedDir, "out.go"))
-		assert.True(t, os.IsNotExist(statErr))
+		result, err := os.ReadFile(filepath.Join(nestedDir, "out.go"))
+		require.NoError(t, err)
+		assert.Equal(t, "content", string(result))
 	})
 
 	t.Run("succeeds when directory already exists", func(t *testing.T) {

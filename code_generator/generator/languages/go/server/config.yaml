@@ -40,7 +40,7 @@ templates:
     const (
     {{$enumName := .Name}}{{$baseType := .BaseType}}{{range .Values}}	{{$enumName}}_{{.Key}} {{$enumName}} = {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}
     {{end}})
-    
+
     // {{.Name}}From{{capitalize .BaseType}} converts a {{.BaseType}} to {{.Name}} enum
     func {{.Name}}From{{capitalize .BaseType}}(v {{mapType .BaseType}}) {{.Name}} {
       switch v {
@@ -50,12 +50,12 @@ templates:
     		return {{$enumName}}_{{(index .Values 0).Key}} // Return first value as default
       }
     }
-    
+
     // {{.Name}}To{{capitalize .BaseType}} converts {{.Name}} enum to {{.BaseType}}
     func {{.Name}}To{{capitalize .BaseType}}(e {{.Name}}) {{mapType .BaseType}} {
       return {{mapType .BaseType}}(e)
     }
-    
+
     // {{.Name}}IsValid checks if the enum value is valid
     func {{.Name}}IsValid(e {{.Name}}) bool {
       switch e {
@@ -86,51 +86,56 @@ templates:
     type {{.Name}}Url struct {
     {{range .PathParams}}	{{capitalize .Name}} *{{.Type}} `url:"{{.Name}}"`
     {{end}}}{{end}}{{end}}{{end}}
+
   server: |
     {{.Settings.PackageComment}}
-    package {{.PackageName}}
+    package {{.Server.PackageName}}
 
     import (
-    {{range .Imports}}	"{{.}}"
-    {{end}})
+      "context"
+      {{.PackageName}} "{{.TypesPackage}}"
+      "github.com/medubin/gonzo/runtime/cookies"
+      "github.com/medubin/gonzo/runtime/handle"
+      "github.com/medubin/gonzo/runtime/router"
+      "github.com/medubin/gonzo/runtime/types"
+      "github.com/medubin/gonzo/runtime/url"
+    )
 
-    {{range .Servers}}
-    {{if .Comments}}{{formatComments .Comments}}
-    {{end}}type {{.Name}} interface {
-    {{range .Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}	{{.Name}}(ctx context.Context, body {{.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{.Parameters}}{{else}}struct{}{{end}}, {{.URLType}}]) (*handle.Response[{{.ReturnType | replace "*" ""}}], error)
+    {{if .Server.Comments}}{{formatComments .Server.Comments}}
+    {{end}}type {{.Server.Name}} interface {
+    {{range .Server.Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
+    {{end}}	{{.Name}}(ctx context.Context, body {{qual $.PackageName .BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{qual $.PackageName .Parameters}}{{else}}struct{}{{end}}, {{qual $.PackageName .URLType}}]) (*handle.Response[{{.ReturnType | replace "*" "" | qual $.PackageName}}], error)
     {{end}}}
 
-    func Start{{.Name}}(s {{.Name}}, r *router.Router) {
-    {{$serverName := .Name}}{{range .Endpoints}}	r.Route(handle.Handle(s.{{.Name}}), &types.RouteInfo{
+    func Start{{.Server.Name}}(s {{.Server.Name}}, r *router.Router) {
+    {{range .Server.Endpoints}}	r.Route(handle.Handle(s.{{.Name}}), &types.RouteInfo{
       Method: "{{.Method}}",
       Path: "{{.Path}}",
       Endpoint: "{{.Name}}",
-      Server: "{{$serverName}}",
+      Server: "{{$.Server.Name}}",
       RequiresBody: {{.RequiresBody}},
       })
     {{end}}}
-    {{end}}
+
+  server_impl: |
+    {{.Settings.PackageComment}}
+    package {{.Server.PackageName}}
+
+    {{if .Server.Comments}}{{formatComments .Server.Comments}}
+    {{end}}type {{.Server.Name}}Impl struct {
+    	// Add your server implementation fields here
+    }
 
   endpoint: |
-    package {{.PackageName}}
+    package {{.Server.PackageName}}
 
     import (
     {{range .Settings.EndpointImports}}	"{{.}}"
-    {{end}})
+    {{end}}	{{.PackageName}} "{{.TypesPackage}}"
+    )
 
     {{if .Endpoint.Comments}}{{formatComments .Endpoint.Comments}}
     {{end}}// {{.Endpoint.Method}} {{.Endpoint.Path}}
-    func (s *{{.Server.Name}}Impl) {{.Endpoint.Name}}(ctx context.Context, body {{.Endpoint.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .Endpoint.HasParams}}{{.Endpoint.Parameters}}{{else}}struct{}{{end}}, {{.Endpoint.URLType}}]) (*handle.Response[{{.Endpoint.ReturnType | replace "*" ""}}], error) {
+    func (s *{{.Server.Name}}Impl) {{.Endpoint.Name}}(ctx context.Context, body {{qual $.PackageName .Endpoint.BodyType}}, cookie cookies.Cookies, url url.URL[{{if .Endpoint.HasParams}}{{qual $.PackageName .Endpoint.Parameters}}{{else}}struct{}{{end}}, {{qual $.PackageName .Endpoint.URLType}}]) (*handle.Response[{{.Endpoint.ReturnType | replace "*" "" | qual $.PackageName}}], error) {
       return nil, gerrors.UnimplementedError("{{.Endpoint.Name}}")
     }
-  server_impl: |
-    {{.Settings.PackageComment}}
-    package {{.PackageName}}
-
-    {{range .Servers}}
-    {{if .Comments}}{{formatComments .Comments}}
-    {{end}}type {{.Name}}Impl struct {
-    	// Add your server implementation fields here
-    }
-    {{end}}

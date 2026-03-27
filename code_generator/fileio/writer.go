@@ -7,11 +7,10 @@ import (
 )
 
 func WriteToFile(directory string, name string, output string, safe bool) error {
-	if err := os.Mkdir(directory, os.ModePerm); err != nil && !errors.Is(err, os.ErrExist) {
+	filename := filepath.Join(directory, name)
+	if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 		return err
 	}
-
-	filename := filepath.Join(directory, name)
 
 	if safe {
 		if fileExists(filename) {

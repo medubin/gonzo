@@ -50,14 +50,15 @@ type LanguageConfig struct {
 
 // TemplateData represents the data passed to templates
 type TemplateData struct {
-	PackageName string
-	Language    string
-	Imports     []string
-	Types       []TemplateType
-	Enums       []TemplateEnum
-	Servers     []TemplateServer
-	Settings    LanguageSettings
-	ErrorCodes  []TemplateErrorCode
+	PackageName  string
+	TypesPackage string // full import path of the parent types package (used by sub-packages)
+	Language     string
+	Imports      []string
+	Types        []TemplateType
+	Enums        []TemplateEnum
+	Servers      []TemplateServer
+	Settings     LanguageSettings
+	ErrorCodes   []TemplateErrorCode
 }
 
 // TemplateComment represents a comment with its type for templates
@@ -96,9 +97,10 @@ type TemplateEnumValue struct {
 }
 
 type TemplateServer struct {
-	Name      string
-	Endpoints []TemplateEndpoint
-	Comments  []TemplateComment
+	Name        string
+	PackageName string // snake_case sub-package name (e.g., "user_service")
+	Endpoints   []TemplateEndpoint
+	Comments    []TemplateComment
 }
 
 type TemplateEndpoint struct {
@@ -200,6 +202,12 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 	}
 	tg.funcMap["getUsedTypes"] = tg.getUsedTypes
 	tg.funcMap["handleUnknownType"] = tg.handleUnknownType
+	// qual qualifies exported identifiers in typeStr with alias as package prefix.
+	// Used in sub-package templates: {{qual $.PackageName .BodyType}}
+	// When piped: {{.ReturnType | replace "*" "" | qual $.PackageName}}
+	tg.funcMap["qual"] = func(alias, typeStr string) string {
+		return qualifyTypeString(typeStr, alias)
+	}
 }
 
 // loadLanguageConfig loads language configuration from YAML
@@ -225,33 +233,46 @@ func (tg *TemplateGenerator) loadTemplates() error {
 	return nil
 }
 
-// Generate generates code from API definition
-func (tg *TemplateGenerator) Generate(api *APIDefinition, packageName string) (map[string]string, error) {
+// Generate generates code from API definition.
+// typesPackage (optional) is the full import path of the parent types package,
+// used when generating Go server sub-packages (e.g., "github.com/myapp/api/server").
+func (tg *TemplateGenerator) Generate(api *APIDefinition, packageName string, typesPackage ...string) (map[string]string, error) {
 	data, err := tg.prepareTemplateData(api, packageName)
 	if err != nil {
 		return nil, err
+	}
+	if len(typesPackage) > 0 {
+		data.TypesPackage = typesPackage[0]
 	}
 
 	files := make(map[string]string)
 
 	for templateName, tmpl := range tg.templates {
-		// Handle special case for endpoint template - generate one file per endpoint
-		if templateName == "endpoint" {
+		switch templateName {
+		case "endpoint":
+			// Generate one file per endpoint, prefixed with the server's sub-package directory.
 			endpointFiles, err := tg.generateEndpointFiles(tmpl, data)
 			if err != nil {
 				return nil, fmt.Errorf("failed to generate endpoint files: %v", err)
 			}
-			// Merge endpoint files into main files map
 			for filename, content := range endpointFiles {
 				files[filename] = content
 			}
-		} else {
-			// Normal template processing
+		case "server", "server_impl":
+			// Generate one file per server in its sub-package directory.
+			serverFiles, err := tg.generateServerFiles(tmpl, data, templateName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate %s files: %v", templateName, err)
+			}
+			for filename, content := range serverFiles {
+				files[filename] = content
+			}
+		default:
+			// Normal single-file template.
 			var buf bytes.Buffer
 			if err := tmpl.Execute(&buf, data); err != nil {
 				return nil, fmt.Errorf("failed to execute template %s: %v", templateName, err)
 			}
-
 			filename := templateName + tg.config.FileExt
 			files[filename] = collapseBlankLines(buf.String())
 		}
@@ -260,13 +281,13 @@ func (tg *TemplateGenerator) Generate(api *APIDefinition, packageName string) (m
 	return files, nil
 }
 
-// generateEndpointFiles generates individual files for each endpoint
+// generateEndpointFiles generates individual files for each endpoint.
+// Each file is placed in the server's sub-package directory: <server_pkg>/<endpoint_name>.go
 func (tg *TemplateGenerator) generateEndpointFiles(tmpl *template.Template, data TemplateData) (map[string]string, error) {
 	files := make(map[string]string)
 
 	for _, server := range data.Servers {
 		for _, endpoint := range server.Endpoints {
-			// Create data for single endpoint
 			endpointData := struct {
 				TemplateData
 				Server   TemplateServer
@@ -282,10 +303,35 @@ func (tg *TemplateGenerator) generateEndpointFiles(tmpl *template.Template, data
 				return nil, fmt.Errorf("failed to execute endpoint template for %s: %v", endpoint.Name, err)
 			}
 
-			// Use endpoint name for filename (snake case)
-			filename := fmt.Sprintf("%s%s", strcase.ToSnake(endpoint.Name), tg.config.FileExt)
+			filename := fmt.Sprintf("%s/%s%s", server.PackageName, strcase.ToSnake(endpoint.Name), tg.config.FileExt)
 			files[filename] = collapseBlankLines(buf.String())
 		}
+	}
+
+	return files, nil
+}
+
+// generateServerFiles generates one file per server (for "server" and "server_impl" templates).
+// Each file is placed in the server's sub-package directory: <server_pkg>/<templateName>.go
+func (tg *TemplateGenerator) generateServerFiles(tmpl *template.Template, data TemplateData, templateName string) (map[string]string, error) {
+	files := make(map[string]string)
+
+	for _, server := range data.Servers {
+		serverData := struct {
+			TemplateData
+			Server TemplateServer
+		}{
+			TemplateData: data,
+			Server:       server,
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, serverData); err != nil {
+			return nil, fmt.Errorf("failed to execute %s template for server %s: %v", templateName, server.Name, err)
+		}
+
+		filename := fmt.Sprintf("%s/%s%s", server.PackageName, templateName, tg.config.FileExt)
+		files[filename] = collapseBlankLines(buf.String())
 	}
 
 	return files, nil
@@ -415,8 +461,9 @@ func (tg *TemplateGenerator) convertEnum(enumDef *EnumDef) TemplateEnum {
 // convertServer converts ServerDef to TemplateServer
 func (tg *TemplateGenerator) convertServer(serverDef *ServerDef) TemplateServer {
 	ts := TemplateServer{
-		Name:     serverDef.Name,
-		Comments: tg.extractComments(serverDef.Comments),
+		Name:        serverDef.Name,
+		PackageName: strcase.ToSnake(serverDef.Name),
+		Comments:    tg.extractComments(serverDef.Comments),
 	}
 
 	for _, endpoint := range serverDef.Endpoints {

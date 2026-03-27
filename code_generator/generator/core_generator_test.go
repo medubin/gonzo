@@ -190,8 +190,8 @@ func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	// Generate Go server code
 	g, err := generator.NewTemplateGenerator("languages/go/server/config.yaml")
 	require.NoError(t, err)
-	
-	results, err := g.Generate(api, "server")
+
+	results, err := g.Generate(api, "server", "github.com/test/server")
 	require.NoError(t, err)
 	require.NotEmpty(t, results)
 

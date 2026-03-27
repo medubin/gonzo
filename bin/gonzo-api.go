@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/medubin/gonzo/code_generator/fileio"
 	"github.com/medubin/gonzo/code_generator/generator"
@@ -14,9 +16,10 @@ import (
 
 type Languages int
 
-var serverRegex = regexp.MustCompile(`^server\..+$`)
-var typesRegex = regexp.MustCompile(`^types\..+$`)
-var clientRegex = regexp.MustCompile(`^client\..+$`)
+// serverRegex matches server.go at any path depth (e.g., user_service/server.go).
+var serverRegex = regexp.MustCompile(`(^|/)server\.[^/]+$`)
+var typesRegex = regexp.MustCompile(`(^|/)types\.[^/]+$`)
+var clientRegex = regexp.MustCompile(`(^|/)client\.[^/]+$`)
 
 const (
 	Golang Languages = iota
@@ -116,7 +119,6 @@ func (g *GenerateCommand) Run() error {
 
 	if g.packageName == "" {
 		return fmt.Errorf("package name required")
-
 	}
 
 	lines, err := fileio.ParseFile(g.input)
@@ -130,12 +132,23 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	template, err := generator.NewTemplateGenerator(config)
+	tmpl, err := generator.NewTemplateGenerator(config)
 	if err != nil {
 		return err
 	}
 
-	results, err := template.Generate(api, g.packageName)
+	// For Go server generation, compute the full import path of the types package
+	// so sub-packages can import it.
+	var typesPackage string
+	if g.language == "go" && g.stack == "server" {
+		typesPackage, err = computeTypesPackage(g.output)
+		if err != nil {
+			// Non-fatal: generated code will compile but sub-packages won't have the import.
+			fmt.Fprintf(os.Stderr, "warning: could not compute types package path: %v\n", err)
+		}
+	}
+
+	results, err := tmpl.Generate(api, g.packageName, typesPackage)
 	if err != nil {
 		return err
 	}
@@ -149,4 +162,56 @@ func (g *GenerateCommand) Run() error {
 	}
 
 	return nil
+}
+
+// computeTypesPackage resolves the full Go module import path for the output directory.
+// It walks up from the current directory to find go.mod and combines the module path
+// with the relative path from the module root to outputDir.
+func computeTypesPackage(outputDir string) (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Walk up to find go.mod
+	dir := cwd
+	var modulePath, moduleRoot string
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		data, err := os.ReadFile(goModPath)
+		if err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				if strings.HasPrefix(line, "module ") {
+					modulePath = strings.TrimSpace(strings.TrimPrefix(line, "module "))
+					moduleRoot = dir
+					break
+				}
+			}
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("go.mod not found")
+		}
+		dir = parent
+	}
+
+	if modulePath == "" {
+		return "", fmt.Errorf("module path not found in go.mod")
+	}
+
+	absOutputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return "", err
+	}
+
+	relPath, err := filepath.Rel(moduleRoot, absOutputDir)
+	if err != nil {
+		return "", err
+	}
+
+	// Normalize path separators for Go import paths
+	relPath = strings.ReplaceAll(relPath, string(filepath.Separator), "/")
+
+	return modulePath + "/" + relPath, nil
 }
