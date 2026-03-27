@@ -58,6 +58,76 @@ server TestServer {
 	assert.NotContains(t, importLine, "NestedType")
 }
 
+// TestTypeScript_ErrorsFileMirrorsGerrors verifies that the generated errors.ts
+// contains a class and ErrorCode entry for every exported error type in gerrors.
+// This test catches drift between the Go error definitions and the TypeScript output.
+func TestTypeScript_ErrorsFileMirrorsGerrors(t *testing.T) {
+	parser := generator.NewParser(`server TestServer { GetFoo GET /foo }`)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+	require.NoError(t, err)
+
+	results, err := g.Generate(parsed, "client")
+	require.NoError(t, err)
+
+	errorsTS := results["errors.ts"]
+	require.NotEmpty(t, errorsTS)
+
+	// Each of these must appear as both a class definition and a case in the switch.
+	// Update this list whenever a new public error type is added to runtime/gerrors.
+	expectedErrors := []struct {
+		className string
+		code      string
+	}{
+		{"NotFoundError", "not_found"},
+		{"InvalidArgumentError", "invalid_argument"},
+		{"MissingArgumentError", "missing_argument"},
+		{"AlreadyExistsError", "already_exists"},
+		{"UnauthenticatedError", "unauthenticated"},
+		{"UnimplementedError", "unimplemented"},
+		{"InternalError", "internal"},
+	}
+
+	for _, e := range expectedErrors {
+		assert.Contains(t, errorsTS, "class "+e.className, "errors.ts missing class %s", e.className)
+		assert.Contains(t, errorsTS, "'"+e.code+"'", "errors.ts missing error code '%s'", e.code)
+	}
+
+	assert.Contains(t, errorsTS, "export type ErrorCode")
+	assert.Contains(t, errorsTS, "parseGonzoError")
+	assert.Contains(t, errorsTS, "extends GonzoError")
+}
+
+// TestTypeScript_ClientUsesParseGonzoError verifies the generated client.ts throws
+// typed errors via parseGonzoError rather than a generic Error.
+func TestTypeScript_ClientUsesParseGonzoError(t *testing.T) {
+	const api = `
+type Item { Name string }
+server ItemService {
+  GetItem GET /items/{id string} returns(Item)
+  CreateItem POST /items body(Item) returns(Item)
+}
+`
+	parser := generator.NewParser(api)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+	require.NoError(t, err)
+
+	results, err := g.Generate(parsed, "client")
+	require.NoError(t, err)
+
+	client := results["client.ts"]
+	require.NotEmpty(t, client)
+
+	assert.Contains(t, client, "parseGonzoError", "client should import and use parseGonzoError")
+	assert.Contains(t, client, "throw await parseGonzoError(response)", "client should throw typed errors")
+	assert.NotContains(t, client, "new Error(", "client should not throw generic Error objects")
+}
+
 func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	// Parse the test API
 	input, err := fileio.ParseFile("test_data/test_server.api")
