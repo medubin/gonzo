@@ -194,7 +194,7 @@ go work use .
 
 - [ ] **File splitting / modularization** — Currently all types land in a single `types.go`/`types.ts` file and all client methods in a single `client.ts`. For large APIs this becomes hard to navigate. Add an option to split output across multiple files organized by resource or service group.
 
-- [ ] **TypeScript structured error types** — The Go server uses the `gerrors` package to return typed errors with distinct HTTP status codes (400/401/404/409/500). The TypeScript client throws a generic `Error` with only the status code as a string, so callers cannot distinguish error types. Generate typed error classes that mirror the `gerrors` hierarchy.
+- [x] **TypeScript structured error types** — Generates `errors.ts` with typed error classes derived at generation time by parsing `runtime/gerrors/errors.go`. The client throws typed errors (e.g. `NotFoundError`, `UnauthenticatedError`) instead of a generic `Error`, and adding a new error type to gerrors automatically updates the TypeScript output.
 
 - [ ] **TypeScript enum helpers** — Go generates `EnumFromType`, `EnumToType`, and `EnumIsValid` conversion functions for every enum. TypeScript only generates a string-union type with no validation or conversion utilities. Generate equivalent helper functions in TypeScript.
 
