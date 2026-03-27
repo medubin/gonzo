@@ -168,13 +168,13 @@ func (g *GenerateCommand) Run() error {
 // It walks up from the current directory to find go.mod and combines the module path
 // with the relative path from the module root to outputDir.
 func computeTypesPackage(outputDir string) (string, error) {
-	cwd, err := os.Getwd()
+	absOutputDir, err := filepath.Abs(outputDir)
 	if err != nil {
 		return "", err
 	}
 
-	// Walk up to find go.mod
-	dir := cwd
+	// Walk up from the output directory to find go.mod
+	dir := absOutputDir
 	var modulePath, moduleRoot string
 	for {
 		goModPath := filepath.Join(dir, "go.mod")
@@ -198,11 +198,6 @@ func computeTypesPackage(outputDir string) (string, error) {
 
 	if modulePath == "" {
 		return "", fmt.Errorf("module path not found in go.mod")
-	}
-
-	absOutputDir, err := filepath.Abs(outputDir)
-	if err != nil {
-		return "", err
 	}
 
 	relPath, err := filepath.Rel(moduleRoot, absOutputDir)
