@@ -51,6 +51,7 @@ var keywords = map[string]struct{}{
 	"returns":    {},
 	"parameters": {},
 	"import":     {},
+	"as":         {},
 }
 
 // Helper function for keyword checking
@@ -93,7 +94,7 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	// Handle symbols
-	if strings.ContainsRune("()=:,/{}", rune(char)) {
+	if strings.ContainsRune("()=:,/{}.", rune(char)) {
 		l.position++
 		return Token{Type: TokenSymbol, Value: string(char), Line: l.line}
 	}
@@ -366,9 +367,10 @@ type ParamDef struct {
 type Parser struct {
 	lexer        *Lexer
 	currentToken Token
-	comments     []Comment       // Buffer for accumulated comments
-	baseDir      string          // Directory of the file being parsed (for resolving imports)
-	visited      map[string]bool // Absolute paths already imported (shared across recursive parsers)
+	comments     []Comment         // Buffer for accumulated comments
+	baseDir      string            // Directory of the file being parsed (for resolving imports)
+	visited      map[string]bool   // Absolute paths already imported (shared across recursive parsers)
+	namespaces   map[string]string // namespace alias → capitalized prefix (e.g. "common" → "Common")
 }
 
 // NewParser creates a parser for the given input text.
@@ -378,8 +380,9 @@ type Parser struct {
 func NewParser(input string, filePath ...string) *Parser {
 	lexer := NewLexer(input)
 	parser := &Parser{
-		lexer:   lexer,
-		visited: make(map[string]bool),
+		lexer:      lexer,
+		visited:    make(map[string]bool),
+		namespaces: make(map[string]string),
 	}
 	if len(filePath) > 0 {
 		if abs, err := filepath.Abs(filePath[0]); err == nil {
@@ -482,9 +485,10 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 	return api, nil
 }
 
-// parseImport handles `import "path/to/file.api"` statements.
-// It reads and parses the referenced file, then flat-merges its definitions
-// into the current APIDefinition. Circular imports are silently skipped.
+// parseImport handles `import "path/to/file.api"` and `import "path" as "ns"` statements.
+// Without `as`, definitions are flat-merged. With `as`, all imported names are prefixed
+// with capitalize(ns) and type references within the imported file are rewritten accordingly.
+// Circular imports are silently skipped.
 func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNames map[string]bool) error {
 	p.nextToken() // consume "import"
 
@@ -494,6 +498,20 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 
 	importPath := p.currentToken.Value
 	p.nextToken() // consume the path string
+
+	// Optional: as "namespace"
+	var nsPrefix string
+	if p.currentToken.Type == TokenKeyword && p.currentToken.Value == "as" {
+		p.nextToken() // consume "as"
+		if p.currentToken.Type != TokenString {
+			return fmt.Errorf("expected string namespace after 'as' at line %d", p.currentToken.Line)
+		}
+		nsAlias := p.currentToken.Value
+		p.nextToken() // consume namespace string
+		nsPrefix = capitalizeFirst(nsAlias)
+		// Register so this file's type expressions can use namespace.Type syntax
+		p.namespaces[nsAlias] = nsPrefix
+	}
 
 	// Resolve relative to the current file's directory
 	absPath := importPath
@@ -519,9 +537,10 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 	}
 
 	child := &Parser{
-		lexer:   NewLexer(string(data)),
-		baseDir: filepath.Dir(absPath),
-		visited: p.visited, // share visited set for circular import detection
+		lexer:      NewLexer(string(data)),
+		baseDir:    filepath.Dir(absPath),
+		visited:    p.visited, // share visited set for circular import detection
+		namespaces: make(map[string]string), // each file has its own namespace scope
 	}
 	child.nextToken()
 
@@ -530,7 +549,12 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 		return fmt.Errorf("error in import %q: %v", importPath, err)
 	}
 
-	// Flat-merge, checking for conflicts against all names seen so far
+	// If a namespace was given, rewrite all names and internal type references
+	if nsPrefix != "" {
+		imported = applyNamespacePrefix(imported, nsPrefix)
+	}
+
+	// Flat-merge, checking for conflicts using the (possibly prefixed) names
 	for _, t := range imported.Types {
 		if typeNames[t.Name] {
 			return fmt.Errorf("import %q: type %q is already defined", importPath, t.Name)
@@ -554,6 +578,86 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 	}
 
 	return nil
+}
+
+// capitalizeFirst returns s with its first character uppercased.
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// applyNamespacePrefix rewrites all definition names and internal type references
+// in imported to have the given prefix. This makes types from `import "x.api" as "ns"`
+// become e.g. NsUser, NsRole — preventing conflicts and making origin clear.
+func applyNamespacePrefix(imported *APIDefinition, prefix string) *APIDefinition {
+	// Collect original names so we know which references to rewrite
+	definedNames := make(map[string]bool, len(imported.Types)+len(imported.Enums)+len(imported.Servers))
+	for _, t := range imported.Types {
+		definedNames[t.Name] = true
+	}
+	for _, e := range imported.Enums {
+		definedNames[e.Name] = true
+	}
+	for _, s := range imported.Servers {
+		definedNames[s.Name] = true
+	}
+
+	result := &APIDefinition{}
+
+	for _, t := range imported.Types {
+		t.Name = prefix + t.Name
+		t.Target = prefixName(t.Target, prefix, definedNames)
+		for i, f := range t.Fields {
+			t.Fields[i].Type = prefixTypeExpr(f.Type, prefix, definedNames)
+		}
+		t.ElementType = prefixTypeExpr(t.ElementType, prefix, definedNames)
+		t.KeyType = prefixTypeExpr(t.KeyType, prefix, definedNames)
+		t.ValueType = prefixTypeExpr(t.ValueType, prefix, definedNames)
+		result.Types = append(result.Types, t)
+	}
+	for _, e := range imported.Enums {
+		e.Name = prefix + e.Name
+		result.Enums = append(result.Enums, e)
+	}
+	for _, s := range imported.Servers {
+		s.Name = prefix + s.Name
+		for i, ep := range s.Endpoints {
+			s.Endpoints[i].Body = prefixTypeExpr(ep.Body, prefix, definedNames)
+			s.Endpoints[i].Returns = prefixTypeExpr(ep.Returns, prefix, definedNames)
+			s.Endpoints[i].Parameters = prefixTypeExpr(ep.Parameters, prefix, definedNames)
+		}
+		result.Servers = append(result.Servers, s)
+	}
+
+	return result
+}
+
+// prefixName prefixes name if it is a user-defined name from the imported file.
+func prefixName(name, prefix string, definedNames map[string]bool) string {
+	if definedNames[name] {
+		return prefix + name
+	}
+	return name
+}
+
+// prefixTypeExpr rewrites type references that refer to imported definitions.
+func prefixTypeExpr(expr *TypeExpr, prefix string, definedNames map[string]bool) *TypeExpr {
+	if expr == nil {
+		return nil
+	}
+	result := *expr
+	switch expr.Kind {
+	case "reference":
+		result.Name = prefixName(expr.Name, prefix, definedNames)
+	case "repeated":
+		result.ElementType = prefixTypeExpr(expr.ElementType, prefix, definedNames)
+	case "map":
+		result.KeyType = prefixTypeExpr(expr.KeyType, prefix, definedNames)
+		result.ValueType = prefixTypeExpr(expr.ValueType, prefix, definedNames)
+	}
+	return &result
 }
 
 func (p *Parser) parseTypeDef() (*TypeDef, error) {
@@ -607,12 +711,24 @@ func (p *Parser) parseTypeExpression() (*TypeExpr, error) {
 	case "map":
 		return p.parseMapExpr()
 	default:
-		// Simple type reference
-		typeName, err := p.expectIdentifier()
+		name, err := p.expectIdentifier()
 		if err != nil {
 			return nil, err
 		}
-		return &TypeExpr{Kind: "reference", Name: typeName}, nil
+		// Check for namespace.TypeName (e.g. common.User)
+		if p.currentToken.Type == TokenSymbol && p.currentToken.Value == "." {
+			p.nextToken() // consume "."
+			typeName, err := p.expectIdentifier()
+			if err != nil {
+				return nil, err
+			}
+			prefix, ok := p.namespaces[name]
+			if !ok {
+				return nil, fmt.Errorf("unknown namespace %q", name)
+			}
+			return &TypeExpr{Kind: "reference", Name: prefix + typeName}, nil
+		}
+		return &TypeExpr{Kind: "reference", Name: name}, nil
 	}
 }
 

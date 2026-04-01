@@ -190,6 +190,109 @@ type User int32
 	assert.Contains(t, err.Error(), `type "User" is already defined`)
 }
 
+func TestImport_NamespacedPrefixesNames(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "common.api", `
+type User string
+enum Color string { RED = "red" }
+`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api" as "common"
+type LocalType string
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	api, err := generator.NewParser(string(data), mainPath).Parse()
+	require.NoError(t, err)
+
+	typeNames := make(map[string]bool)
+	for _, tt := range api.Types {
+		typeNames[tt.Name] = true
+	}
+	assert.True(t, typeNames["CommonUser"], "imported User should be prefixed to CommonUser")
+	assert.False(t, typeNames["User"], "bare User should not exist")
+	assert.True(t, typeNames["LocalType"])
+
+	require.Len(t, api.Enums, 1)
+	assert.Equal(t, "CommonColor", api.Enums[0].Name)
+}
+
+func TestImport_NamespacedReferencesResolveInFields(t *testing.T) {
+	dir := t.TempDir()
+	// common.api: Role references Color (both get prefixed)
+	writeFile(t, dir, "common.api", `
+enum Color string { RED = "red" }
+type Role { Color Color }
+`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api" as "common"
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	api, err := generator.NewParser(string(data), mainPath).Parse()
+	require.NoError(t, err)
+
+	// Find CommonRole type and check its field still references CommonColor, not Color
+	var roleType *generator.TypeDef
+	for i, tt := range api.Types {
+		if tt.Name == "CommonRole" {
+			roleType = &api.Types[i]
+		}
+	}
+	require.NotNil(t, roleType, "CommonRole should exist")
+	require.Len(t, roleType.Fields, 1)
+	assert.Equal(t, "CommonColor", roleType.Fields[0].Type.Name, "field type reference should be rewritten to CommonColor")
+}
+
+func TestImport_NamespacedTypeUsableInEndpoint(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "common.api", `type User { Name string }`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api" as "common"
+server MyService {
+  GetUser GET /users
+    returns(common.User)
+}
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	api, err := generator.NewParser(string(data), mainPath).Parse()
+	require.NoError(t, err)
+
+	require.Len(t, api.Servers, 1)
+	require.Len(t, api.Servers[0].Endpoints, 1)
+	ep := api.Servers[0].Endpoints[0]
+	require.NotNil(t, ep.Returns)
+	assert.Equal(t, "CommonUser", ep.Returns.Name)
+}
+
+func TestImport_NamespacedConflictWithLocalType(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "common.api", `type User string`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api" as "common"
+type CommonUser string
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	_, err = generator.NewParser(string(data), mainPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"CommonUser" is already defined`)
+}
+
+func TestImport_UnknownNamespaceErrors(t *testing.T) {
+	p := generator.NewParser(`
+type Foo { X unknown.Type }
+`)
+	_, err := p.Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown namespace "unknown"`)
+}
+
 func TestImport_DuplicateServerInSameFile(t *testing.T) {
 	p := generator.NewParser(`
 server MyService {
