@@ -200,6 +200,25 @@ import "c.api"
 	assert.Contains(t, err.Error(), `cannot also import without a namespace`)
 }
 
+func TestImport_DiamondDifferentNamespacesErrors(t *testing.T) {
+	// A imports C as "alpha". B imports C as "beta".
+	// A imports B first (which processes C as "beta"), then tries to import C as "alpha" — error.
+	dir := t.TempDir()
+	writeFile(t, dir, "c.api", `type Thing string`)
+	writeFile(t, dir, "b.api", `import "c.api" as "beta"`)
+	mainPath := writeFile(t, dir, "a.api", `
+import "b.api"
+import "c.api" as "alpha"
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	_, err = generator.NewParser(string(data), mainPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `already imported as namespace "beta"`)
+	assert.Contains(t, err.Error(), `cannot also import as "alpha"`)
+}
+
 func TestImport_DiamondSameNamespaceIsOk(t *testing.T) {
 	// A imports B and C as "c". B also imports C as "c".
 	// Both use the same alias, so C is only processed once (via B) and A's import is skipped.
