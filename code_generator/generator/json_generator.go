@@ -2,6 +2,8 @@ package generator
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -48,6 +50,7 @@ var keywords = map[string]struct{}{
 	"body":       {},
 	"returns":    {},
 	"parameters": {},
+	"import":     {},
 }
 
 // Helper function for keyword checking
@@ -363,12 +366,22 @@ type ParamDef struct {
 type Parser struct {
 	lexer        *Lexer
 	currentToken Token
-	comments     []Comment // Buffer for accumulated comments
+	comments     []Comment       // Buffer for accumulated comments
+	baseDir      string          // Directory of the file being parsed (for resolving imports)
+	visited      map[string]bool // Absolute paths already imported (shared across recursive parsers)
 }
 
-func NewParser(input string) *Parser {
+// NewParser creates a parser for the given input text.
+// baseDir (optional) is the directory of the source file; required for resolving imports.
+func NewParser(input string, baseDir ...string) *Parser {
 	lexer := NewLexer(input)
-	parser := &Parser{lexer: lexer}
+	parser := &Parser{
+		lexer:   lexer,
+		visited: make(map[string]bool),
+	}
+	if len(baseDir) > 0 {
+		parser.baseDir = baseDir[0]
+	}
 	parser.nextToken()
 	return parser
 }
@@ -419,6 +432,10 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 		}
 
 		switch p.currentToken.Value {
+		case "import":
+			if err := p.parseImport(api); err != nil {
+				return nil, err
+			}
 		case "type":
 			typeDef, err := p.parseTypeDef()
 			if err != nil {
@@ -443,6 +460,62 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 	}
 
 	return api, nil
+}
+
+// parseImport handles `import "path/to/file.api"` statements.
+// It reads and parses the referenced file, then flat-merges its definitions
+// into the current APIDefinition. Circular imports are silently skipped.
+func (p *Parser) parseImport(api *APIDefinition) error {
+	p.nextToken() // consume "import"
+
+	if p.currentToken.Type != TokenString {
+		return fmt.Errorf("expected string path after import at line %d", p.currentToken.Line)
+	}
+
+	importPath := p.currentToken.Value
+	p.nextToken() // consume the path string
+
+	// Resolve relative to the current file's directory
+	absPath := importPath
+	if !filepath.IsAbs(importPath) && p.baseDir != "" {
+		absPath = filepath.Join(p.baseDir, importPath)
+	}
+
+	var err error
+	absPath, err = filepath.Abs(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve import %q: %v", importPath, err)
+	}
+
+	// Skip if already imported (handles circular imports)
+	if p.visited[absPath] {
+		return nil
+	}
+	p.visited[absPath] = true
+
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to read import %q: %v", importPath, err)
+	}
+
+	child := &Parser{
+		lexer:   NewLexer(string(data)),
+		baseDir: filepath.Dir(absPath),
+		visited: p.visited, // share visited set for circular import detection
+	}
+	child.nextToken()
+
+	imported, err := child.Parse()
+	if err != nil {
+		return fmt.Errorf("error in import %q: %v", importPath, err)
+	}
+
+	// Flat-merge all definitions
+	api.Types = append(api.Types, imported.Types...)
+	api.Enums = append(api.Enums, imported.Enums...)
+	api.Servers = append(api.Servers, imported.Servers...)
+
+	return nil
 }
 
 func (p *Parser) parseTypeDef() (*TypeDef, error) {
