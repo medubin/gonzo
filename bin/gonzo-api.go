@@ -126,11 +126,7 @@ func (g *GenerateCommand) Run() error {
 		return err
 	}
 
-	absInput, err := filepath.Abs(g.input)
-	if err != nil {
-		return err
-	}
-	parser := generator.NewParser(string(lines), filepath.Dir(absInput))
+	parser := generator.NewParser(string(lines), g.input)
 	api, err := parser.Parse()
 	if err != nil {
 		return err

@@ -372,15 +372,20 @@ type Parser struct {
 }
 
 // NewParser creates a parser for the given input text.
-// baseDir (optional) is the directory of the source file; required for resolving imports.
-func NewParser(input string, baseDir ...string) *Parser {
+// filePath (optional) is the absolute (or relative) path of the source file.
+// It is used to resolve imports relative to the file's directory, and to mark
+// the file as visited so that circular imports back to the root are skipped.
+func NewParser(input string, filePath ...string) *Parser {
 	lexer := NewLexer(input)
 	parser := &Parser{
 		lexer:   lexer,
 		visited: make(map[string]bool),
 	}
-	if len(baseDir) > 0 {
-		parser.baseDir = baseDir[0]
+	if len(filePath) > 0 {
+		if abs, err := filepath.Abs(filePath[0]); err == nil {
+			parser.baseDir = filepath.Dir(abs)
+			parser.visited[abs] = true // prevent circular imports back to this file
+		}
 	}
 	parser.nextToken()
 	return parser
@@ -424,6 +429,9 @@ func (p *Parser) expectIdentifier() (string, error) {
 
 func (p *Parser) Parse() (*APIDefinition, error) {
 	api := &APIDefinition{}
+	typeNames := make(map[string]bool)
+	enumNames := make(map[string]bool)
+	serverNames := make(map[string]bool)
 
 	for p.currentToken.Type != TokenEOF {
 		// Check for error tokens
@@ -433,7 +441,7 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 
 		switch p.currentToken.Value {
 		case "import":
-			if err := p.parseImport(api); err != nil {
+			if err := p.parseImport(api, typeNames, enumNames, serverNames); err != nil {
 				return nil, err
 			}
 		case "type":
@@ -441,18 +449,30 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 			if err != nil {
 				return nil, err
 			}
+			if typeNames[typeDef.Name] {
+				return nil, fmt.Errorf("type %q is already defined", typeDef.Name)
+			}
+			typeNames[typeDef.Name] = true
 			api.Types = append(api.Types, *typeDef)
 		case "enum":
 			enumDef, err := p.parseEnumDef()
 			if err != nil {
 				return nil, err
 			}
+			if enumNames[enumDef.Name] {
+				return nil, fmt.Errorf("enum %q is already defined", enumDef.Name)
+			}
+			enumNames[enumDef.Name] = true
 			api.Enums = append(api.Enums, *enumDef)
 		case "server":
 			serverDef, err := p.parseServerDef()
 			if err != nil {
 				return nil, err
 			}
+			if serverNames[serverDef.Name] {
+				return nil, fmt.Errorf("server %q is already defined", serverDef.Name)
+			}
+			serverNames[serverDef.Name] = true
 			api.Servers = append(api.Servers, *serverDef)
 		default:
 			return nil, fmt.Errorf("unexpected token '%s' at line %d", p.currentToken.Value, p.currentToken.Line)
@@ -465,7 +485,7 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 // parseImport handles `import "path/to/file.api"` statements.
 // It reads and parses the referenced file, then flat-merges its definitions
 // into the current APIDefinition. Circular imports are silently skipped.
-func (p *Parser) parseImport(api *APIDefinition) error {
+func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNames map[string]bool) error {
 	p.nextToken() // consume "import"
 
 	if p.currentToken.Type != TokenString {
@@ -510,10 +530,28 @@ func (p *Parser) parseImport(api *APIDefinition) error {
 		return fmt.Errorf("error in import %q: %v", importPath, err)
 	}
 
-	// Flat-merge all definitions
-	api.Types = append(api.Types, imported.Types...)
-	api.Enums = append(api.Enums, imported.Enums...)
-	api.Servers = append(api.Servers, imported.Servers...)
+	// Flat-merge, checking for conflicts against all names seen so far
+	for _, t := range imported.Types {
+		if typeNames[t.Name] {
+			return fmt.Errorf("import %q: type %q is already defined", importPath, t.Name)
+		}
+		typeNames[t.Name] = true
+		api.Types = append(api.Types, t)
+	}
+	for _, e := range imported.Enums {
+		if enumNames[e.Name] {
+			return fmt.Errorf("import %q: enum %q is already defined", importPath, e.Name)
+		}
+		enumNames[e.Name] = true
+		api.Enums = append(api.Enums, e)
+	}
+	for _, s := range imported.Servers {
+		if serverNames[s.Name] {
+			return fmt.Errorf("import %q: server %q is already defined", importPath, s.Name)
+		}
+		serverNames[s.Name] = true
+		api.Servers = append(api.Servers, s)
+	}
 
 	return nil
 }

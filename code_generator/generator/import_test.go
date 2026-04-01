@@ -42,7 +42,7 @@ server MyServer {
 	data, err := os.ReadFile(mainPath)
 	require.NoError(t, err)
 
-	p := generator.NewParser(string(data), dir)
+	p := generator.NewParser(string(data), mainPath)
 	api, err := p.Parse()
 	require.NoError(t, err)
 
@@ -79,7 +79,7 @@ type TopType bool
 	data, err := os.ReadFile(mainPath)
 	require.NoError(t, err)
 
-	p := generator.NewParser(string(data), dir)
+	p := generator.NewParser(string(data), mainPath)
 	api, err := p.Parse()
 	require.NoError(t, err)
 
@@ -109,7 +109,7 @@ type TypeB string
 	data, err := os.ReadFile(mainPath)
 	require.NoError(t, err)
 
-	p := generator.NewParser(string(data), dir)
+	p := generator.NewParser(string(data), mainPath)
 	api, err := p.Parse()
 	require.NoError(t, err)
 
@@ -128,7 +128,7 @@ func TestImport_FileNotFound(t *testing.T) {
 	data, err := os.ReadFile(mainPath)
 	require.NoError(t, err)
 
-	p := generator.NewParser(string(data), dir)
+	p := generator.NewParser(string(data), mainPath)
 	_, err = p.Parse()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nonexistent.api")
@@ -148,4 +148,58 @@ func TestImport_NoBadSideEffectsWithoutBaseDir(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, api.Types, 1)
 	assert.Equal(t, "Foo", api.Types[0].Name)
+}
+
+func TestImport_ConflictingTypeFromImport(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "common.api", `type User string`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api"
+type User string
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	_, err = generator.NewParser(string(data), mainPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `type "User" is already defined`)
+}
+
+func TestImport_ConflictingEnumFromImport(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "common.api", `enum Color string { RED = "red" }`)
+	mainPath := writeFile(t, dir, "main.api", `
+import "common.api"
+enum Color string { BLUE = "blue" }
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	_, err = generator.NewParser(string(data), mainPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `enum "Color" is already defined`)
+}
+
+func TestImport_DuplicateTypeInSameFile(t *testing.T) {
+	p := generator.NewParser(`
+type User string
+type User int32
+`)
+	_, err := p.Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `type "User" is already defined`)
+}
+
+func TestImport_DuplicateServerInSameFile(t *testing.T) {
+	p := generator.NewParser(`
+server MyService {
+  GetFoo GET /foo
+}
+server MyService {
+  GetBar GET /bar
+}
+`)
+	_, err := p.Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `server "MyService" is already defined`)
 }
