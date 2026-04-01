@@ -180,6 +180,46 @@ enum Color string { BLUE = "blue" }
 	assert.Contains(t, err.Error(), `enum "Color" is already defined`)
 }
 
+func TestImport_DiamondConflictFlatVsNamespaced(t *testing.T) {
+	// A imports B (flat) and C (flat). B imports C as "c".
+	// When A processes import B, C gets visited as "c".
+	// When A then tries to import C flat, it should error.
+	dir := t.TempDir()
+	writeFile(t, dir, "c.api", `type Thing string`)
+	writeFile(t, dir, "b.api", `import "c.api" as "c"`)
+	mainPath := writeFile(t, dir, "a.api", `
+import "b.api"
+import "c.api"
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	_, err = generator.NewParser(string(data), mainPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `already imported as namespace "c"`)
+	assert.Contains(t, err.Error(), `cannot also import without a namespace`)
+}
+
+func TestImport_DiamondSameNamespaceIsOk(t *testing.T) {
+	// A imports B and C as "c". B also imports C as "c".
+	// Both use the same alias, so C is only processed once (via B) and A's import is skipped.
+	dir := t.TempDir()
+	writeFile(t, dir, "c.api", `type Thing string`)
+	writeFile(t, dir, "b.api", `import "c.api" as "c"`)
+	mainPath := writeFile(t, dir, "a.api", `
+import "b.api"
+import "c.api" as "c"
+`)
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+
+	api, err := generator.NewParser(string(data), mainPath).Parse()
+	require.NoError(t, err)
+
+	require.Len(t, api.Types, 1)
+	assert.Equal(t, "CThing", api.Types[0].Name)
+}
+
 func TestImport_DuplicateTypeInSameFile(t *testing.T) {
 	p := generator.NewParser(`
 type User string

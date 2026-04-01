@@ -369,7 +369,7 @@ type Parser struct {
 	currentToken Token
 	comments     []Comment         // Buffer for accumulated comments
 	baseDir      string            // Directory of the file being parsed (for resolving imports)
-	visited      map[string]bool   // Absolute paths already imported (shared across recursive parsers)
+	visited      map[string]string // absPath → namespace alias used ("" = flat); shared across recursive parsers
 	namespaces   map[string]string // namespace alias → capitalized prefix (e.g. "common" → "Common")
 }
 
@@ -381,13 +381,13 @@ func NewParser(input string, filePath ...string) *Parser {
 	lexer := NewLexer(input)
 	parser := &Parser{
 		lexer:      lexer,
-		visited:    make(map[string]bool),
+		visited:    make(map[string]string),
 		namespaces: make(map[string]string),
 	}
 	if len(filePath) > 0 {
 		if abs, err := filepath.Abs(filePath[0]); err == nil {
 			parser.baseDir = filepath.Dir(abs)
-			parser.visited[abs] = true // prevent circular imports back to this file
+			parser.visited[abs] = "" // root file is flat; prevents circular imports back to it
 		}
 	}
 	parser.nextToken()
@@ -500,13 +500,13 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 	p.nextToken() // consume the path string
 
 	// Optional: as "namespace"
-	var nsPrefix string
+	var nsAlias, nsPrefix string
 	if p.currentToken.Type == TokenKeyword && p.currentToken.Value == "as" {
 		p.nextToken() // consume "as"
 		if p.currentToken.Type != TokenString {
 			return fmt.Errorf("expected string namespace after 'as' at line %d", p.currentToken.Line)
 		}
-		nsAlias := p.currentToken.Value
+		nsAlias = p.currentToken.Value
 		p.nextToken() // consume namespace string
 		nsPrefix = capitalizeFirst(nsAlias)
 		// Register so this file's type expressions can use namespace.Type syntax
@@ -525,11 +525,20 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 		return fmt.Errorf("failed to resolve import %q: %v", importPath, err)
 	}
 
-	// Skip if already imported (handles circular imports)
-	if p.visited[absPath] {
-		return nil
+	// Check if already imported
+	if storedAlias, seen := p.visited[absPath]; seen {
+		if storedAlias == nsAlias {
+			return nil // same import (circular or diamond with identical namespace) — skip
+		}
+		if storedAlias == "" {
+			return fmt.Errorf("import %q: already imported without a namespace, cannot also import as %q", importPath, nsAlias)
+		}
+		if nsAlias == "" {
+			return fmt.Errorf("import %q: already imported as namespace %q, cannot also import without a namespace", importPath, storedAlias)
+		}
+		return fmt.Errorf("import %q: already imported as namespace %q, cannot also import as %q", importPath, storedAlias, nsAlias)
 	}
-	p.visited[absPath] = true
+	p.visited[absPath] = nsAlias
 
 	data, err := os.ReadFile(absPath)
 	if err != nil {
