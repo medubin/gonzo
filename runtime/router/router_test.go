@@ -171,11 +171,10 @@ func TestRouter_ServeHTTP_RequiresBody_MissingBody(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestRouter_ServeHTTP_NilRouteInfo_Panics(t *testing.T) {
+func TestRouter_Route_NilRouteInfo_ReturnsError(t *testing.T) {
 	rtr := &router.Router{}
-	assert.Panics(t, func() {
-		rtr.Route(func(w http.ResponseWriter, r *http.Request) {}, nil)
-	})
+	err := rtr.Route(func(w http.ResponseWriter, r *http.Request) {}, nil)
+	assert.Error(t, err)
 }
 
 func TestRouter_Use_MiddlewareExecuted(t *testing.T) {

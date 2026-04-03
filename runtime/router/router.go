@@ -21,29 +21,30 @@ type Router struct {
 	middleware []middleware.Middleware
 }
 
-func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) {
+func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) error {
 	if info == nil {
-		panic("RouteInfo is required")
+		return fmt.Errorf("RouteInfo is required")
 	}
 
 	exactPath := url.ConvertPathToRegex(info.Path)
 
 	// Create route-specific middleware based on route info
 	var routeMiddleware []middleware.Middleware
-	
+
 	// Auto-add RequireBody middleware if route requires a body
 	if info.RequiresBody {
 		routeMiddleware = append(routeMiddleware, middleware.NewRequireBody())
 	}
 
 	e := RouteEntry{
-		Method:           info.Method,
-		Path:             exactPath,
-		HandlerFunc:      handlerFunc,
-		Info:             info,
-		RouteMiddleware:  routeMiddleware,
+		Method:          info.Method,
+		Path:            exactPath,
+		HandlerFunc:     handlerFunc,
+		Info:            info,
+		RouteMiddleware: routeMiddleware,
 	}
 	rtr.routes = append(rtr.routes, e)
+	return nil
 }
 
 func (rtr *Router) Use(m middleware.Middleware) {

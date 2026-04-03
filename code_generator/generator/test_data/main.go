@@ -41,10 +41,14 @@ func run() error {
 	// r.Use(errorMiddleware)
 
 	us := &user_service.UserServiceImpl{}
-	user_service.StartUserService(us, r)
+	if err := user_service.StartUserService(us, r); err != nil {
+		return err
+	}
 
 	ns := &notification_service.NotificationServiceImpl{}
-	notification_service.StartNotificationService(ns, r)
+	if err := notification_service.StartNotificationService(ns, r); err != nil {
+		return err
+	}
 
 	err := http.ListenAndServe(":8080", r)
 	return err

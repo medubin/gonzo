@@ -107,15 +107,18 @@ templates:
     {{end}}	{{.Name}}(ctx context.Context, body {{qual $.PackageName .BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{qual $.PackageName .Parameters}}{{else}}struct{}{{end}}, {{qual $.PackageName .URLType}}]) (*handle.Response[{{.ReturnType | replace "*" "" | qual $.PackageName}}], error)
     {{end}}}
 
-    func Start{{.Server.Name}}(s {{.Server.Name}}, r *router.Router) {
-    {{range .Server.Endpoints}}	r.Route(handle.Handle(s.{{.Name}}), &types.RouteInfo{
+    func Start{{.Server.Name}}(s {{.Server.Name}}, r *router.Router) error {
+    {{range .Server.Endpoints}}	if err := r.Route(handle.Handle(s.{{.Name}}), &types.RouteInfo{
       Method: "{{.Method}}",
       Path: "{{.Path}}",
       Endpoint: "{{.Name}}",
       Server: "{{$.Server.Name}}",
       RequiresBody: {{.RequiresBody}},
-      })
-    {{end}}}
+      }); err != nil {
+    		return err
+    	}
+    {{end}}	return nil
+    }
 
   server_impl: |
     {{.Settings.PackageComment}}
