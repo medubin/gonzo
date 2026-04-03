@@ -10,6 +10,12 @@ import (
 	"github.com/medubin/gonzo/runtime/types"
 )
 
+// Context key types — unexported structs prevent collisions with keys from other packages.
+type startTimeKey struct{}
+type userKey struct{}
+type authenticatedKey struct{}
+type requestIDKey struct{}
+
 // LoggingMiddleware logs request and response information
 type LoggingMiddleware struct {
 	BaseMiddleware
@@ -21,13 +27,13 @@ func NewLoggingMiddleware() *LoggingMiddleware {
 
 func (m *LoggingMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareRequest, info *types.RouteInfo) (context.Context, *MiddlewareRequest, error) {
 	// Add start time to context for duration calculation
-	ctx = context.WithValue(ctx, "middleware_start_time", time.Now())
+	ctx = context.WithValue(ctx, startTimeKey{}, time.Now())
 	log.Printf("→ %s %s (%s.%s)", req.Method, req.Path, info.Server, info.Endpoint)
 	return ctx, req, nil
 }
 
 func (m *LoggingMiddleware) AfterHandler(ctx context.Context, req *MiddlewareRequest, resp *MiddlewareResponse, info *types.RouteInfo) (*MiddlewareResponse, error) {
-	if startTime, ok := ctx.Value("middleware_start_time").(time.Time); ok {
+	if startTime, ok := ctx.Value(startTimeKey{}).(time.Time); ok {
 		duration := time.Since(startTime)
 		log.Printf("← %s %s -> %d (%v)", req.Method, req.Path, resp.Status, duration)
 	}
@@ -35,7 +41,7 @@ func (m *LoggingMiddleware) AfterHandler(ctx context.Context, req *MiddlewareReq
 }
 
 func (m *LoggingMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, err error, info *types.RouteInfo) (*MiddlewareResponse, error) {
-	if startTime, ok := ctx.Value("middleware_start_time").(time.Time); ok {
+	if startTime, ok := ctx.Value(startTimeKey{}).(time.Time); ok {
 		duration := time.Since(startTime)
 		log.Printf("✗ %s %s -> ERROR (%v): %v", req.Method, req.Path, duration, err)
 	}
@@ -64,10 +70,6 @@ func (m *AuthMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareReque
 
 	// Extract token from Authorization header
 	authHeader, exists := req.Headers["Authorization"]
-	if !exists {
-		authHeader, exists = req.Headers["authorization"] // Try lowercase
-	}
-
 	if !exists || authHeader == "" {
 		return ctx, req, fmt.Errorf("missing authorization header")
 	}
@@ -89,8 +91,8 @@ func (m *AuthMiddleware) BeforeHandler(ctx context.Context, req *MiddlewareReque
 	}
 
 	// Add user to context
-	ctx = context.WithValue(ctx, "user", user)
-	ctx = context.WithValue(ctx, "authenticated", true)
+	ctx = context.WithValue(ctx, userKey{}, user)
+	ctx = context.WithValue(ctx, authenticatedKey{}, true)
 
 	return ctx, req, nil
 }
@@ -131,7 +133,7 @@ func (m *ErrorHandlerMiddleware) OnError(ctx context.Context, req *MiddlewareReq
 	}
 
 	// Add request ID if available
-	if requestID := ctx.Value("request_id"); requestID != nil {
+	if requestID := ctx.Value(requestIDKey{}); requestID != nil {
 		errorResp["request_id"] = requestID
 	}
 
