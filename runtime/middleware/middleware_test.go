@@ -74,6 +74,20 @@ func TestConvertHeadersFromHTTP(t *testing.T) {
 	assert.Equal(t, "Bearer token", result["Authorization"])
 }
 
+func TestConvertHeadersFromHTTP_NormalizesKeys(t *testing.T) {
+	// http.Header stores canonical keys, but be explicit that the output is always canonical
+	// so CORS and other middleware can reliably do map lookups like req.Headers["Origin"].
+	h := http.Header{}
+	h["origin"] = []string{"https://example.com"} // bypass Set() to insert a non-canonical key
+	h["content-type"] = []string{"application/json"}
+
+	result := middleware.ConvertHeadersFromHTTP(h)
+
+	assert.Equal(t, "https://example.com", result["Origin"], "non-canonical 'origin' should be stored as 'Origin'")
+	assert.Equal(t, "application/json", result["Content-Type"], "non-canonical 'content-type' should be stored as 'Content-Type'")
+	assert.Empty(t, result["origin"], "non-canonical key should not appear in result")
+}
+
 func TestConvertHeadersFromHTTP_Empty(t *testing.T) {
 	result := middleware.ConvertHeadersFromHTTP(http.Header{})
 	assert.Empty(t, result)

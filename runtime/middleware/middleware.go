@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"net/textproto"
 
 	"github.com/medubin/gonzo/runtime/cookies"
 	"github.com/medubin/gonzo/runtime/types"
@@ -66,12 +67,14 @@ func (m *BaseMiddleware) OnError(ctx context.Context, req *MiddlewareRequest, er
 	return nil, err // Let error propagate
 }
 
-// ConvertHeadersFromHTTP converts http.Header to map[string]string
+// ConvertHeadersFromHTTP converts http.Header to map[string]string.
+// Keys are normalized to canonical MIME header form (e.g. "content-type" → "Content-Type")
+// so that lookups like req.Headers["Origin"] are always consistent.
 func ConvertHeadersFromHTTP(headers http.Header) map[string]string {
 	result := make(map[string]string)
 	for key, values := range headers {
 		if len(values) > 0 {
-			result[key] = values[0] // Take first value
+			result[textproto.CanonicalMIMEHeaderKey(key)] = values[0]
 		}
 	}
 	return result
