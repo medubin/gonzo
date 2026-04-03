@@ -230,16 +230,95 @@ func TestRouter_ServeHTTP_PanicRecovery(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func TestRouter_ServeHTTP_MiddlewareReceivesBody(t *testing.T) {
+	rtr := &router.Router{}
+
+	var capturedBody any
+	m := &recordingMiddleware{
+		onBeforeWithReq: func(req *middleware.MiddlewareRequest) {
+			capturedBody = req.Body
+		},
+	}
+	rtr.Use(m)
+
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}, newRouteInfo("POST", "/items"))
+
+	body := `{"name":"thing"}`
+	req := httptest.NewRequest("POST", "/items", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.ContentLength = int64(len(body))
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	require.NotNil(t, capturedBody)
+	raw, ok := capturedBody.(json.RawMessage)
+	require.True(t, ok, "expected json.RawMessage, got %T", capturedBody)
+	assert.JSONEq(t, body, string(raw))
+}
+
+func TestRouter_ServeHTTP_HandlerCanReadBufferedBody(t *testing.T) {
+	rtr := &router.Router{}
+
+	var handlerBody map[string]string
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		err := json.NewDecoder(r.Body).Decode(&handlerBody)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}, newRouteInfo("POST", "/items"))
+
+	body := `{"key":"value"}`
+	req := httptest.NewRequest("POST", "/items", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.ContentLength = int64(len(body))
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, map[string]string{"key": "value"}, handlerBody)
+}
+
+func TestRouter_ServeHTTP_NonJSONBodyPassesThrough(t *testing.T) {
+	rtr := &router.Router{}
+
+	var middlewareBody any
+	m := &recordingMiddleware{
+		onBeforeWithReq: func(req *middleware.MiddlewareRequest) {
+			middlewareBody = req.Body
+		},
+	}
+	rtr.Use(m)
+
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}, newRouteInfo("POST", "/items"))
+
+	body := `name=thing`
+	req := httptest.NewRequest("POST", "/items", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ContentLength = int64(len(body))
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Nil(t, middlewareBody, "non-JSON body should not be parsed into middleware")
+}
+
 // --- recordingMiddleware helper ---
 
 type recordingMiddleware struct {
 	middleware.BaseMiddleware
-	onBefore func()
+	onBefore        func()
+	onBeforeWithReq func(*middleware.MiddlewareRequest)
 }
 
 func (m *recordingMiddleware) BeforeHandler(ctx context.Context, req *middleware.MiddlewareRequest, info *types.RouteInfo) (context.Context, *middleware.MiddlewareRequest, error) {
 	if m.onBefore != nil {
 		m.onBefore()
+	}
+	if m.onBeforeWithReq != nil {
+		m.onBeforeWithReq(req)
 	}
 	return ctx, req, nil
 }

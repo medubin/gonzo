@@ -119,15 +119,15 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		
 		// Replace the body with a new reader for the handler to use
 		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-		
-		// Parse JSON for middleware
+
+		// Validate JSON early and pass raw bytes to middleware.
+		// The handler does the one typed parse; we avoid a redundant unmarshal here.
 		if len(bodyBytes) > 0 {
-			var bodyData any
-			if err := json.Unmarshal(bodyBytes, &bodyData); err != nil {
-				gerrors.JSONError(w, gerrors.MalformedError("invalid JSON: "+err.Error()))
+			if !json.Valid(bodyBytes) {
+				gerrors.JSONError(w, gerrors.MalformedError("invalid JSON"))
 				return
 			}
-			body = bodyData
+			body = json.RawMessage(bodyBytes)
 		}
 	}
 
