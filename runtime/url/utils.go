@@ -7,9 +7,46 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type ParamKey = struct{}
+
+type fieldMeta struct {
+	index int
+	tag   string
+}
+
+type cacheKey struct {
+	typ     reflect.Type
+	tagName string
+}
+
+var fieldCache sync.Map // map[cacheKey][]fieldMeta
+
+func getFieldMeta(t reflect.Type, tagName string) []fieldMeta {
+	key := cacheKey{t, tagName}
+	if v, ok := fieldCache.Load(key); ok {
+		return v.([]fieldMeta)
+	}
+	var meta []fieldMeta
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		tag := f.Tag.Get(tagName)
+		if tag == "" {
+			continue
+		}
+		if tagName == "json" {
+			tag = strings.Split(tag, ",")[0]
+		}
+		if tag == "" || tag == "-" {
+			continue
+		}
+		meta = append(meta, fieldMeta{index: i, tag: tag})
+	}
+	fieldCache.Store(key, meta)
+	return meta
+}
 
 func ConvertPathToRegex(path string) *regexp.Regexp {
 	path = strings.TrimRight(path, "/")
@@ -53,33 +90,14 @@ func GetTypedParamsFromQuery[Params any](query url.Values) Params {
 	return params
 }
 
-// setFieldsFromMap uses reflection to set struct fields based on tag values
+// setFieldsFromMap uses reflection to set struct fields based on tag values.
+// Field metadata is cached per (type, tagName) pair via sync.Map so the
+// reflection loop over struct fields only runs once per type.
 func setFieldsFromMap(structPtr interface{}, paramMap map[string]string, tagName string) {
 	v := reflect.ValueOf(structPtr).Elem()
-	t := v.Type()
-	
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		fieldType := t.Field(i)
-		
-		if !field.CanSet() {
-			continue
-		}
-		
-		// Get the tag value (e.g., `url:"role"` or `json:"page"`)
-		tag := fieldType.Tag.Get(tagName)
-		if tag == "" {
-			continue
-		}
-		
-		// Handle json tags that might have ",omitempty"
-		if tagName == "json" {
-			tag = strings.Split(tag, ",")[0]
-		}
-		
-		// Look for the parameter in the map
-		if value, exists := paramMap[tag]; exists {
-			setFieldValue(field, value)
+	for _, m := range getFieldMeta(v.Type(), tagName) {
+		if value, exists := paramMap[m.tag]; exists {
+			setFieldValue(v.Field(m.index), value)
 		}
 	}
 }

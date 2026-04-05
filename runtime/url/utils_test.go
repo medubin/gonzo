@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"regexp"
+	"sync"
 	"testing"
 
 	gonzourl "github.com/medubin/gonzo/runtime/url"
@@ -122,4 +123,28 @@ func TestGetTypedParamsFromContext_InvalidInt_IgnoresField(t *testing.T) {
 	ctx := context.WithValue(context.Background(), gonzourl.ParamKey{}, params)
 	result := gonzourl.GetTypedParamsFromContext[X](ctx)
 	assert.Equal(t, int64(0), result.Count)
+}
+
+// TestGetTypedParamsFromContext_ConcurrentSameType verifies that concurrent
+// calls for the same type produce correct results — the key behavioral
+// guarantee of the sync.Map cache (no data races, no corruption).
+func TestGetTypedParamsFromContext_ConcurrentSameType(t *testing.T) {
+	type X struct {
+		ID   string `url:"id"`
+		Name string `url:"name"`
+	}
+	params := map[string]string{"id": "42", "name": "alice"}
+	ctx := context.WithValue(context.Background(), gonzourl.ParamKey{}, params)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result := gonzourl.GetTypedParamsFromContext[X](ctx)
+			assert.Equal(t, "42", result.ID)
+			assert.Equal(t, "alice", result.Name)
+		}()
+	}
+	wg.Wait()
 }

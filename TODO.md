@@ -18,7 +18,7 @@
 
 ## Performance
 
-- [ ] **Reflection on every request** — [url/utils.go:57-85](runtime/url/utils.go#L57)
+- [x] **Reflection on every request** — [url/utils.go:57-85](runtime/url/utils.go#L57)
   `setFieldsFromMap` reflects on struct fields per-request with no caching. Cache field metadata per type using `sync.Map`.
 
 - [x] **`responseWriter` uses byte slice append** — [router/router.go:80](runtime/router/router.go#L80)
