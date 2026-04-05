@@ -55,7 +55,7 @@ func (rtr *Router) Use(m middleware.Middleware) {
 type responseWriter struct {
 	statusCode int
 	headers    http.Header
-	body       []byte
+	body       bytes.Buffer
 	written    bool
 }
 
@@ -78,7 +78,7 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	if !rw.written {
 		rw.WriteHeader(200)
 	}
-	rw.body = append(rw.body, b...)
+	rw.body.Write(b)
 	return len(b), nil
 }
 
@@ -215,7 +215,7 @@ func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	responseCapture := &responseWriter{statusCode: 404}
 	errorMsg := map[string]string{"error": fmt.Sprintf("bad_route: %s: %s", method, path)}
 	if bodyBytes, err := json.Marshal(errorMsg); err == nil {
-		responseCapture.body = bodyBytes
+		responseCapture.body.Write(bodyBytes)
 		responseCapture.Header().Set("Content-Type", "application/json")
 	}
 
@@ -245,12 +245,12 @@ func (rtr *Router) handleMiddlewareError(w http.ResponseWriter, ctx context.Cont
 func (rtr *Router) handleMiddlewareResponse(w http.ResponseWriter, ctx context.Context, req *middleware.MiddlewareRequest, responseCapture *responseWriter, info *types.RouteInfo, allMiddleware []middleware.Middleware) {
 	// Parse captured body for middleware access
 	var bodyForMiddleware any
-	if len(responseCapture.body) > 0 {
+	if responseCapture.body.Len() > 0 {
 		var jsonBody any
-		if err := json.Unmarshal(responseCapture.body, &jsonBody); err == nil {
+		if err := json.Unmarshal(responseCapture.body.Bytes(), &jsonBody); err == nil {
 			bodyForMiddleware = jsonBody
 		} else {
-			bodyForMiddleware = string(responseCapture.body)
+			bodyForMiddleware = responseCapture.body.String()
 		}
 	}
 

@@ -304,12 +304,86 @@ func TestRouter_ServeHTTP_NonJSONBodyPassesThrough(t *testing.T) {
 	assert.Nil(t, middlewareBody, "non-JSON body should not be parsed into middleware")
 }
 
+// --- responseWriter buffer behavior ---
+
+// TestResponseWriter_MultipleWrites verifies that a handler calling Write
+// multiple times produces a correctly concatenated response body — the key
+// behavioral guarantee of the bytes.Buffer change.
+func TestResponseWriter_MultipleWrites(t *testing.T) {
+	rtr := &router.Router{}
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"a":`))
+		w.Write([]byte(`"hello"`))
+		w.Write([]byte(`}`))
+	}, newRouteInfo("GET", "/multi"))
+
+	req := httptest.NewRequest("GET", "/multi", nil)
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `{"a":"hello"}`, strings.TrimSpace(w.Body.String()))
+}
+
+// TestResponseWriter_MultipleWrites_MiddlewareSeesFullBody verifies that
+// AfterHandler middleware receives the fully assembled body when the handler
+// writes in multiple chunks.
+func TestResponseWriter_MultipleWrites_MiddlewareSeesFullBody(t *testing.T) {
+	rtr := &router.Router{}
+
+	var capturedBody any
+	m := &recordingMiddleware{
+		onAfterWithResp: func(resp *middleware.MiddlewareResponse) {
+			capturedBody = resp.Body
+		},
+	}
+	rtr.Use(m)
+
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"part":`))
+		w.Write([]byte(`"one"}`))
+	}, newRouteInfo("GET", "/chunked"))
+
+	req := httptest.NewRequest("GET", "/chunked", nil)
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	require.NotNil(t, capturedBody)
+	bodyMap, ok := capturedBody.(map[string]any)
+	require.True(t, ok, "expected map body, got %T", capturedBody)
+	assert.Equal(t, "one", bodyMap["part"])
+}
+
+// TestResponseWriter_LargeBody verifies that a response significantly larger
+// than a typical initial slice allocation is captured without truncation.
+func TestResponseWriter_LargeBody(t *testing.T) {
+	const payloadSize = 64 * 1024 // 64 KB
+
+	rtr := &router.Router{}
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strings.Repeat("x", payloadSize)))
+	}, newRouteInfo("GET", "/large"))
+
+	req := httptest.NewRequest("GET", "/large", nil)
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.GreaterOrEqual(t, w.Body.Len(), payloadSize)
+}
+
 // --- recordingMiddleware helper ---
 
 type recordingMiddleware struct {
 	middleware.BaseMiddleware
 	onBefore        func()
 	onBeforeWithReq func(*middleware.MiddlewareRequest)
+	onAfterWithResp func(*middleware.MiddlewareResponse)
 }
 
 func (m *recordingMiddleware) BeforeHandler(ctx context.Context, req *middleware.MiddlewareRequest, info *types.RouteInfo) (context.Context, *middleware.MiddlewareRequest, error) {
@@ -320,4 +394,11 @@ func (m *recordingMiddleware) BeforeHandler(ctx context.Context, req *middleware
 		m.onBeforeWithReq(req)
 	}
 	return ctx, req, nil
+}
+
+func (m *recordingMiddleware) AfterHandler(ctx context.Context, req *middleware.MiddlewareRequest, resp *middleware.MiddlewareResponse, info *types.RouteInfo) (*middleware.MiddlewareResponse, error) {
+	if m.onAfterWithResp != nil {
+		m.onAfterWithResp(resp)
+	}
+	return resp, nil
 }

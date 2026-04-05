@@ -21,5 +21,5 @@
 - [ ] **Reflection on every request** — [url/utils.go:57-85](runtime/url/utils.go#L57)
   `setFieldsFromMap` reflects on struct fields per-request with no caching. Cache field metadata per type using `sync.Map`.
 
-- [ ] **`responseWriter` uses byte slice append** — [router/router.go:80](runtime/router/router.go#L80)
+- [x] **`responseWriter` uses byte slice append** — [router/router.go:80](runtime/router/router.go#L80)
   `rw.body = append(rw.body, b...)` causes repeated allocations for large responses. Replace with `bytes.Buffer`.
