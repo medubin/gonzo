@@ -62,10 +62,13 @@ UPDATE_SNAPS=true go test -v -run TestCoreGenerate ./code_generator/generator/..
 | `gerrors.MissingArgumentError()` | 400 Bad Request | Missing required fields, parameters, or request body |
 | `gerrors.InvalidArgumentError()` | 400 Bad Request | Invalid input format or values |
 | `gerrors.UnauthenticatedError()` | 401 Unauthorized | Invalid credentials or missing authentication |
+| `gerrors.PermissionDeniedError()` | 403 Forbidden | Authenticated but not authorized to perform the action |
 | `gerrors.NotFoundError()` | 404 Not Found | Resource doesn't exist |
 | `gerrors.AlreadyExistsError()` | 409 Conflict | Resource already exists |
 | `gerrors.InternalError()` | 500 Internal Server Error | Database errors, system failures |
 | `gerrors.UnimplementedError()` | 501 Not Implemented | Placeholder for unfinished endpoints |
+| `gerrors.RateLimitedError()` | 429 Too Many Requests | Rate limit or quota exceeded |
+| `gerrors.UnavailableError()` | 503 Service Unavailable | Downstream dependency temporarily unavailable |
 
 ### Error Handling Examples
 

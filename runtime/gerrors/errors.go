@@ -11,8 +11,11 @@ const (
 	NotFound        ErrorCode = "not_found"
 	AlreadyExists   ErrorCode = "already_exists"
 	Unauthenticated ErrorCode = "unauthenticated"
-	Unimplemented   ErrorCode = "unimplemented"
-	Internal        ErrorCode = "internal"
+	PermissionDenied ErrorCode = "permission_denied"
+	Unimplemented    ErrorCode = "unimplemented"
+	Internal         ErrorCode = "internal"
+	RateLimited      ErrorCode = "rate_limited"
+	Unavailable      ErrorCode = "unavailable"
 	MissingArgument ErrorCode = "missing_argument"
 
 	BadRoute  ErrorCode = "bad_route"
@@ -43,8 +46,20 @@ func UnauthenticatedError(msg string) GonzoError {
 	return newError(Unauthenticated, msg, http.StatusUnauthorized)
 }
 
+func PermissionDeniedError(msg string) GonzoError {
+	return newError(PermissionDenied, msg, http.StatusForbidden)
+}
+
 func UnimplementedError(msg string) GonzoError {
 	return newError(Unimplemented, msg, http.StatusNotImplemented)
+}
+
+func RateLimitedError(msg string) GonzoError {
+	return newError(RateLimited, msg, http.StatusTooManyRequests)
+}
+
+func UnavailableError(msg string) GonzoError {
+	return newError(Unavailable, msg, http.StatusServiceUnavailable)
 }
 
 func InternalError(msg string) GonzoError {
