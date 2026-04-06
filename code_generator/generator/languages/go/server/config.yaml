@@ -47,7 +47,7 @@ templates:
     {{range .Values}}	case {{if eq $baseType "string"}}{{quote .Value}}{{else}}{{.Value}}{{end}}:
       return {{$enumName}}_{{.Key}}
     {{end}}	default:
-    		return {{$enumName}}_{{(index .Values 0).Key}} // Return first value as default
+    		return {{$enumName}}(v)
       }
     }
 

@@ -6,7 +6,10 @@ export type ErrorCode =
   | 'not_found'
   | 'already_exists'
   | 'unauthenticated'
+  | 'permission_denied'
   | 'unimplemented'
+  | 'rate_limited'
+  | 'unavailable'
   | 'internal'
   | 'bad_route'
   | 'malformed';
@@ -58,10 +61,31 @@ export class UnauthenticatedError extends GonzoError {
   }
 }
 
+export class PermissionDeniedError extends GonzoError {
+  constructor(message: string, statusCode = 403) {
+    super('permission_denied', message, statusCode);
+    this.name = 'PermissionDeniedError';
+  }
+}
+
 export class UnimplementedError extends GonzoError {
   constructor(message: string, statusCode = 501) {
     super('unimplemented', message, statusCode);
     this.name = 'UnimplementedError';
+  }
+}
+
+export class RateLimitedError extends GonzoError {
+  constructor(message: string, statusCode = 429) {
+    super('rate_limited', message, statusCode);
+    this.name = 'RateLimitedError';
+  }
+}
+
+export class UnavailableError extends GonzoError {
+  constructor(message: string, statusCode = 503) {
+    super('unavailable', message, statusCode);
+    this.name = 'UnavailableError';
   }
 }
 
@@ -110,7 +134,10 @@ export async function parseGonzoError(response: Response): Promise<GonzoError> {
     case 'not_found': return new NotFoundError(message, statusCode);
     case 'already_exists': return new AlreadyExistsError(message, statusCode);
     case 'unauthenticated': return new UnauthenticatedError(message, statusCode);
+    case 'permission_denied': return new PermissionDeniedError(message, statusCode);
     case 'unimplemented': return new UnimplementedError(message, statusCode);
+    case 'rate_limited': return new RateLimitedError(message, statusCode);
+    case 'unavailable': return new UnavailableError(message, statusCode);
     case 'internal': return new InternalError(message, statusCode);
     case 'bad_route': return new BadRouteError(message, statusCode);
     case 'malformed': return new MalformedError(message, statusCode);

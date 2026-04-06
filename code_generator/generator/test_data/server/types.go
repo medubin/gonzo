@@ -24,7 +24,7 @@ func UserRoleFromString(v string) UserRole {
 	case "user":
   return UserRole_USER
 	default:
-		return UserRole_ADMIN // Return first value as default
+		return UserRole(v)
   }
 }
 
@@ -63,7 +63,7 @@ func UserStatusFromString(v string) UserStatus {
 	case "suspended":
   return UserStatus_SUSPENDED
 	default:
-		return UserStatus_ACTIVE // Return first value as default
+		return UserStatus(v)
   }
 }
 
@@ -96,7 +96,7 @@ func WelcomeMessageFromString(v string) WelcomeMessage {
 	case "Welcome to \"MyApp\"":
   return WelcomeMessage_WELCOME
 	default:
-		return WelcomeMessage_WELCOME // Return first value as default
+		return WelcomeMessage(v)
   }
 }
 
@@ -131,7 +131,7 @@ func UserSomethingFromInt32(v int32) UserSomething {
 	case 1:
   return UserSomething_TWO
 	default:
-		return UserSomething_ONE // Return first value as default
+		return UserSomething(v)
   }
 }
 
