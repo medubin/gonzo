@@ -178,6 +178,68 @@ server ItemService {
 	assert.NotContains(t, client, "new Error(", "client should not throw generic Error objects")
 }
 
+// TestHyphenatedPathsPreserved guards against a regression where hyphens in
+// URL path segments were silently stripped during lexing (e.g. /piste-data
+// became /pistedata). Both the parsed path value and the generated output for
+// Go server and TypeScript client are verified.
+func TestHyphenatedPathsPreserved(t *testing.T) {
+	const api = `
+type ResortID string
+
+type PisteDataResponse {
+  data *string
+}
+
+server PisteDataServer {
+  GetPisteData GET /piste-data/{resortId ResortID} returns(PisteDataResponse)
+}
+`
+	parser := generator.NewParser(api)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	require.Len(t, parsed.Servers, 1)
+	require.Len(t, parsed.Servers[0].Endpoints, 1)
+	assert.Equal(t, "/piste-data/{resortId}", parsed.Servers[0].Endpoints[0].Path,
+		"hyphen in path segment must be preserved after parsing")
+
+	t.Run("go_server", func(t *testing.T) {
+		g, err := generator.NewTemplateGenerator("languages/go/server/config.yaml")
+		require.NoError(t, err)
+		results, err := g.Generate(parsed, "server", "github.com/test/server")
+		require.NoError(t, err)
+		all := strings.Join(func() []string {
+			out := make([]string, 0, len(results))
+			for _, v := range results {
+				out = append(out, v)
+			}
+			return out
+		}(), "\n")
+		assert.Contains(t, all, "/piste-data/",
+			"generated Go server must preserve hyphen in route path")
+		assert.NotContains(t, all, "/pistedata/",
+			"generated Go server must not strip hyphen from route path")
+	})
+
+	t.Run("typescript_client", func(t *testing.T) {
+		g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+		require.NoError(t, err)
+		results, err := g.Generate(parsed, "client")
+		require.NoError(t, err)
+		all := strings.Join(func() []string {
+			out := make([]string, 0, len(results))
+			for _, v := range results {
+				out = append(out, v)
+			}
+			return out
+		}(), "\n")
+		assert.Contains(t, all, "piste-data",
+			"generated TypeScript client must preserve hyphen in URL path")
+		assert.NotContains(t, all, "pistedata",
+			"generated TypeScript client must not strip hyphen from URL path")
+	})
+}
+
 func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	// Parse the test API
 	input, err := fileio.ParseFile("test_data/test_server.api")

@@ -114,6 +114,12 @@ func (l *Lexer) NextToken() Token {
 		return l.readIdentifier()
 	}
 
+	// Handle hyphen (not part of a negative number — that case handled above)
+	if char == '-' {
+		l.position++
+		return Token{Type: TokenSymbol, Value: "-", Line: l.line}
+	}
+
 	// Skip unknown characters
 	l.position++
 	return l.NextToken()
@@ -1032,6 +1038,9 @@ func (p *Parser) parsePath() (string, []ParamDef, error) {
 			p.nextToken()
 		} else if p.currentToken.Type == TokenIdentifier {
 			pathParts = append(pathParts, p.currentToken.Value)
+			p.nextToken()
+		} else if p.currentToken.Value == "-" {
+			pathParts = append(pathParts, "-")
 			p.nextToken()
 		} else if p.currentToken.Value == "{" {
 			// Parse path parameter

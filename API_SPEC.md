@@ -69,7 +69,7 @@ enum UserStatus string {
 **Enum Rules:**
 - Must specify an underlying primitive type (`string`, `int32`, `int64`, etc.)
 - Values must match the underlying type
-- String values can contain escaped quotes: `"Welcome to \"MyApp\""`
+- String values support escape sequences: `\"`, `\\`, `\n`, `\t`, `\r`
 
 ### Collections
 
@@ -167,6 +167,43 @@ type User {
 }
 ```
 
+## Imports
+
+API definition files can import other `.api` files to share types across multiple definitions.
+
+### Flat Import
+
+Merges all types, enums, and servers from the imported file into the current namespace:
+
+```api
+import "common/types.api"
+
+// Types from types.api are now available directly
+type UserProfile {
+  ID UserID  // UserID defined in types.api
+}
+```
+
+### Namespaced Import
+
+Imports definitions under a namespace prefix to avoid name conflicts. All imported names are prefixed with the capitalized namespace:
+
+```api
+import "common/types.api" as "common"
+
+// Reference imported types with namespace.TypeName syntax
+type UserProfile {
+  ID common.UserID  // becomes CommonUserID internally
+}
+```
+
+**Import Rules:**
+- Paths are relative to the importing file's directory
+- Circular imports are silently skipped
+- The same file cannot be imported both with and without a namespace, or under two different namespaces
+- Name conflicts between imports and the current file are errors
+- Namespaced imports prefix all type/enum/server names with `capitalize(namespace)` (e.g., `as "common"` → `Common` prefix)
+
 ## Server Definitions
 
 Define REST API servers with endpoints:
@@ -225,7 +262,7 @@ UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)
 ```
 
 **Body Rules:**
-- Must reference a struct type
+- Typically references a struct type
 - GET endpoints typically don't have bodies
 - Body is optional for all HTTP methods
 
