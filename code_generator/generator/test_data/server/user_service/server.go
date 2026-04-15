@@ -2,13 +2,13 @@
 package user_service
 
 import (
-  "context"
-  server "github.com/medubin/gonzo/code_generator/generator/test_data/server"
-  "github.com/medubin/gonzo/runtime/cookies"
-  "github.com/medubin/gonzo/runtime/handle"
-  "github.com/medubin/gonzo/runtime/router"
-  "github.com/medubin/gonzo/runtime/types"
-  "github.com/medubin/gonzo/runtime/url"
+	"context"
+	server "github.com/medubin/gonzo/code_generator/generator/test_data/server"
+	"github.com/medubin/gonzo/runtime/cookies"
+	"github.com/medubin/gonzo/runtime/handle"
+	"github.com/medubin/gonzo/runtime/router"
+	"github.com/medubin/gonzo/runtime/types"
+	"github.com/medubin/gonzo/runtime/url"
 )
 
 /*
@@ -33,75 +33,75 @@ type UserService interface {
 
 func StartUserService(s UserService, r *router.Router) error {
 	if err := r.Route(handle.Handle(s.GetUser), &types.RouteInfo{
-  Method: "GET",
-  Path: "/users/{id}",
-  Endpoint: "GetUser",
-  Server: "UserService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "GET",
+		Path:         "/users/{id}",
+		Endpoint:     "GetUser",
+		Server:       "UserService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.CreateUser), &types.RouteInfo{
-  Method: "POST",
-  Path: "/users",
-  Endpoint: "CreateUser",
-  Server: "UserService",
-  RequiresBody: true,
-  }); err != nil {
+		Method:       "POST",
+		Path:         "/users",
+		Endpoint:     "CreateUser",
+		Server:       "UserService",
+		RequiresBody: true,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.UpdateUser), &types.RouteInfo{
-  Method: "PUT",
-  Path: "/users/{id}",
-  Endpoint: "UpdateUser",
-  Server: "UserService",
-  RequiresBody: true,
-  }); err != nil {
+		Method:       "PUT",
+		Path:         "/users/{id}",
+		Endpoint:     "UpdateUser",
+		Server:       "UserService",
+		RequiresBody: true,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.DeleteUser), &types.RouteInfo{
-  Method: "DELETE",
-  Path: "/users/{id}",
-  Endpoint: "DeleteUser",
-  Server: "UserService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "DELETE",
+		Path:         "/users/{id}",
+		Endpoint:     "DeleteUser",
+		Server:       "UserService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.PatchUserProfile), &types.RouteInfo{
-  Method: "PATCH",
-  Path: "/users/{id}/profile",
-  Endpoint: "PatchUserProfile",
-  Server: "UserService",
-  RequiresBody: true,
-  }); err != nil {
+		Method:       "PATCH",
+		Path:         "/users/{id}/profile",
+		Endpoint:     "PatchUserProfile",
+		Server:       "UserService",
+		RequiresBody: true,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.ListUsers), &types.RouteInfo{
-  Method: "GET",
-  Path: "/users",
-  Endpoint: "ListUsers",
-  Server: "UserService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "GET",
+		Path:         "/users",
+		Endpoint:     "ListUsers",
+		Server:       "UserService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.SearchUsers), &types.RouteInfo{
-  Method: "GET",
-  Path: "/users/search",
-  Endpoint: "SearchUsers",
-  Server: "UserService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "GET",
+		Path:         "/users/search",
+		Endpoint:     "SearchUsers",
+		Server:       "UserService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	if err := r.Route(handle.Handle(s.GetUsersByRole), &types.RouteInfo{
-  Method: "GET",
-  Path: "/users/role/{role}",
-  Endpoint: "GetUsersByRole",
-  Server: "UserService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "GET",
+		Path:         "/users/role/{role}",
+		Endpoint:     "GetUsersByRole",
+		Server:       "UserService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	return nil

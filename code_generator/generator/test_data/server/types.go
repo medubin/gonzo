@@ -2,156 +2,163 @@
 package server
 
 import (
-  "github.com/medubin/gonzo/runtime/gerrors"
+	"github.com/medubin/gonzo/runtime/gerrors"
 )
 
 // enums can be defined like this
 // enums can be any primitive type
 type UserRole string
+
 const (
-	UserRole_ADMIN UserRole = "admin"
+	UserRole_ADMIN     UserRole = "admin"
 	UserRole_MODERATOR UserRole = "moderator"
-	UserRole_USER UserRole = "user"
+	UserRole_USER      UserRole = "user"
 )
 
 // UserRoleFromString converts a string to UserRole enum
 func UserRoleFromString(v string) UserRole {
-  switch v {
+	switch v {
 	case "admin":
-  return UserRole_ADMIN
+		return UserRole_ADMIN
 	case "moderator":
-  return UserRole_MODERATOR
+		return UserRole_MODERATOR
 	case "user":
-  return UserRole_USER
+		return UserRole_USER
 	default:
 		return UserRole(v)
-  }
+	}
 }
 
 // UserRoleToString converts UserRole enum to string
 func UserRoleToString(e UserRole) string {
-  return string(e)
+	return string(e)
 }
 
 // UserRoleIsValid checks if the enum value is valid
 func UserRoleIsValid(e UserRole) bool {
-  switch e {
+	switch e {
 	case UserRole_ADMIN:
-  return true
+		return true
 	case UserRole_MODERATOR:
-  return true
+		return true
 	case UserRole_USER:
-  return true
+		return true
 	default:
-  return false
+		return false
+	}
 }
-}
+
 type UserStatus string
+
 const (
-	UserStatus_ACTIVE UserStatus = "active"
-	UserStatus_PENDING UserStatus = "pending"
+	UserStatus_ACTIVE    UserStatus = "active"
+	UserStatus_PENDING   UserStatus = "pending"
 	UserStatus_SUSPENDED UserStatus = "suspended"
 )
 
 // UserStatusFromString converts a string to UserStatus enum
 func UserStatusFromString(v string) UserStatus {
-  switch v {
+	switch v {
 	case "active":
-  return UserStatus_ACTIVE
+		return UserStatus_ACTIVE
 	case "pending":
-  return UserStatus_PENDING
+		return UserStatus_PENDING
 	case "suspended":
-  return UserStatus_SUSPENDED
+		return UserStatus_SUSPENDED
 	default:
 		return UserStatus(v)
-  }
+	}
 }
 
 // UserStatusToString converts UserStatus enum to string
 func UserStatusToString(e UserStatus) string {
-  return string(e)
+	return string(e)
 }
 
 // UserStatusIsValid checks if the enum value is valid
 func UserStatusIsValid(e UserStatus) bool {
-  switch e {
+	switch e {
 	case UserStatus_ACTIVE:
-  return true
+		return true
 	case UserStatus_PENDING:
-  return true
+		return true
 	case UserStatus_SUSPENDED:
-  return true
+		return true
 	default:
-  return false
+		return false
+	}
 }
-}
+
 type WelcomeMessage string
+
 const (
 	WelcomeMessage_WELCOME WelcomeMessage = "Welcome to \"MyApp\""
 )
 
 // WelcomeMessageFromString converts a string to WelcomeMessage enum
 func WelcomeMessageFromString(v string) WelcomeMessage {
-  switch v {
+	switch v {
 	case "Welcome to \"MyApp\"":
-  return WelcomeMessage_WELCOME
+		return WelcomeMessage_WELCOME
 	default:
 		return WelcomeMessage(v)
-  }
+	}
 }
 
 // WelcomeMessageToString converts WelcomeMessage enum to string
 func WelcomeMessageToString(e WelcomeMessage) string {
-  return string(e)
+	return string(e)
 }
 
 // WelcomeMessageIsValid checks if the enum value is valid
 func WelcomeMessageIsValid(e WelcomeMessage) bool {
-  switch e {
+	switch e {
 	case WelcomeMessage_WELCOME:
-  return true
+		return true
 	default:
-  return false
+		return false
+	}
 }
-}
+
 type UserSomething int32
+
 const (
-	UserSomething_ONE UserSomething = 0
+	UserSomething_ONE   UserSomething = 0
 	UserSomething_THREE UserSomething = 2
-	UserSomething_TWO UserSomething = 1
+	UserSomething_TWO   UserSomething = 1
 )
 
 // UserSomethingFromInt32 converts a int32 to UserSomething enum
 func UserSomethingFromInt32(v int32) UserSomething {
-  switch v {
+	switch v {
 	case 0:
-  return UserSomething_ONE
+		return UserSomething_ONE
 	case 2:
-  return UserSomething_THREE
+		return UserSomething_THREE
 	case 1:
-  return UserSomething_TWO
+		return UserSomething_TWO
 	default:
 		return UserSomething(v)
-  }
+	}
 }
 
 // UserSomethingToInt32 converts UserSomething enum to int32
 func UserSomethingToInt32(e UserSomething) int32 {
-  return int32(e)
+	return int32(e)
 }
 
 // UserSomethingIsValid checks if the enum value is valid
 func UserSomethingIsValid(e UserSomething) bool {
-  switch e {
+	switch e {
 	case UserSomething_ONE:
-  return true
+		return true
 	case UserSomething_THREE:
-  return true
+		return true
 	case UserSomething_TWO:
-  return true
+		return true
 	default:
-  return false
-}
+		return false
+	}
 }
 
 // this is a comment
@@ -187,14 +194,14 @@ type UserActivityByMonth map[string]map[int64][]int32
 
 // structs can be defined like this
 type User struct {
-  ID *UserID `json:"id,omitempty"`
-  Username *string `json:"username,omitempty"`
-  Email *Email `json:"email,omitempty"`
-  Role *UserRole `json:"role,omitempty"`
+	ID       *UserID   `json:"id,omitempty"`
+	Username *string   `json:"username,omitempty"`
+	Email    *Email    `json:"email,omitempty"`
+	Role     *UserRole `json:"role,omitempty"`
 }
 
 func (v User) Validate() error {
-  return nil
+	return nil
 }
 
 /*
@@ -207,28 +214,28 @@ func (v User) Validate() error {
  */
 type DetailedUser struct {
 	// fields are optional unless marked with 'required'
-  ID *UserID `json:"id,omitempty"`
-  Usernames *[]string `json:"usernames,omitempty"`
-  LoginCount *map[string]int32 `json:"loginCount,omitempty"`
-  Profile *UserProfile `json:"profile,omitempty"`
+	ID         *UserID           `json:"id,omitempty"`
+	Usernames  *[]string         `json:"usernames,omitempty"`
+	LoginCount *map[string]int32 `json:"loginCount,omitempty"`
+	Profile    *UserProfile      `json:"profile,omitempty"`
 }
 
 func (v DetailedUser) Validate() error {
-  if v.ID == nil {
-    return gerrors.MissingArgumentError("field 'ID' is required")
-  }
-  return nil
+	if v.ID == nil {
+		return gerrors.MissingArgumentError("field 'ID' is required")
+	}
+	return nil
 }
 
 type UserProfile struct {
-  FirstName *string `json:"firstName,omitempty"`
-  LastName *string `json:"lastName,omitempty"`
-  Bio *string `json:"bio,omitempty"`
-  AvatarUrl *string `json:"avatarUrl,omitempty"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+	Bio       *string `json:"bio,omitempty"`
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
 }
 
 func (v UserProfile) Validate() error {
-  return nil
+	return nil
 }
 
 // both lists and maps can contain structs
@@ -244,107 +251,107 @@ type UsersByDepartment map[string]User
  * - Maybe simple maps: map(string: primitive)
  */
 type UserSearchParams struct {
-  Query *string `json:"query,omitempty"`
-  Roles *[]UserRole `json:"roles,omitempty"`
-  IsActive *bool `json:"isActive,omitempty"`
-  Limit *int32 `json:"limit,omitempty"`
+	Query    *string     `json:"query,omitempty"`
+	Roles    *[]UserRole `json:"roles,omitempty"`
+	IsActive *bool       `json:"isActive,omitempty"`
+	Limit    *int32      `json:"limit,omitempty"`
 }
 
 func (v UserSearchParams) Validate() error {
-  return nil
+	return nil
 }
 
 type UserListParams struct {
-  Page *int32 `json:"page,omitempty"`
-  PageSize *int32 `json:"pageSize,omitempty"`
-  SortBy *string `json:"sortBy,omitempty"`
-  SortOrder *string `json:"sortOrder,omitempty"`
+	Page      *int32  `json:"page,omitempty"`
+	PageSize  *int32  `json:"pageSize,omitempty"`
+	SortBy    *string `json:"sortBy,omitempty"`
+	SortOrder *string `json:"sortOrder,omitempty"`
 }
 
 func (v UserListParams) Validate() error {
-  return nil
+	return nil
 }
 
 type CreateUserRequest struct {
-  Username *string `json:"username,omitempty"`
-  Email *Email `json:"email,omitempty"`
-  Password *string `json:"password,omitempty"`
-  Role *UserRole `json:"role,omitempty"`
-  Profile *UserProfile `json:"profile,omitempty"`
+	Username *string      `json:"username,omitempty"`
+	Email    *Email       `json:"email,omitempty"`
+	Password *string      `json:"password,omitempty"`
+	Role     *UserRole    `json:"role,omitempty"`
+	Profile  *UserProfile `json:"profile,omitempty"`
 }
 
 func (v CreateUserRequest) Validate() error {
-  if v.Username == nil {
-    return gerrors.MissingArgumentError("field 'Username' is required")
-  }
-  if v.Email == nil {
-    return gerrors.MissingArgumentError("field 'Email' is required")
-  }
-  if v.Password == nil {
-    return gerrors.MissingArgumentError("field 'Password' is required")
-  }
-  return nil
+	if v.Username == nil {
+		return gerrors.MissingArgumentError("field 'Username' is required")
+	}
+	if v.Email == nil {
+		return gerrors.MissingArgumentError("field 'Email' is required")
+	}
+	if v.Password == nil {
+		return gerrors.MissingArgumentError("field 'Password' is required")
+	}
+	return nil
 }
 
 type UpdateUserRequest struct {
-  Username *string `json:"username,omitempty"`
-  Email *Email `json:"email,omitempty"`
-  Role *UserRole `json:"role,omitempty"`
-  Status *UserStatus `json:"status,omitempty"`
+	Username *string     `json:"username,omitempty"`
+	Email    *Email      `json:"email,omitempty"`
+	Role     *UserRole   `json:"role,omitempty"`
+	Status   *UserStatus `json:"status,omitempty"`
 }
 
 func (v UpdateUserRequest) Validate() error {
-  return nil
+	return nil
 }
 
 type DeleteUserRequest struct {
-  Reason *string `json:"reason,omitempty"`
-  TransferDataTo *UserID `json:"transferDataTo,omitempty"`
+	Reason         *string `json:"reason,omitempty"`
+	TransferDataTo *UserID `json:"transferDataTo,omitempty"`
 }
 
 func (v DeleteUserRequest) Validate() error {
-  return nil
+	return nil
 }
 
 type UserProfileUpdate struct {
-  FirstName *string `json:"firstName,omitempty"`
-  LastName *string `json:"lastName,omitempty"`
-  Bio *string `json:"bio,omitempty"`
-  AvatarUrl *string `json:"avatarUrl,omitempty"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+	Bio       *string `json:"bio,omitempty"`
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
 }
 
 func (v UserProfileUpdate) Validate() error {
-  return nil
+	return nil
 }
 
 type Notification struct {
-  ID *NotificationID `json:"id,omitempty"`
-  Title *string `json:"title,omitempty"`
-  Message *string `json:"message,omitempty"`
-  CreatedAt *Timestamp `json:"createdAt,omitempty"`
-  IsRead *bool `json:"isRead,omitempty"`
+	ID        *NotificationID `json:"id,omitempty"`
+	Title     *string         `json:"title,omitempty"`
+	Message   *string         `json:"message,omitempty"`
+	CreatedAt *Timestamp      `json:"createdAt,omitempty"`
+	IsRead    *bool           `json:"isRead,omitempty"`
 }
 
 func (v Notification) Validate() error {
-  return nil
+	return nil
 }
 
 // URL parameters for GetUser
 type GetUserUrl struct {
 	Id *UserID `url:"id"`
-}// URL parameters for UpdateUser
+} // URL parameters for UpdateUser
 type UpdateUserUrl struct {
 	Id *UserID `url:"id"`
-}// URL parameters for DeleteUser
+} // URL parameters for DeleteUser
 type DeleteUserUrl struct {
 	Id *UserID `url:"id"`
-}// URL parameters for PatchUserProfile
+} // URL parameters for PatchUserProfile
 type PatchUserProfileUrl struct {
 	Id *UserID `url:"id"`
-}// URL parameters for GetUsersByRole
+} // URL parameters for GetUsersByRole
 type GetUsersByRoleUrl struct {
 	Role *UserRole `url:"role"`
-}// URL parameters for GetUserNotifications
+} // URL parameters for GetUserNotifications
 type GetUserNotificationsUrl struct {
 	UserId *UserID `url:"userId"`
 }

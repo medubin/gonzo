@@ -2,13 +2,13 @@
 package notification_service
 
 import (
-  "context"
-  server "github.com/medubin/gonzo/code_generator/generator/test_data/server"
-  "github.com/medubin/gonzo/runtime/cookies"
-  "github.com/medubin/gonzo/runtime/handle"
-  "github.com/medubin/gonzo/runtime/router"
-  "github.com/medubin/gonzo/runtime/types"
-  "github.com/medubin/gonzo/runtime/url"
+	"context"
+	server "github.com/medubin/gonzo/code_generator/generator/test_data/server"
+	"github.com/medubin/gonzo/runtime/cookies"
+	"github.com/medubin/gonzo/runtime/handle"
+	"github.com/medubin/gonzo/runtime/router"
+	"github.com/medubin/gonzo/runtime/types"
+	"github.com/medubin/gonzo/runtime/url"
 )
 
 // multiple servers can be defined in a single file
@@ -18,12 +18,12 @@ type NotificationService interface {
 
 func StartNotificationService(s NotificationService, r *router.Router) error {
 	if err := r.Route(handle.Handle(s.GetUserNotifications), &types.RouteInfo{
-  Method: "GET",
-  Path: "/users/{userId}/notifications",
-  Endpoint: "GetUserNotifications",
-  Server: "NotificationService",
-  RequiresBody: false,
-  }); err != nil {
+		Method:       "GET",
+		Path:         "/users/{userId}/notifications",
+		Endpoint:     "GetUserNotifications",
+		Server:       "NotificationService",
+		RequiresBody: false,
+	}); err != nil {
 		return err
 	}
 	return nil
