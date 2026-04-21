@@ -15,15 +15,16 @@ func TestWriteToFile(t *testing.T) {
 		tempDir := t.TempDir()
 		fileName := "test.go"
 		content := "package main\n\nfunc main() {\n    println(\"Hello, World!\")\n}"
-		
+		formatted := "package main\n\nfunc main() {\n\tprintln(\"Hello, World!\")\n}\n"
+
 		err := fileio.WriteToFile(tempDir, fileName, content, false)
 		require.NoError(t, err)
-		
-		// Verify file was created with correct content
+
+		// Verify file was created with gofmt-formatted content
 		filePath := filepath.Join(tempDir, fileName)
 		result, err := os.ReadFile(filePath)
 		require.NoError(t, err)
-		assert.Equal(t, content, string(result))
+		assert.Equal(t, formatted, string(result))
 		
 		// Verify file permissions
 		info, err := os.Stat(filePath)

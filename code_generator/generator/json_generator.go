@@ -1031,17 +1031,24 @@ func (p *Parser) parsePath() (string, []ParamDef, error) {
 	var pathParts []string
 	var params []ParamDef
 
+	// afterSeparator tracks whether we just consumed a "/" or "-", meaning the
+	// next token is unambiguously a path segment even if it's a keyword.
+	afterSeparator := false
+
 	// Build path by consuming tokens until we hit a non-path token
 	for {
 		if p.currentToken.Value == "/" {
 			pathParts = append(pathParts, "/")
 			p.nextToken()
-		} else if p.currentToken.Type == TokenIdentifier {
+			afterSeparator = true
+		} else if p.currentToken.Type == TokenIdentifier || (afterSeparator && p.currentToken.Type == TokenKeyword) {
 			pathParts = append(pathParts, p.currentToken.Value)
 			p.nextToken()
+			afterSeparator = false
 		} else if p.currentToken.Value == "-" {
 			pathParts = append(pathParts, "-")
 			p.nextToken()
+			afterSeparator = true
 		} else if p.currentToken.Value == "{" {
 			// Parse path parameter
 			p.nextToken()
@@ -1066,6 +1073,7 @@ func (p *Parser) parsePath() (string, []ParamDef, error) {
 
 			// Add parameter placeholder using {paramName} format
 			pathParts = append(pathParts, fmt.Sprintf("{%s}", paramName))
+			afterSeparator = false
 		} else {
 			// End of path
 			break
