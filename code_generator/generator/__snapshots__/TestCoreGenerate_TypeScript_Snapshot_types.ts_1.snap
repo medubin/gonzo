@@ -185,6 +185,16 @@ export interface Notification {
   isRead?: boolean;
 }
 
+export interface UploadAvatarRequest {
+  image: File;
+  caption?: string;
+}
+
+export interface UploadResult {
+  url?: string;
+  size?: number;
+}
+
 export interface GetUserParams {
   id: UserID;
 }
@@ -199,6 +209,9 @@ export interface PatchUserProfileParams {
 }
 export interface GetUsersByRoleParams {
   role: UserRole;
+}
+export interface UploadAvatarParams {
+  id: UserID;
 }
 export interface GetUserNotificationsParams {
   userId: UserID;

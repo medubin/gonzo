@@ -68,20 +68,24 @@ type TemplateComment struct {
 }
 
 type TemplateType struct {
-	Name       string
-	Kind       string
-	Target     string // for aliases
-	Fields     []TemplateField
-	Comments   []TemplateComment
-	MappedType string // The complete mapped type string
+	Name        string
+	Kind        string
+	Target      string // for aliases
+	Fields      []TemplateField
+	Comments    []TemplateComment
+	MappedType  string // The complete mapped type string
+	IsMultipart bool   // true if any field is the file primitive
 }
 
 type TemplateField struct {
-	Name     string
-	Type     string
-	Required bool
-	Comments []TemplateComment
-	JSONTag  string
+	Name        string
+	Type        string
+	Required    bool
+	Comments    []TemplateComment
+	JSONTag     string
+	FormTag     string
+	IsFile      bool // field type is the file primitive
+	IsMultipart bool // parent struct has file fields; use form: tags
 }
 
 type TemplateEnum struct {
@@ -104,18 +108,19 @@ type TemplateServer struct {
 }
 
 type TemplateEndpoint struct {
-	Name       string
-	Method     string
-	Path       string
-	PathParams []TemplatePathParam
-	Parameters string
-	BodyType   string
-	ReturnType string
-	URLType    string
-	Comments   []TemplateComment
-	HasBody    bool
-	HasReturn  bool
-	HasParams  bool
+	Name        string
+	Method      string
+	Path        string
+	PathParams  []TemplatePathParam
+	Parameters  string
+	BodyType    string
+	ReturnType  string
+	URLType     string
+	Comments    []TemplateComment
+	HasBody     bool
+	HasReturn   bool
+	HasParams   bool
+	IsMultipart bool // body type is a multipart struct
 }
 
 // RequiresBody determines if this endpoint requires a request body
@@ -361,6 +366,25 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 		data.Servers = append(data.Servers, tg.convertServer(&serverDef))
 	}
 
+	// Detect multipart endpoints by checking if their body type is a multipart struct
+	multipartTypes := make(map[string]bool)
+	for _, t := range data.Types {
+		if t.IsMultipart {
+			multipartTypes[t.Name] = true
+		}
+	}
+	for i := range data.Servers {
+		for j := range data.Servers[i].Endpoints {
+			ep := &data.Servers[i].Endpoints[j]
+			if ep.HasBody {
+				bodyTypeName := strings.TrimPrefix(ep.BodyType, "*")
+				if multipartTypes[bodyTypeName] {
+					ep.IsMultipart = true
+				}
+			}
+		}
+	}
+
 	// Parse error codes from Go source if configured
 	if tg.config.Settings.ErrorCodesSource != "" {
 		sourcePath := tg.config.Settings.ErrorCodesSource
@@ -389,6 +413,19 @@ func (tg *TemplateGenerator) convertType(typeDef *TypeDef) TemplateType {
 	// Convert fields for structs
 	for _, field := range typeDef.Fields {
 		tt.Fields = append(tt.Fields, tg.convertField(&field))
+	}
+
+	// Detect multipart structs and propagate to fields
+	for _, f := range tt.Fields {
+		if f.IsFile {
+			tt.IsMultipart = true
+			break
+		}
+	}
+	if tt.IsMultipart {
+		for i := range tt.Fields {
+			tt.Fields[i].IsMultipart = true
+		}
 	}
 
 	// Set MappedType based on kind
@@ -421,14 +458,17 @@ func (tg *TemplateGenerator) convertType(typeDef *TypeDef) TemplateType {
 
 // convertField converts FieldDef to TemplateField
 func (tg *TemplateGenerator) convertField(field *FieldDef) TemplateField {
-	jsonTag := strcase.ToLowerCamel(field.Name) + ",omitempty"
+	camelName := strcase.ToLowerCamel(field.Name)
+	isFile := field.Type != nil && field.Type.Kind == "reference" && field.Type.Name == "file"
 
 	return TemplateField{
 		Name:     field.Name,
 		Type:     tg.mapTypeExpr(field.Type),
 		Required: field.Required,
 		Comments: tg.extractComments(field.Comments),
-		JSONTag:  jsonTag,
+		JSONTag:  camelName + ",omitempty",
+		FormTag:  camelName,
+		IsFile:   isFile,
 	}
 }
 

@@ -159,6 +159,20 @@ server UserService {
   GetUsersByRole GET /users/role/{role UserRole} parameters(UserListParams) returns(UserCollection)
 }
 
+type UploadAvatarRequest {
+  required Image file
+  Caption string
+}
+
+type UploadResult {
+  Url string
+  Size int64
+}
+
+server MediaService {
+  UploadAvatar POST /users/{id UserID}/avatar body(UploadAvatarRequest) returns(UploadResult)
+}
+
 // multiple servers can be defined in a single file
 server NotificationService {
   GetUserNotifications GET /users/{userId UserID}/notifications parameters(UserListParams) returns(repeated(Notification))

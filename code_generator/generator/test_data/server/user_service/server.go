@@ -38,6 +38,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "GetUser",
 		Server:       "UserService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -47,6 +48,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "CreateUser",
 		Server:       "UserService",
 		RequiresBody: true,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -56,6 +58,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "UpdateUser",
 		Server:       "UserService",
 		RequiresBody: true,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -65,6 +68,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "DeleteUser",
 		Server:       "UserService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -74,6 +78,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "PatchUserProfile",
 		Server:       "UserService",
 		RequiresBody: true,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -83,6 +88,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "ListUsers",
 		Server:       "UserService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -92,6 +98,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "SearchUsers",
 		Server:       "UserService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}
@@ -101,6 +108,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Endpoint:     "GetUsersByRole",
 		Server:       "UserService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}

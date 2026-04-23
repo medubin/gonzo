@@ -9,4 +9,5 @@ type RouteInfo struct {
 	BodyType     string // "CreateUserRequest"
 	ReturnType   string // "User"
 	RequiresBody bool   // Whether this endpoint requires a request body
+	IsMultipart  bool   // Whether this endpoint expects multipart/form-data
 }

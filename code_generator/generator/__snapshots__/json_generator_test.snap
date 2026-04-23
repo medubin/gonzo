@@ -224,10 +224,34 @@
    "name": "UserService"
   },
   {
+   "endpoints": [
+    {
+     "body": {
+      "kind": "reference",
+      "name": "UploadAvatarRequest"
+     },
+     "method": "POST",
+     "name": "UploadAvatar",
+     "path": "/users/{id}/avatar",
+     "pathParams": [
+      {
+       "name": "id",
+       "type": "UserID"
+      }
+     ],
+     "returns": {
+      "kind": "reference",
+      "name": "UploadResult"
+     }
+    }
+   ],
+   "name": "MediaService"
+  },
+  {
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 162,
+     "line": 176,
      "type": "single"
     }
    ],
@@ -859,6 +883,50 @@
    ],
    "kind": "struct",
    "name": "Notification"
+  },
+  {
+   "fields": [
+    {
+     "name": "Image",
+     "required": true,
+     "type": {
+      "kind": "reference",
+      "name": "file"
+     }
+    },
+    {
+     "name": "Caption",
+     "required": false,
+     "type": {
+      "kind": "reference",
+      "name": "string"
+     }
+    }
+   ],
+   "kind": "struct",
+   "name": "UploadAvatarRequest"
+  },
+  {
+   "fields": [
+    {
+     "name": "Url",
+     "required": false,
+     "type": {
+      "kind": "reference",
+      "name": "string"
+     }
+    },
+    {
+     "name": "Size",
+     "required": false,
+     "type": {
+      "kind": "reference",
+      "name": "int64"
+     }
+    }
+   ],
+   "kind": "struct",
+   "name": "UploadResult"
   }
  ]
 }

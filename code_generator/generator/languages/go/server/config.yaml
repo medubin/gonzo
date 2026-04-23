@@ -7,6 +7,7 @@ primitives:
   float32: float32
   float64: float64
   bool: bool
+  file: multipart.FileHeader
 type_patterns:
   repeated: "[]%s"
   map: "map[%s]%s"
@@ -30,10 +31,11 @@ templates:
   types: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}
-    {{$needsValidation := false}}{{range .Types}}{{if eq .Kind "struct"}}{{range .Fields}}{{if .Required}}{{$needsValidation = true}}{{end}}{{end}}{{end}}{{end}}{{if $needsValidation}}
+    {{$needsValidation := false}}{{$needsMultipart := false}}{{range .Types}}{{if eq .Kind "struct"}}{{if .IsMultipart}}{{$needsMultipart = true}}{{end}}{{range .Fields}}{{if .Required}}{{$needsValidation = true}}{{end}}{{end}}{{end}}{{end}}{{if or $needsValidation $needsMultipart}}
     import (
-      "github.com/medubin/gonzo/runtime/gerrors"
-    ){{end}}
+    {{if $needsValidation}}  "github.com/medubin/gonzo/runtime/gerrors"
+    {{end}}{{if $needsMultipart}}  "mime/multipart"
+    {{end}}){{end}}
     {{range .Enums}}
     {{if .Comments}}{{formatComments .Comments}}
     {{end}}type {{.Name}} {{mapType .BaseType}}
@@ -70,7 +72,7 @@ templates:
     {{end}}{{if eq .Kind "alias"}}type {{.Name}} {{.MappedType}}
     {{else if eq .Kind "struct"}}type {{.Name}} struct {
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
-    {{end}}  {{capitalize .Name}} *{{.Type}} `json:"{{.JSONTag}}"`
+    {{end}}  {{capitalize .Name}} *{{.Type}} `{{if .IsMultipart}}form:"{{.FormTag}}"{{else}}json:"{{.JSONTag}}"{{end}}`
     {{end}}}
 
     func (v {{.Name}}) Validate() error {
@@ -108,12 +110,13 @@ templates:
     {{end}}}
 
     func Start{{.Server.Name}}(s {{.Server.Name}}, r *router.Router) error {
-    {{range .Server.Endpoints}}	if err := r.Route(handle.Handle(s.{{.Name}}), &types.RouteInfo{
+    {{range .Server.Endpoints}}	if err := r.Route({{if .IsMultipart}}handle.HandleMultipart{{else}}handle.Handle{{end}}(s.{{.Name}}), &types.RouteInfo{
       Method: "{{.Method}}",
       Path: "{{.Path}}",
       Endpoint: "{{.Name}}",
       Server: "{{$.Server.Name}}",
       RequiresBody: {{.RequiresBody}},
+      IsMultipart: {{.IsMultipart}},
       }); err != nil {
     		return err
     	}

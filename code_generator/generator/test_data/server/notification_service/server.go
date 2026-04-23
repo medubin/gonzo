@@ -23,6 +23,7 @@ func StartNotificationService(s NotificationService, r *router.Router) error {
 		Endpoint:     "GetUserNotifications",
 		Server:       "NotificationService",
 		RequiresBody: false,
+		IsMultipart:  false,
 	}); err != nil {
 		return err
 	}

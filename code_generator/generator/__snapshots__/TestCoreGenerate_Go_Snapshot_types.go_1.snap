@@ -3,6 +3,7 @@ package server
 
 import (
   "github.com/medubin/gonzo/runtime/gerrors"
+  "mime/multipart"
 )
 
 // enums can be defined like this
@@ -329,6 +330,27 @@ func (v Notification) Validate() error {
   return nil
 }
 
+type UploadAvatarRequest struct {
+  Image *multipart.FileHeader `form:"image"`
+  Caption *string `form:"caption"`
+}
+
+func (v UploadAvatarRequest) Validate() error {
+  if v.Image == nil {
+    return gerrors.MissingArgumentError("field 'Image' is required")
+  }
+  return nil
+}
+
+type UploadResult struct {
+  Url *string `json:"url,omitempty"`
+  Size *int64 `json:"size,omitempty"`
+}
+
+func (v UploadResult) Validate() error {
+  return nil
+}
+
 // URL parameters for GetUser
 type GetUserUrl struct {
     Id *UserID `url:"id"`
@@ -344,6 +366,9 @@ type PatchUserProfileUrl struct {
 }// URL parameters for GetUsersByRole
 type GetUsersByRoleUrl struct {
     Role *UserRole `url:"role"`
+}// URL parameters for UploadAvatar
+type UploadAvatarUrl struct {
+    Id *UserID `url:"id"`
 }// URL parameters for GetUserNotifications
 type GetUserNotificationsUrl struct {
     UserId *UserID `url:"userId"`
