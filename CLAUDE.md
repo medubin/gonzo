@@ -157,8 +157,9 @@ code_generator/
 
 runtime/                      # Runtime libraries imported by generated code
 ├── cookies/                  # Cookie handling
+├── form/                     # Reflection-based multipart/form-data parser
 ├── gerrors/                  # Structured error handling with HTTP status codes
-├── handle/                   # Generic type-safe request handler
+├── handle/                   # Generic type-safe request handler (Handle + HandleMultipart)
 ├── middleware/               # Middleware system
 ├── router/                   # HTTP routing
 ├── types/                    # Shared types (RouteInfo, etc.)
@@ -208,6 +209,38 @@ go work use .
 - **Validation**: Required fields use simple `nil` checks
 - **Collections**: Arrays (`repeated(Type)`) and maps (`map(Key: Value)`) work anywhere
 - **Map Keys**: Must be comparable types (primitives, enums, comparable structs)
+
+### Multipart File Uploads
+
+Use the `file` primitive for file upload fields. Any struct containing a `file` field is automatically treated as a multipart struct:
+
+```api
+type UploadAvatarRequest {
+  required Image file   // file upload field
+  Caption string        // regular form value field
+}
+
+server MediaService {
+  UploadAvatar POST /users/{id UserID}/avatar body(UploadAvatarRequest) returns(UploadResult)
+}
+```
+
+**What the generator does automatically:**
+- Struct fields get `form:` tags instead of `json:` tags
+- `file` fields map to `*multipart.FileHeader` in Go
+- `mime/multipart` is imported when needed
+- The route is registered with `handle.HandleMultipart` instead of `handle.Handle`
+- `RouteInfo.IsMultipart` is set to `true`
+- `RequireBody` middleware checks for `Content-Type: multipart/form-data` instead of a JSON body
+
+**In the handler implementation**, access the file via `body.Image` (`*multipart.FileHeader`) and open it with `body.Image.Open()`. Non-file fields are parsed from form values.
+
+**Runtime packages involved:**
+- `runtime/form` — reflection-based multipart parser (`form.Parse[T]`)
+- `runtime/handle` — `HandleMultipart` generic handler
+- `runtime/middleware` — `RequireBody` multipart-aware check
+
+**Design note:** A struct becomes multipart implicitly by having a `file` field — there is no explicit keyword. Only direct struct fields are scanned; `file` inside `repeated()` or `map()` is not currently supported.
 
 ## Debugging Tips
 

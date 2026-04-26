@@ -140,13 +140,23 @@ templates:
           url += '?' + searchParams.toString();
         }
         {{end}}
-        const response = await fetch(url, {
+        {{if and .HasBody .IsMultipart}}const formData = new FormData();
+        Object.entries(body).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+          if (value instanceof Blob) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+        {{end}}const response = await fetch(url, {
           method: '{{.Method}}',
-          {{if .HasBody}}body: JSON.stringify(body),
+          {{if .HasBody}}{{if .IsMultipart}}body: formData,
+          headers: options?.headers,{{else}}body: JSON.stringify(body),
           headers: {
             'Content-Type': 'application/json',
             ...options?.headers
-          },{{else}}headers: options?.headers,{{end}}
+          },{{end}}{{else}}headers: options?.headers,{{end}}
           credentials: 'include',
           signal: options?.timeout ? AbortSignal.timeout(options.timeout) : undefined
         });
