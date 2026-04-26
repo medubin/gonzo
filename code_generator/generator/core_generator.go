@@ -114,6 +114,7 @@ type TemplateEndpoint struct {
 	PathParams  []TemplatePathParam
 	Parameters  string
 	BodyType    string
+	BodyFields  []TemplateField // populated when IsMultipart so templates can branch on IsFile per field
 	ReturnType  string
 	URLType     string
 	Comments    []TemplateComment
@@ -368,10 +369,12 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 
 	// Detect multipart endpoints by checking if their body type is a multipart struct
 	multipartTypes := make(map[string]bool)
+	typeFieldsByName := make(map[string][]TemplateField)
 	for _, t := range data.Types {
 		if t.IsMultipart {
 			multipartTypes[t.Name] = true
 		}
+		typeFieldsByName[t.Name] = t.Fields
 	}
 	for i := range data.Servers {
 		for j := range data.Servers[i].Endpoints {
@@ -380,6 +383,7 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 				bodyTypeName := strings.TrimPrefix(ep.BodyType, "*")
 				if multipartTypes[bodyTypeName] {
 					ep.IsMultipart = true
+					ep.BodyFields = typeFieldsByName[bodyTypeName]
 				}
 			}
 		}

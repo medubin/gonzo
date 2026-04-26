@@ -186,7 +186,7 @@ export interface Notification {
 }
 
 export interface UploadAvatarRequest {
-  image: File;
+  image: File | Blob | { uri: string; type: string; name: string };
   caption?: string;
 }
 

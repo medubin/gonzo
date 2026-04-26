@@ -230,14 +230,10 @@ export class MediaServiceClient {
     url = url.replace('{id}', String(params.id));
 
     const formData = new FormData();
-    Object.entries(body).forEach(([key, value]) => {
-      if (value === undefined || value === null) return;
-      if (value instanceof Blob) {
-        formData.append(key, value);
-      } else {
-        formData.append(key, String(value));
-      }
-    });
+    formData.append('image', body.image as any);
+    if (body.caption !== undefined && body.caption !== null) {
+      formData.append('caption', String(body.caption));
+    }
     const response = await fetch(url, {
       method: 'POST',
       body: formData,

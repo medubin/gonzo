@@ -7,6 +7,7 @@ primitives:
   float32: number
   float64: number
   bool: boolean
+  file: "File | Blob | { uri: string; type: string; name: string }"
 type_patterns:
   repeated: "Array<%s>"
   map: "Record<%s, %s>"
@@ -141,15 +142,14 @@ templates:
         }
         {{end}}
         {{if and .HasBody .IsMultipart}}const formData = new FormData();
-        Object.entries(body).forEach(([key, value]) => {
-          if (value === undefined || value === null) return;
-          if (value instanceof Blob) {
-            formData.append(key, value);
-          } else {
-            formData.append(key, String(value));
-          }
-        });
-        {{end}}const response = await fetch(url, {
+        {{range .BodyFields}}{{if .IsFile}}{{if .Required}}formData.append('{{camelCase .Name}}', body.{{camelCase .Name}} as any);
+        {{else}}if (body.{{camelCase .Name}} !== undefined && body.{{camelCase .Name}} !== null) {
+          formData.append('{{camelCase .Name}}', body.{{camelCase .Name}} as any);
+        }
+        {{end}}{{else}}if (body.{{camelCase .Name}} !== undefined && body.{{camelCase .Name}} !== null) {
+          formData.append('{{camelCase .Name}}', String(body.{{camelCase .Name}}));
+        }
+        {{end}}{{end}}{{end}}const response = await fetch(url, {
           method: '{{.Method}}',
           {{if .HasBody}}{{if .IsMultipart}}body: formData,
           headers: options?.headers,{{else}}body: JSON.stringify(body),
