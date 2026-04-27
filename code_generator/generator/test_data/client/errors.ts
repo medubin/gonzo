@@ -17,95 +17,97 @@ export type ErrorCode =
 export class GonzoError extends Error {
   readonly code: ErrorCode;
   readonly statusCode: number;
+  readonly rawBody?: string;
 
-  constructor(code: ErrorCode, message: string, statusCode: number) {
+  constructor(code: ErrorCode, message: string, statusCode: number, rawBody?: string) {
     super(message);
     this.name = 'GonzoError';
     this.code = code;
     this.statusCode = statusCode;
+    this.rawBody = rawBody;
   }
 }
 
 export class InvalidArgumentError extends GonzoError {
-  constructor(message: string, statusCode = 400) {
-    super('invalid_argument', message, statusCode);
+  constructor(message: string, statusCode = 400, rawBody?: string) {
+    super('invalid_argument', message, statusCode, rawBody);
     this.name = 'InvalidArgumentError';
   }
 }
 
 export class MissingArgumentError extends GonzoError {
-  constructor(message: string, statusCode = 400) {
-    super('missing_argument', message, statusCode);
+  constructor(message: string, statusCode = 400, rawBody?: string) {
+    super('missing_argument', message, statusCode, rawBody);
     this.name = 'MissingArgumentError';
   }
 }
 
 export class NotFoundError extends GonzoError {
-  constructor(message: string, statusCode = 404) {
-    super('not_found', message, statusCode);
+  constructor(message: string, statusCode = 404, rawBody?: string) {
+    super('not_found', message, statusCode, rawBody);
     this.name = 'NotFoundError';
   }
 }
 
 export class AlreadyExistsError extends GonzoError {
-  constructor(message: string, statusCode = 409) {
-    super('already_exists', message, statusCode);
+  constructor(message: string, statusCode = 409, rawBody?: string) {
+    super('already_exists', message, statusCode, rawBody);
     this.name = 'AlreadyExistsError';
   }
 }
 
 export class UnauthenticatedError extends GonzoError {
-  constructor(message: string, statusCode = 401) {
-    super('unauthenticated', message, statusCode);
+  constructor(message: string, statusCode = 401, rawBody?: string) {
+    super('unauthenticated', message, statusCode, rawBody);
     this.name = 'UnauthenticatedError';
   }
 }
 
 export class PermissionDeniedError extends GonzoError {
-  constructor(message: string, statusCode = 403) {
-    super('permission_denied', message, statusCode);
+  constructor(message: string, statusCode = 403, rawBody?: string) {
+    super('permission_denied', message, statusCode, rawBody);
     this.name = 'PermissionDeniedError';
   }
 }
 
 export class UnimplementedError extends GonzoError {
-  constructor(message: string, statusCode = 501) {
-    super('unimplemented', message, statusCode);
+  constructor(message: string, statusCode = 501, rawBody?: string) {
+    super('unimplemented', message, statusCode, rawBody);
     this.name = 'UnimplementedError';
   }
 }
 
 export class RateLimitedError extends GonzoError {
-  constructor(message: string, statusCode = 429) {
-    super('rate_limited', message, statusCode);
+  constructor(message: string, statusCode = 429, rawBody?: string) {
+    super('rate_limited', message, statusCode, rawBody);
     this.name = 'RateLimitedError';
   }
 }
 
 export class UnavailableError extends GonzoError {
-  constructor(message: string, statusCode = 503) {
-    super('unavailable', message, statusCode);
+  constructor(message: string, statusCode = 503, rawBody?: string) {
+    super('unavailable', message, statusCode, rawBody);
     this.name = 'UnavailableError';
   }
 }
 
 export class InternalError extends GonzoError {
-  constructor(message: string, statusCode = 500) {
-    super('internal', message, statusCode);
+  constructor(message: string, statusCode = 500, rawBody?: string) {
+    super('internal', message, statusCode, rawBody);
     this.name = 'InternalError';
   }
 }
 
 export class BadRouteError extends GonzoError {
-  constructor(message: string, statusCode = 404) {
-    super('bad_route', message, statusCode);
+  constructor(message: string, statusCode = 404, rawBody?: string) {
+    super('bad_route', message, statusCode, rawBody);
     this.name = 'BadRouteError';
   }
 }
 
 export class MalformedError extends GonzoError {
-  constructor(message: string, statusCode = 400) {
-    super('malformed', message, statusCode);
+  constructor(message: string, statusCode = 400, rawBody?: string) {
+    super('malformed', message, statusCode, rawBody);
     this.name = 'MalformedError';
   }
 }
@@ -114,33 +116,42 @@ export async function parseGonzoError(response: Response): Promise<GonzoError> {
   const statusCode = response.status;
   let code: ErrorCode = 'internal';
   let message = response.statusText || 'unknown error';
+  let rawBody: string | undefined;
 
   try {
-    const body = await response.json();
-    if (body.error && typeof body.error === 'string') {
-      const colonIdx = body.error.indexOf(': ');
-      if (colonIdx !== -1) {
-        code = body.error.substring(0, colonIdx) as ErrorCode;
-        message = body.error.substring(colonIdx + 2);
-      } else {
-        message = body.error;
-      }
-    }
+    rawBody = await response.text();
   } catch (_) {}
 
+  if (rawBody) {
+    try {
+      const body = JSON.parse(rawBody);
+      if (body.error && typeof body.error === 'string') {
+        const colonIdx = body.error.indexOf(': ');
+        if (colonIdx !== -1) {
+          code = body.error.substring(0, colonIdx) as ErrorCode;
+          message = body.error.substring(colonIdx + 2);
+        } else {
+          message = body.error;
+        }
+      }
+    } catch (_) {
+      message = rawBody.length > 500 ? rawBody.slice(0, 500) + '...' : rawBody;
+    }
+  }
+
   switch (code) {
-    case 'invalid_argument': return new InvalidArgumentError(message, statusCode);
-    case 'missing_argument': return new MissingArgumentError(message, statusCode);
-    case 'not_found': return new NotFoundError(message, statusCode);
-    case 'already_exists': return new AlreadyExistsError(message, statusCode);
-    case 'unauthenticated': return new UnauthenticatedError(message, statusCode);
-    case 'permission_denied': return new PermissionDeniedError(message, statusCode);
-    case 'unimplemented': return new UnimplementedError(message, statusCode);
-    case 'rate_limited': return new RateLimitedError(message, statusCode);
-    case 'unavailable': return new UnavailableError(message, statusCode);
-    case 'internal': return new InternalError(message, statusCode);
-    case 'bad_route': return new BadRouteError(message, statusCode);
-    case 'malformed': return new MalformedError(message, statusCode);
-    default: return new GonzoError('internal', message, statusCode);
+    case 'invalid_argument': return new InvalidArgumentError(message, statusCode, rawBody);
+    case 'missing_argument': return new MissingArgumentError(message, statusCode, rawBody);
+    case 'not_found': return new NotFoundError(message, statusCode, rawBody);
+    case 'already_exists': return new AlreadyExistsError(message, statusCode, rawBody);
+    case 'unauthenticated': return new UnauthenticatedError(message, statusCode, rawBody);
+    case 'permission_denied': return new PermissionDeniedError(message, statusCode, rawBody);
+    case 'unimplemented': return new UnimplementedError(message, statusCode, rawBody);
+    case 'rate_limited': return new RateLimitedError(message, statusCode, rawBody);
+    case 'unavailable': return new UnavailableError(message, statusCode, rawBody);
+    case 'internal': return new InternalError(message, statusCode, rawBody);
+    case 'bad_route': return new BadRouteError(message, statusCode, rawBody);
+    case 'malformed': return new MalformedError(message, statusCode, rawBody);
+    default: return new GonzoError('internal', message, statusCode, rawBody);
   }
 }

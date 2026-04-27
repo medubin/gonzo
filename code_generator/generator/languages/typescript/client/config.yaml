@@ -27,18 +27,20 @@ templates:
     export class GonzoError extends Error {
       readonly code: ErrorCode;
       readonly statusCode: number;
+      readonly rawBody?: string;
 
-      constructor(code: ErrorCode, message: string, statusCode: number) {
+      constructor(code: ErrorCode, message: string, statusCode: number, rawBody?: string) {
         super(message);
         this.name = 'GonzoError';
         this.code = code;
         this.statusCode = statusCode;
+        this.rawBody = rawBody;
       }
     }
     {{range .ErrorCodes}}
     export class {{.ClassName}} extends GonzoError {
-      constructor(message: string, statusCode = {{.StatusCode}}) {
-        super('{{.Code}}', message, statusCode);
+      constructor(message: string, statusCode = {{.StatusCode}}, rawBody?: string) {
+        super('{{.Code}}', message, statusCode, rawBody);
         this.name = '{{.ClassName}}';
       }
     }
@@ -47,23 +49,32 @@ templates:
       const statusCode = response.status;
       let code: ErrorCode = 'internal';
       let message = response.statusText || 'unknown error';
+      let rawBody: string | undefined;
 
       try {
-        const body = await response.json();
-        if (body.error && typeof body.error === 'string') {
-          const colonIdx = body.error.indexOf(': ');
-          if (colonIdx !== -1) {
-            code = body.error.substring(0, colonIdx) as ErrorCode;
-            message = body.error.substring(colonIdx + 2);
-          } else {
-            message = body.error;
-          }
-        }
+        rawBody = await response.text();
       } catch (_) {}
 
+      if (rawBody) {
+        try {
+          const body = JSON.parse(rawBody);
+          if (body.error && typeof body.error === 'string') {
+            const colonIdx = body.error.indexOf(': ');
+            if (colonIdx !== -1) {
+              code = body.error.substring(0, colonIdx) as ErrorCode;
+              message = body.error.substring(colonIdx + 2);
+            } else {
+              message = body.error;
+            }
+          }
+        } catch (_) {
+          message = rawBody.length > 500 ? rawBody.slice(0, 500) + '...' : rawBody;
+        }
+      }
+
       switch (code) {
-        {{range .ErrorCodes}}case '{{.Code}}': return new {{.ClassName}}(message, statusCode);
-        {{end}}default: return new GonzoError('internal', message, statusCode);
+        {{range .ErrorCodes}}case '{{.Code}}': return new {{.ClassName}}(message, statusCode, rawBody);
+        {{end}}default: return new GonzoError('internal', message, statusCode, rawBody);
       }
     }
 
