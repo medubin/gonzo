@@ -20,6 +20,7 @@ type Languages int
 var serverRegex = regexp.MustCompile(`(^|/)server\.[^/]+$`)
 var typesRegex = regexp.MustCompile(`(^|/)types\.[^/]+$`)
 var clientRegex = regexp.MustCompile(`(^|/)client\.[^/]+$`)
+var errorsRegex = regexp.MustCompile(`(^|/)errors\.[^/]+$`)
 
 const (
 	Golang Languages = iota
@@ -154,7 +155,7 @@ func (g *GenerateCommand) Run() error {
 	}
 
 	for name, result := range results {
-		safe := (!serverRegex.MatchString(name) && !typesRegex.MatchString(name) && !clientRegex.MatchString(name))
+		safe := (!serverRegex.MatchString(name) && !typesRegex.MatchString(name) && !clientRegex.MatchString(name) && !errorsRegex.MatchString(name))
 		err = fileio.WriteToFile(g.output, name, result, safe)
 		if err != nil {
 			return err
