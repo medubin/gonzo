@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/medubin/gonzo/runtime/cookies"
 	"github.com/medubin/gonzo/runtime/gerrors"
@@ -27,6 +28,26 @@ func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) er
 	}
 
 	exactPath := url.ConvertPathToRegex(info.Path)
+	segments := ParseSegments(info.Path)
+
+	// Reject identical-shape duplicates within the same method so that two
+	// routes that would otherwise race for the same path surface as a clear
+	// registration error instead of a silent first-wins shadow.
+	for _, existing := range rtr.routes {
+		if existing.Method == info.Method && SameShape(existing.Segments, segments) {
+			existingEndpoint := "Unknown"
+			existingServer := "Unknown"
+			if existing.Info != nil {
+				existingEndpoint = existing.Info.Endpoint
+				existingServer = existing.Info.Server
+			}
+			return fmt.Errorf(
+				"route conflict: %s %s (%s on %s) collides with already-registered endpoint %s on %s",
+				info.Method, info.Path, info.Endpoint, info.Server,
+				existingEndpoint, existingServer,
+			)
+		}
+	}
 
 	// Create route-specific middleware based on route info
 	var routeMiddleware []middleware.Middleware
@@ -42,8 +63,16 @@ func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) er
 		HandlerFunc:     handlerFunc,
 		Info:            info,
 		RouteMiddleware: routeMiddleware,
+		Segments:        segments,
 	}
 	rtr.routes = append(rtr.routes, e)
+
+	// Sort so that more-specific routes (static segments beat param segments
+	// per position) are evaluated first. Stable sort preserves registration
+	// order for routes of equivalent specificity.
+	sort.SliceStable(rtr.routes, func(i, j int) bool {
+		return MoreSpecific(rtr.routes[i].Segments, rtr.routes[j].Segments)
+	})
 	return nil
 }
 

@@ -377,6 +377,93 @@ func TestResponseWriter_LargeBody(t *testing.T) {
 	assert.GreaterOrEqual(t, w.Body.Len(), payloadSize)
 }
 
+// --- Route specificity & conflict detection ---
+
+func makeRecordingHandler(name string, hits *map[string]int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		(*hits)[name]++
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func TestRouter_Specificity_StaticBeatsParam_RegistrationOrderA(t *testing.T) {
+	rtr := &router.Router{}
+	hits := map[string]int{}
+	require.NoError(t, rtr.Route(makeRecordingHandler("param", &hits), newRouteInfo("GET", "/ski-sessions/{id}")))
+	require.NoError(t, rtr.Route(makeRecordingHandler("static", &hits), newRouteInfo("GET", "/ski-sessions/full")))
+
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ski-sessions/full", nil))
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ski-sessions/123", nil))
+
+	assert.Equal(t, 1, hits["static"])
+	assert.Equal(t, 1, hits["param"])
+}
+
+func TestRouter_Specificity_StaticBeatsParam_RegistrationOrderB(t *testing.T) {
+	rtr := &router.Router{}
+	hits := map[string]int{}
+	require.NoError(t, rtr.Route(makeRecordingHandler("static", &hits), newRouteInfo("GET", "/ski-sessions/full")))
+	require.NoError(t, rtr.Route(makeRecordingHandler("param", &hits), newRouteInfo("GET", "/ski-sessions/{id}")))
+
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ski-sessions/full", nil))
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ski-sessions/123", nil))
+
+	assert.Equal(t, 1, hits["static"])
+	assert.Equal(t, 1, hits["param"])
+}
+
+func TestRouter_Specificity_NestedPerPosition(t *testing.T) {
+	for _, order := range []string{"AB", "BA"} {
+		t.Run(order, func(t *testing.T) {
+			rtr := &router.Router{}
+			hits := map[string]int{}
+			a := func() error {
+				return rtr.Route(makeRecordingHandler("paramFirst", &hits), newRouteInfo("GET", "/a/{x}/b"))
+			}
+			b := func() error {
+				return rtr.Route(makeRecordingHandler("staticFirst", &hits), newRouteInfo("GET", "/a/c/{y}"))
+			}
+			if order == "AB" {
+				require.NoError(t, a())
+				require.NoError(t, b())
+			} else {
+				require.NoError(t, b())
+				require.NoError(t, a())
+			}
+
+			rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/a/c/b", nil))
+			rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/a/z/b", nil))
+
+			// /a/c/b: static "c" at position 1 wins → matches /a/c/{y}
+			// /a/z/b: "z" doesn't match static "c" → matches /a/{x}/b
+			assert.Equal(t, 1, hits["staticFirst"], "/a/c/b should hit /a/c/{y}")
+			assert.Equal(t, 1, hits["paramFirst"], "/a/z/b should hit /a/{x}/b")
+		})
+	}
+}
+
+func TestRouter_Conflict_IdenticalShape_ReturnsError(t *testing.T) {
+	rtr := &router.Router{}
+	require.NoError(t, rtr.Route(func(w http.ResponseWriter, r *http.Request) {}, newRouteInfo("GET", "/a/{x}")))
+	err := rtr.Route(func(w http.ResponseWriter, r *http.Request) {}, newRouteInfo("GET", "/a/{y}"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "TestEndpoint")
+	assert.Contains(t, err.Error(), "TestServer")
+}
+
+func TestRouter_SamePathDifferentMethods_Coexist(t *testing.T) {
+	rtr := &router.Router{}
+	hits := map[string]int{}
+	require.NoError(t, rtr.Route(makeRecordingHandler("get", &hits), newRouteInfo("GET", "/a/{x}")))
+	require.NoError(t, rtr.Route(makeRecordingHandler("del", &hits), newRouteInfo("DELETE", "/a/{x}")))
+
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/a/1", nil))
+	rtr.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("DELETE", "/a/2", nil))
+
+	assert.Equal(t, 1, hits["get"])
+	assert.Equal(t, 1, hits["del"])
+}
+
 // --- recordingMiddleware helper ---
 
 type recordingMiddleware struct {
