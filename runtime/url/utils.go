@@ -66,11 +66,11 @@ func ConvertPathToRegex(path string) *regexp.Regexp {
 func GetTypedParamsFromContext[Params any](ctx context.Context) Params {
 	var params Params
 
-	if ctx.Value(ParamKey{}) == nil {
+	paramMap, ok := ctx.Value(ParamKey{}).(map[string]string)
+	if !ok {
 		return params
 	}
 
-	paramMap := ctx.Value(ParamKey{}).(map[string]string)
 	setFieldsFromMap(&params, paramMap, "url")
 	return params
 }

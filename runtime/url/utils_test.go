@@ -49,6 +49,17 @@ func TestGetTypedParamsFromContext_EmptyContext(t *testing.T) {
 	assert.Equal(t, "", actual.A)
 }
 
+func TestGetTypedParamsFromContext_WrongValueType_ReturnsZero(t *testing.T) {
+	type X struct {
+		A string `url:"A"`
+	}
+	ctx := context.WithValue(context.Background(), gonzourl.ParamKey{}, "not-a-map")
+	assert.NotPanics(t, func() {
+		actual := gonzourl.GetTypedParamsFromContext[X](ctx)
+		assert.Equal(t, "", actual.A)
+	})
+}
+
 func TestGetTypedParamsFromQuery_StringField(t *testing.T) {
 	type Q struct {
 		Name string `json:"name"`
