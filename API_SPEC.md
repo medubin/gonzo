@@ -104,7 +104,7 @@ Map keys must be comparable types (based on Go language requirements):
 - ❌ **Not Allowed**: `repeated(Type)` (slices are not comparable)
 - ❌ **Not Allowed**: `map(KeyType: ValueType)` (maps are not comparable)
 
-*Note: The code generator does not currently enforce these constraints, but using non-comparable key types will result in invalid Go code that fails to compile.*
+*The parser enforces these constraints: defining a map with a non-comparable key type (e.g. a `repeated`, another `map`, or a struct that transitively contains either) is rejected at parse time with a descriptive error.*
 
 ### Structs
 

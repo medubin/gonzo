@@ -490,7 +490,141 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 		}
 	}
 
+	if err := validateMapKeys(api); err != nil {
+		return nil, err
+	}
+
 	return api, nil
+}
+
+// validateMapKeys rejects map types whose key type is not comparable. The Go
+// language constraint is that map keys must be comparable; using slices or
+// maps as keys produces invalid generated Go that fails to compile. Catching
+// it at parse time gives a much clearer error.
+func validateMapKeys(api *APIDefinition) error {
+	typesByName := make(map[string]*TypeDef, len(api.Types))
+	for i := range api.Types {
+		typesByName[api.Types[i].Name] = &api.Types[i]
+	}
+	enumsByName := make(map[string]bool, len(api.Enums))
+	for _, e := range api.Enums {
+		enumsByName[e.Name] = true
+	}
+
+	var checkExpr func(expr *TypeExpr, where string) error
+	checkExpr = func(expr *TypeExpr, where string) error {
+		if expr == nil {
+			return nil
+		}
+		switch expr.Kind {
+		case "map":
+			if !isComparableType(expr.KeyType, typesByName, enumsByName, map[string]bool{}) {
+				return fmt.Errorf("map key in %s is not a comparable type: %s", where, describeType(expr.KeyType))
+			}
+			if err := checkExpr(expr.KeyType, where); err != nil {
+				return err
+			}
+			return checkExpr(expr.ValueType, where)
+		case "repeated":
+			return checkExpr(expr.ElementType, where)
+		}
+		return nil
+	}
+
+	for _, td := range api.Types {
+		switch td.Kind {
+		case "map":
+			if !isComparableType(td.KeyType, typesByName, enumsByName, map[string]bool{}) {
+				return fmt.Errorf("map key in type %q is not a comparable type: %s", td.Name, describeType(td.KeyType))
+			}
+			if err := checkExpr(td.KeyType, fmt.Sprintf("type %q", td.Name)); err != nil {
+				return err
+			}
+			if err := checkExpr(td.ValueType, fmt.Sprintf("type %q", td.Name)); err != nil {
+				return err
+			}
+		case "repeated":
+			if err := checkExpr(td.ElementType, fmt.Sprintf("type %q", td.Name)); err != nil {
+				return err
+			}
+		case "struct":
+			for _, f := range td.Fields {
+				if err := checkExpr(f.Type, fmt.Sprintf("type %q field %q", td.Name, f.Name)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+var primitiveTypes = map[string]bool{
+	"string": true, "int32": true, "int64": true,
+	"float32": true, "float64": true, "bool": true,
+	// "file" is a multipart marker, not a real value type, so it is never a valid map key
+}
+
+// isComparableType reports whether expr resolves to a Go-comparable type.
+// Aliases and structs are followed recursively; visiting tracks names already
+// seen so a cyclic alias chain doesn't blow the stack.
+func isComparableType(expr *TypeExpr, typesByName map[string]*TypeDef, enumsByName map[string]bool, visiting map[string]bool) bool {
+	if expr == nil {
+		return false
+	}
+	switch expr.Kind {
+	case "repeated", "map":
+		return false
+	case "reference":
+		if primitiveTypes[expr.Name] {
+			return true
+		}
+		if enumsByName[expr.Name] {
+			return true
+		}
+		if visiting[expr.Name] {
+			return true
+		}
+		td, ok := typesByName[expr.Name]
+		if !ok {
+			// Unknown reference — let later stages report it; treat as comparable
+			// here so we don't double-flag the same problem.
+			return true
+		}
+		visiting[expr.Name] = true
+		defer delete(visiting, expr.Name)
+		switch td.Kind {
+		case "alias":
+			if primitiveTypes[td.Target] {
+				return true
+			}
+			return isComparableType(&TypeExpr{Kind: "reference", Name: td.Target}, typesByName, enumsByName, visiting)
+		case "struct":
+			for _, f := range td.Fields {
+				if !isComparableType(f.Type, typesByName, enumsByName, visiting) {
+					return false
+				}
+			}
+			return true
+		case "repeated", "map":
+			return false
+		}
+	}
+	return false
+}
+
+func describeType(expr *TypeExpr) string {
+	if expr == nil {
+		return "<nil>"
+	}
+	switch expr.Kind {
+	case "reference":
+		return expr.Name
+	case "repeated":
+		return "repeated(" + describeType(expr.ElementType) + ")"
+	case "map":
+		return "map(" + describeType(expr.KeyType) + ": " + describeType(expr.ValueType) + ")"
+	}
+	return expr.Kind
 }
 
 // parseImport handles `import "path/to/file.api"` and `import "path" as "ns"` statements.
