@@ -97,6 +97,76 @@ func TestGetTypedParamsFromQuery_MultipleValues_TakesFirst(t *testing.T) {
 	assert.Equal(t, "first", result.Tag)
 }
 
+func TestGetTypedParamsFromQuery_SliceField_StringValues(t *testing.T) {
+	type Q struct {
+		Tags []string `json:"tag"`
+	}
+	q := url.Values{"tag": []string{"a", "b", "c"}}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Equal(t, []string{"a", "b", "c"}, result.Tags)
+}
+
+func TestGetTypedParamsFromQuery_SliceField_Int32Values(t *testing.T) {
+	type Q struct {
+		IDs []int32 `json:"id"`
+	}
+	q := url.Values{"id": []string{"1", "2", "3"}}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Equal(t, []int32{1, 2, 3}, result.IDs)
+}
+
+func TestGetTypedParamsFromQuery_PointerToSliceField(t *testing.T) {
+	type Q struct {
+		Tags *[]string `json:"tag"`
+	}
+	q := url.Values{"tag": []string{"a", "b"}}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	require.NotNil(t, result.Tags)
+	assert.Equal(t, []string{"a", "b"}, *result.Tags)
+}
+
+func TestGetTypedParamsFromQuery_SliceField_SingleValue(t *testing.T) {
+	type Q struct {
+		Tags []string `json:"tag"`
+	}
+	q := url.Values{"tag": []string{"only"}}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Equal(t, []string{"only"}, result.Tags)
+}
+
+func TestGetTypedParamsFromQuery_SliceField_Missing_NilSlice(t *testing.T) {
+	type Q struct {
+		Tags []string `json:"tag"`
+	}
+	q := url.Values{}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Nil(t, result.Tags)
+}
+
+func TestGetTypedParamsFromQuery_SliceField_SkipsUnconvertibleEntries(t *testing.T) {
+	type Q struct {
+		IDs []int32 `json:"id"`
+	}
+	q := url.Values{"id": []string{"1", "abc", "3"}}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Equal(t, []int32{1, 3}, result.IDs,
+		"unconvertible entries should be dropped, not zero-valued, to match scalar-field policy")
+}
+
+func TestGetTypedParamsFromQuery_MixedSliceAndScalar(t *testing.T) {
+	type Q struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tag"`
+	}
+	q := url.Values{
+		"name": []string{"alice"},
+		"tag":  []string{"x", "y"},
+	}
+	result := gonzourl.GetTypedParamsFromQuery[Q](q)
+	assert.Equal(t, "alice", result.Name)
+	assert.Equal(t, []string{"x", "y"}, result.Tags)
+}
+
 func TestGetTypedParamsFromQuery_OmitemptySuffix_Stripped(t *testing.T) {
 	type Q struct {
 		Limit string `json:"limit,omitempty"`

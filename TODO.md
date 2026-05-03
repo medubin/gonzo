@@ -51,5 +51,5 @@
 
 ### Design
 
-- [ ] **Multiple query param values silently dropped** — [url/utils.go:49](runtime/url/utils.go#L49)
+- [x] **Multiple query param values silently dropped** — [url/utils.go:49](runtime/url/utils.go#L49)
   `?tag=a&tag=b` keeps only `"a"`. Either support slice fields for multi-value params, or document the limitation clearly.

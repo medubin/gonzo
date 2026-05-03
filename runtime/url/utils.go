@@ -77,17 +77,65 @@ func GetTypedParamsFromContext[Params any](ctx context.Context) Params {
 
 func GetTypedParamsFromQuery[Params any](query url.Values) Params {
 	var params Params
+	setFieldsFromValues(&params, query, "json")
+	return params
+}
 
-	// Convert url.Values to map[string]string
-	paramMap := make(map[string]string)
-	for key, values := range query {
-		if len(values) > 0 {
-			paramMap[key] = values[0]
+// setFieldsFromValues populates struct fields from url.Values. Slice fields
+// (and *[]T pointer-to-slice fields) collect every value supplied for the tag,
+// so `?tag=a&tag=b` produces []string{"a","b"} instead of dropping "b". Scalar
+// fields take the first value, matching the previous behavior.
+func setFieldsFromValues(structPtr interface{}, values url.Values, tagName string) {
+	v := reflect.ValueOf(structPtr).Elem()
+	for _, m := range getFieldMeta(v.Type(), tagName) {
+		raw, exists := values[m.tag]
+		if !exists || len(raw) == 0 {
+			continue
+		}
+		field := v.Field(m.index)
+		if !field.CanSet() {
+			continue
+		}
+		if isSliceField(field.Type()) {
+			setSliceField(field, raw)
+		} else {
+			setFieldValue(field, raw[0])
 		}
 	}
-	
-	setFieldsFromMap(&params, paramMap, "json")
-	return params
+}
+
+func isSliceField(t reflect.Type) bool {
+	if t.Kind() == reflect.Slice {
+		return true
+	}
+	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Slice
+}
+
+// setSliceField fills a slice field (or *[]T) by converting each raw string
+// with setScalarValue. Values that fail to convert are skipped, matching the
+// scalar-field policy in setScalarValue.
+func setSliceField(field reflect.Value, raw []string) {
+	sliceType := field.Type()
+	if sliceType.Kind() == reflect.Ptr {
+		sliceType = sliceType.Elem()
+	}
+	elemType := sliceType.Elem()
+
+	out := reflect.MakeSlice(sliceType, 0, len(raw))
+	for _, s := range raw {
+		elem := reflect.New(elemType).Elem()
+		if setScalarValue(elem, s) {
+			out = reflect.Append(out, elem)
+		}
+	}
+
+	if field.Type().Kind() == reflect.Ptr {
+		ptr := reflect.New(sliceType)
+		ptr.Elem().Set(out)
+		field.Set(ptr)
+	} else {
+		field.Set(out)
+	}
 }
 
 // setFieldsFromMap uses reflection to set struct fields based on tag values.
