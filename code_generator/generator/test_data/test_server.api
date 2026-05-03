@@ -157,6 +157,10 @@ server UserService {
   ListUsers GET /users parameters(UserListParams) returns(UserCollection)
   SearchUsers GET /users/search parameters(UserSearchParams) returns(UserCollection)
   GetUsersByRole GET /users/role/{role UserRole} parameters(UserListParams) returns(UserCollection)
+
+  // HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight
+  CheckUserExists HEAD /users/{id UserID}
+  UserOptions OPTIONS /users/{id UserID}
 }
 
 type UploadAvatarRequest {

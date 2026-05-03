@@ -373,6 +373,12 @@ type PatchUserProfileUrl struct {
 } // URL parameters for GetUsersByRole
 type GetUsersByRoleUrl struct {
 	Role *UserRole `url:"role"`
+} // URL parameters for CheckUserExists
+type CheckUserExistsUrl struct {
+	Id *UserID `url:"id"`
+} // URL parameters for UserOptions
+type UserOptionsUrl struct {
+	Id *UserID `url:"id"`
 } // URL parameters for UploadAvatar
 type UploadAvatarUrl struct {
 	Id *UserID `url:"id"`

@@ -219,6 +219,35 @@
       "kind": "reference",
       "name": "UserCollection"
      }
+    },
+    {
+     "comments": [
+      {
+       "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
+       "line": 161,
+       "type": "single"
+      }
+     ],
+     "method": "HEAD",
+     "name": "CheckUserExists",
+     "path": "/users/{id}",
+     "pathParams": [
+      {
+       "name": "id",
+       "type": "UserID"
+      }
+     ]
+    },
+    {
+     "method": "OPTIONS",
+     "name": "UserOptions",
+     "path": "/users/{id}",
+     "pathParams": [
+      {
+       "name": "id",
+       "type": "UserID"
+      }
+     ]
     }
    ],
    "name": "UserService"
@@ -251,7 +280,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 176,
+     "line": 180,
      "type": "single"
     }
    ],

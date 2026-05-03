@@ -210,6 +210,12 @@ export interface PatchUserProfileParams {
 export interface GetUsersByRoleParams {
   role: UserRole;
 }
+export interface CheckUserExistsParams {
+  id: UserID;
+}
+export interface UserOptionsParams {
+  id: UserID;
+}
 export interface UploadAvatarParams {
   id: UserID;
 }

@@ -47,6 +47,8 @@ var keywords = map[string]struct{}{
 	"PUT":        {},
 	"DELETE":     {},
 	"PATCH":      {},
+	"HEAD":       {},
+	"OPTIONS":    {},
 	"body":       {},
 	"returns":    {},
 	"parameters": {},
@@ -1041,7 +1043,7 @@ func (p *Parser) parsePath() (string, []ParamDef, error) {
 			pathParts = append(pathParts, "/")
 			p.nextToken()
 			afterSeparator = true
-		} else if p.currentToken.Type == TokenIdentifier || (afterSeparator && p.currentToken.Type == TokenKeyword) {
+		} else if afterSeparator && (p.currentToken.Type == TokenIdentifier || p.currentToken.Type == TokenKeyword) {
 			pathParts = append(pathParts, p.currentToken.Value)
 			p.nextToken()
 			afterSeparator = false

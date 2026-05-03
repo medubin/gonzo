@@ -230,7 +230,7 @@ EndpointName METHOD /path/to/resource [body(Type)] [parameters(Type)] [returns(T
 #### Components:
 
 - **EndpointName**: Identifier for the endpoint (PascalCase recommended)
-- **METHOD**: HTTP verb (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`)
+- **METHOD**: HTTP verb (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`)
 - **Path**: URL path with optional path parameters
 - **body(Type)**: Optional request body type
 - **parameters(Type)**: Optional query parameters type

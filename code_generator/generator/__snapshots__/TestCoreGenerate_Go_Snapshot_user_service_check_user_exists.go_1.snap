@@ -1,0 +1,16 @@
+package user_service
+
+import (
+    "context"
+    "github.com/medubin/gonzo/runtime/cookies"
+    "github.com/medubin/gonzo/runtime/gerrors"
+    "github.com/medubin/gonzo/runtime/handle"
+    "github.com/medubin/gonzo/runtime/url"
+    server "github.com/test/server"
+)
+
+// HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight
+// HEAD /users/{id}
+func (s *UserServiceImpl) CheckUserExists(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, server.CheckUserExistsUrl]) (*handle.Response[struct{}], error) {
+  return nil, gerrors.UnimplementedError("CheckUserExists")
+}
