@@ -18,13 +18,13 @@
 
 - [ ] **Typed cookies** — The runtime `cookies` package exists but there is no way to declare typed cookies in the `.api` language. Add syntax so cookie shapes are part of the API contract and generated code is type-safe.
 
-- [ ] **Map key type validation** — The spec documents that non-comparable map key types produce invalid Go code, but the generator does not catch this. Add a validation pass that rejects non-comparable key types at generation time rather than at Go compile time.
+- [x] **Map key type validation** — The spec documents that non-comparable map key types produce invalid Go code, but the generator does not catch this. Add a validation pass that rejects non-comparable key types at generation time rather than at Go compile time.
 
 ## Code Generation
 
 - [ ] **File splitting / modularization** — Currently all types land in a single `types.go`/`types.ts` file and all client methods in a single `client.ts`. For large APIs this becomes hard to navigate. Add an option to split output across multiple files organized by resource or service group.
 
-- [ ] **TypeScript request validation** — Go generates a `Validate()` method on request types that checks required fields. TypeScript generates no equivalent, so invalid requests are only caught server-side. Generate TypeScript validation helpers to enable client-side validation before a request is sent.
+- [x] **TypeScript request validation** — Go generates a `Validate()` method on request types that checks required fields. TypeScript generates no equivalent, so invalid requests are only caught server-side. Generate TypeScript validation helpers to enable client-side validation before a request is sent.
 
 - [ ] **OpenAPI/Swagger export** — Generate an OpenAPI 3.x spec from the `.api` definition. This would enable integration with API explorers (Swagger UI, Redoc), auto-generated docs, and third-party tooling that consumes OpenAPI specs.
 
@@ -40,7 +40,7 @@
 
 ### Correctness
 
-- [ ] **Unguarded type assertion in `GetTypedParamsFromContext`** — [url/utils.go:36](runtime/url/utils.go#L36)
+- [x] **Unguarded type assertion in `GetTypedParamsFromContext`** — [url/utils.go:36](runtime/url/utils.go#L36)
   `ctx.Value(ParamKey{}).(map[string]string)` panics if the context holds a wrong type. Add a two-value assertion with an `!ok` guard.
 
 - [ ] **Silent parameter conversion failure** — [url/utils.go:103](runtime/url/utils.go#L103)
