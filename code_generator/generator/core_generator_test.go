@@ -240,6 +240,55 @@ server PisteDataServer {
 	})
 }
 
+// TestTypeScript_RequestValidation verifies that a `validate{TypeName}` helper
+// is emitted for every struct, mirroring the Go `Validate()` method. Required
+// fields produce an undefined/null check; optional fields do not.
+func TestTypeScript_RequestValidation(t *testing.T) {
+	const api = `
+type CreateUserRequest {
+  required Username string
+  required Email string
+  Age int32
+}
+
+type EmptyOptions {
+  Verbose bool
+}
+
+server UserService {
+  CreateUser POST /users body(CreateUserRequest) returns(CreateUserRequest)
+}
+`
+	parser := generator.NewParser(api)
+	parsed, err := parser.Parse()
+	require.NoError(t, err)
+
+	g, err := generator.NewTemplateGenerator("languages/typescript/client/config.yaml")
+	require.NoError(t, err)
+
+	results, err := g.Generate(parsed, "client")
+	require.NoError(t, err)
+
+	types := results["types.ts"]
+	require.NotEmpty(t, types)
+
+	// Required-field struct
+	assert.Contains(t, types, "export function validateCreateUserRequest(v: CreateUserRequest): string | null")
+	assert.Contains(t, types, `if (v.username === undefined || v.username === null)`)
+	assert.Contains(t, types, `return "field 'Username' is required";`)
+	assert.Contains(t, types, `if (v.email === undefined || v.email === null)`)
+	assert.Contains(t, types, `return "field 'Email' is required";`)
+
+	// Optional fields don't get a guard
+	assert.NotContains(t, types, `if (v.age === undefined || v.age === null)`)
+
+	// Struct with no required fields still emits a validator that returns null
+	assert.Contains(t, types, "export function validateEmptyOptions(v: EmptyOptions): string | null")
+
+	// Aliases, repeated, and map type defs do NOT get a validator
+	assert.NotContains(t, types, "export function validate string")
+}
+
 func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	// Parse the test API
 	input, err := fileio.ParseFile("test_data/test_server.api")

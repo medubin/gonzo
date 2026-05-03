@@ -106,6 +106,13 @@ templates:
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
     {{end}}  {{camelCase .Name}}{{if not .Required}}?{{end}}: {{.Type}};
     {{end}}}
+
+    export function validate{{.Name}}(v: {{.Name}}): string | null {
+    {{range .Fields}}{{if .Required}}  if (v.{{camelCase .Name}} === undefined || v.{{camelCase .Name}} === null) {
+        return "field '{{.Name}}' is required";
+      }
+    {{end}}{{end}}  return null;
+    }
     {{else if eq .Kind "repeated"}}export type {{.Name}} = {{.MappedType}};
     {{else if eq .Kind "map"}}export type {{.Name}} = {{.MappedType}};
     {{end}}

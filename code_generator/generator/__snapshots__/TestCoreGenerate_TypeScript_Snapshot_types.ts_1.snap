@@ -101,6 +101,10 @@ export interface User {
   role?: UserRole;
 }
 
+export function validateUser(v: User): string | null {
+  return null;
+}
+
 /*
  * Struct fields can contain:
  * ** any primitives
@@ -117,11 +121,22 @@ export interface DetailedUser {
   profile?: UserProfile;
 }
 
+export function validateDetailedUser(v: DetailedUser): string | null {
+  if (v.id === undefined || v.id === null) {
+    return "field 'ID' is required";
+  }
+  return null;
+}
+
 export interface UserProfile {
   firstName?: string;
   lastName?: string;
   bio?: string;
   avatarUrl?: string;
+}
+
+export function validateUserProfile(v: UserProfile): string | null {
+  return null;
 }
 
 // both lists and maps can contain structs
@@ -143,11 +158,19 @@ export interface UserSearchParams {
   limit?: number;
 }
 
+export function validateUserSearchParams(v: UserSearchParams): string | null {
+  return null;
+}
+
 export interface UserListParams {
   page?: number;
   pageSize?: number;
   sortBy?: string;
   sortOrder?: string;
+}
+
+export function validateUserListParams(v: UserListParams): string | null {
+  return null;
 }
 
 export interface CreateUserRequest {
@@ -158,6 +181,19 @@ export interface CreateUserRequest {
   profile?: UserProfile;
 }
 
+export function validateCreateUserRequest(v: CreateUserRequest): string | null {
+  if (v.username === undefined || v.username === null) {
+    return "field 'Username' is required";
+  }
+  if (v.email === undefined || v.email === null) {
+    return "field 'Email' is required";
+  }
+  if (v.password === undefined || v.password === null) {
+    return "field 'Password' is required";
+  }
+  return null;
+}
+
 export interface UpdateUserRequest {
   username?: string;
   email?: Email;
@@ -165,9 +201,17 @@ export interface UpdateUserRequest {
   status?: UserStatus;
 }
 
+export function validateUpdateUserRequest(v: UpdateUserRequest): string | null {
+  return null;
+}
+
 export interface DeleteUserRequest {
   reason?: string;
   transferDataTo?: UserID;
+}
+
+export function validateDeleteUserRequest(v: DeleteUserRequest): string | null {
+  return null;
 }
 
 export interface UserProfileUpdate {
@@ -175,6 +219,10 @@ export interface UserProfileUpdate {
   lastName?: string;
   bio?: string;
   avatarUrl?: string;
+}
+
+export function validateUserProfileUpdate(v: UserProfileUpdate): string | null {
+  return null;
 }
 
 export interface Notification {
@@ -185,14 +233,29 @@ export interface Notification {
   isRead?: boolean;
 }
 
+export function validateNotification(v: Notification): string | null {
+  return null;
+}
+
 export interface UploadAvatarRequest {
   image: File | Blob | { uri: string; type: string; name: string };
   caption?: string;
 }
 
+export function validateUploadAvatarRequest(v: UploadAvatarRequest): string | null {
+  if (v.image === undefined || v.image === null) {
+    return "field 'Image' is required";
+  }
+  return null;
+}
+
 export interface UploadResult {
   url?: string;
   size?: number;
+}
+
+export function validateUploadResult(v: UploadResult): string | null {
+  return null;
 }
 
 export interface GetUserParams {
