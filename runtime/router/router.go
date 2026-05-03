@@ -113,20 +113,14 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 
 // writeMiddlewareResponse writes a middleware response to the HTTP response
 func (rtr *Router) writeMiddlewareResponse(w http.ResponseWriter, resp *middleware.MiddlewareResponse) {
-	// Set headers
 	for key, value := range resp.Headers {
 		w.Header().Set(key, value)
 	}
-
-	// Set status code
-	w.WriteHeader(resp.Status)
-
-	// Write body if present
-	if resp.Body != nil {
-		if err := json.NewEncoder(w).Encode(resp.Body); err != nil {
-			log.Printf("Error encoding middleware response: %v", err)
-		}
+	if resp.Body == nil {
+		w.WriteHeader(resp.Status)
+		return
 	}
+	gerrors.WriteJSON(w, resp.Status, resp.Body)
 }
 
 func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {

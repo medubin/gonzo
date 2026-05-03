@@ -46,7 +46,7 @@
 - [ ] **Silent parameter conversion failure** — [url/utils.go:103](runtime/url/utils.go#L103)
   When a query/path param can't be converted to the target type (e.g. `"abc"` → `int`), the field is silently set to its zero value. Should at minimum log a warning.
 
-- [ ] **Inconsistent JSON encoding error handling** — [router/router.go:96](runtime/router/router.go#L96) vs [handle/handle.go:63](runtime/handle/handle.go#L63)
+- [x] **Inconsistent JSON encoding error handling** — [router/router.go:96](runtime/router/router.go#L96) vs [handle/handle.go:63](runtime/handle/handle.go#L63)
   Middleware response encoding errors are only logged; handler response encoding errors are returned to the client. Pick one behavior and apply it consistently.
 
 ### Design

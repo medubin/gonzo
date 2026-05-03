@@ -59,13 +59,7 @@ func Handle[Body any, response any, Params any, PathParams any](handler func(ctx
 			respBody = resp.Body
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(statusCode)
-		err = json.NewEncoder(w).Encode(respBody)
-		if err != nil {
-			gerrors.JSONError(w, err)
-			return
-		}
+		gerrors.WriteJSON(w, statusCode, respBody)
 	}
 }
 
@@ -105,11 +99,6 @@ func HandleMultipart[Body any, response any, Params any, PathParams any](handler
 			respBody = resp.Body
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(statusCode)
-		if err = json.NewEncoder(w).Encode(respBody); err != nil {
-			gerrors.JSONError(w, err)
-			return
-		}
+		gerrors.WriteJSON(w, statusCode, respBody)
 	}
 }

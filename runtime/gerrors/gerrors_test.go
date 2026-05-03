@@ -101,3 +101,44 @@ func TestJSONError_WithGenericError(t *testing.T) {
 	gerrors.JSONError(w, errors.New("raw error"))
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
+
+func TestWriteJSON_HappyPath(t *testing.T) {
+	w := httptest.NewRecorder()
+	gerrors.WriteJSON(w, http.StatusCreated, map[string]string{"name": "alice"})
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+	var result map[string]string
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
+	assert.Equal(t, "alice", result["name"])
+}
+
+func TestWriteJSON_NilBody(t *testing.T) {
+	w := httptest.NewRecorder()
+	gerrors.WriteJSON(w, http.StatusOK, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	// Nil encodes to "null\n" — that's fine; we only assert the status got through.
+}
+
+// TestWriteJSON_EncodeError_StillSendsErrorResponse verifies that when the body
+// fails to marshal, the client receives a 500 instead of a successful status
+// with corrupt bytes. Channels are unmarshalable in encoding/json, so we use
+// one to force the encode failure.
+func TestWriteJSON_EncodeError_StillSendsErrorResponse(t *testing.T) {
+	w := httptest.NewRecorder()
+	bad := struct {
+		Ch chan int `json:"ch"`
+	}{Ch: make(chan int)}
+
+	gerrors.WriteJSON(w, http.StatusOK, bad)
+
+	// Status should be 500 from JSONError, not 200 from the original call.
+	assert.Equal(t, http.StatusInternalServerError, w.Code,
+		"encode failure must produce a 500, not the original status")
+
+	// And the body must be a valid Gonzo error envelope, not partial garbage.
+	var result map[string]string
+	require.NoError(t, json.NewDecoder(w.Body).Decode(&result))
+	assert.Contains(t, result["error"], "internal")
+}
