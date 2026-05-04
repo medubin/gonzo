@@ -149,7 +149,9 @@ server UserService {
   // All other urls can contain a body
   // body and return always refer to a struct type
   CreateUser POST /users body(CreateUserRequest) returns(User)
+  @auth("bearer")
   UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)
+  @auth("bearer")
   DeleteUser DELETE /users/{id UserID} body(DeleteUserRequest) returns(User)
   PatchUserProfile PATCH /users/{id UserID}/profile body(UserProfileUpdate) returns(UserProfile)
   

@@ -2,13 +2,13 @@
 
 ## Language & API Definition
 
-- [ ] **Nested routes** — Allow grouping endpoints under a common path prefix (e.g., `/users/{id}/...`) so related endpoints share path parameters without repeating them on every definition.
+- [x] **Nested routes** — Allow grouping endpoints under a common path prefix (e.g., `/users/{id}/...`) so related endpoints share path parameters without repeating them on every definition.
 
-- [ ] **Options/decorators syntax** — Add metadata annotations to endpoints and types (e.g., caching directives, rate limiting hints, deprecation markers). Currently there is no way to attach structured configuration to definitions.
+- [x] **Options/decorators syntax** — `@name(args, kw: value, ...)` decorators can be stacked above any endpoint. Open-vocabulary: parser collects them verbatim and individual generators decide which to honor. `@auth("<scheme>")` is wired through the Go server template (populates `RouteInfo.AuthScheme`) and the OpenAPI generator (per-operation `security:` + `components.securitySchemes`). Adding more decorators (`@cache`, `@rateLimit`, `@tag`, etc.) is now a template-only change. Decorators on `group` declarations and on types/fields are not yet supported.
 
 - [ ] **Deprecation markers** — Allow marking endpoints and types as deprecated in the API definition, so generators can emit deprecation warnings in generated code.
 
-- [ ] **API versioning** — Add first-class versioning support to the API definition language so that multiple versions of an API can be defined and generated from a single source.
+- [x] **API versioning** — URL-based versioning is composed from `group` (path prefix) plus namespaced `import` (per-version types). See "API Versioning" in `API_SPEC.md`. Remaining gaps are tracked separately: per-version package layout (file splitting TODO), deprecation signaling (deprecation markers TODO), and header/content-negotiation versioning (header definitions TODO).
 
 - [ ] **Request/response header definitions** — Add syntax for specifying required or custom request/response headers as part of an endpoint definition. Currently headers can only be handled through middleware with no type-safe contract.
 
@@ -32,7 +32,7 @@
 
 - [ ] **OpenAPI tags / server grouping** — Today every endpoint lives in a flat `paths` block. Group endpoints by their parent `server` declaration via OpenAPI `tags` so Swagger UI / Redoc render them in sections.
 
-- [ ] **OpenAPI security schemes** — No `securitySchemes` or per-operation `security` is emitted today. Add a way to declare auth schemes (bearer, api key, etc.) in the `.api` language or via a CLI flag and surface them in the spec.
+- [x] **OpenAPI security schemes** — Driven by `@auth("<scheme>")` decorators. The OpenAPI generator collects every used scheme, emits per-operation `security:` requirements, and declares the schemes under `components.securitySchemes` with sensible defaults (`bearer` → http+JWT, `apiKey` → header `X-API-Key`). User-overridable scheme declarations (custom header names, OAuth flows, etc.) remain a future extension.
 
 - [ ] **OpenAPI multi-status responses** — Every endpoint declares a single 200/204 plus a `default` error. Allow declaring additional response codes per endpoint (e.g. 201 Created, 404 Not Found) in the `.api` language and emit each.
 

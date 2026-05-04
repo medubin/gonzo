@@ -39,6 +39,7 @@ var keywords = map[string]struct{}{
 	"type":       {},
 	"enum":       {},
 	"server":     {},
+	"group":      {},
 	"required":   {},
 	"repeated":   {},
 	"map":        {},
@@ -96,7 +97,7 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	// Handle symbols
-	if strings.ContainsRune("()=:,/{}.", rune(char)) {
+	if strings.ContainsRune("()=:,/{}.@", rune(char)) {
 		l.position++
 		return Token{Type: TokenSymbol, Value: string(char), Line: l.line}
 	}
@@ -356,19 +357,46 @@ type ServerDef struct {
 }
 
 type EndpointDef struct {
-	Name       string     `json:"name"`
-	Method     string     `json:"method"`
-	Path       string     `json:"path"`
-	PathParams []ParamDef `json:"pathParams,omitempty"`
-	Parameters *TypeExpr  `json:"parameters,omitempty"`
-	Body       *TypeExpr  `json:"body,omitempty"`
-	Returns    *TypeExpr  `json:"returns,omitempty"`
-	Comments   []Comment  `json:"comments,omitempty"` // Associated comments
+	Name       string      `json:"name"`
+	Method     string      `json:"method"`
+	Path       string      `json:"path"`
+	PathParams []ParamDef  `json:"pathParams,omitempty"`
+	Parameters *TypeExpr   `json:"parameters,omitempty"`
+	Body       *TypeExpr   `json:"body,omitempty"`
+	Returns    *TypeExpr   `json:"returns,omitempty"`
+	Decorators []Decorator `json:"decorators,omitempty"`
+	Comments   []Comment   `json:"comments,omitempty"` // Associated comments
 }
 
 type ParamDef struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+// Decorator is an open-vocabulary annotation attached to an endpoint via the
+// `@name(...)` syntax. The parser collects decorators verbatim; individual
+// generators decide which names to honor (e.g. `@auth` is consumed by the Go
+// server template and the OpenAPI generator). Unknown decorators are ignored
+// rather than rejected, so templates can evolve independently.
+type Decorator struct {
+	Name   string           `json:"name"`
+	Args   []DecoratorArg   `json:"args,omitempty"`
+	Kwargs []DecoratorKwarg `json:"kwargs,omitempty"`
+	Line   int              `json:"line,omitempty"`
+}
+
+// DecoratorArg holds a literal scalar argument to a decorator. Kind is one of
+// "string", "number", "bool". Value is the raw lexeme — for strings, the
+// already-unescaped contents (no surrounding quotes); for numbers and bools,
+// the source text.
+type DecoratorArg struct {
+	Kind  string `json:"kind"`
+	Value string `json:"value"`
+}
+
+type DecoratorKwarg struct {
+	Name string       `json:"name"`
+	Arg  DecoratorArg `json:"arg"`
 }
 
 // Parser with comment handling
@@ -1063,13 +1091,8 @@ func (p *Parser) parseServerDef() (*ServerDef, error) {
 	}
 
 	var endpoints []EndpointDef
-
-	for p.currentToken.Value != "}" {
-		endpoint, err := p.parseEndpoint()
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, *endpoint)
+	if err := p.parseServerBody(&endpoints, "", nil); err != nil {
+		return nil, err
 	}
 
 	if err := p.expect("}"); err != nil {
@@ -1083,7 +1106,196 @@ func (p *Parser) parseServerDef() (*ServerDef, error) {
 	}, nil
 }
 
-func (p *Parser) parseEndpoint() (*EndpointDef, error) {
+// parseServerBody parses the contents of a server or group body. Endpoints
+// inherit the accumulated path prefix and path parameters from any enclosing
+// groups; nested groups stack arbitrarily deep and are flattened into the
+// server's endpoint list at parse time.
+func (p *Parser) parseServerBody(endpoints *[]EndpointDef, prefix string, prefixParams []ParamDef) error {
+	for p.currentToken.Value != "}" {
+		// Collect any leading @decorator lines; they attach to whatever
+		// declaration follows. Groups can't carry decorators yet.
+		var decorators []Decorator
+		for p.currentToken.Type == TokenSymbol && p.currentToken.Value == "@" {
+			d, err := p.parseDecorator()
+			if err != nil {
+				return err
+			}
+			decorators = append(decorators, d)
+		}
+
+		if p.currentToken.Type == TokenKeyword && p.currentToken.Value == "group" {
+			if len(decorators) > 0 {
+				return fmt.Errorf("decorators on groups are not yet supported (line %d)", decorators[0].Line)
+			}
+			if err := p.parseGroup(endpoints, prefix, prefixParams); err != nil {
+				return err
+			}
+			continue
+		}
+		endpoint, err := p.parseEndpoint(prefix, prefixParams)
+		if err != nil {
+			return err
+		}
+		endpoint.Decorators = decorators
+		*endpoints = append(*endpoints, *endpoint)
+	}
+	return nil
+}
+
+// parseDecorator parses `@name` or `@name(arg, ..., kw: arg, ...)`. Positional
+// args must precede kwargs. Argument values are scalars: string literals,
+// numbers, or the bare identifiers `true` / `false`.
+func (p *Parser) parseDecorator() (Decorator, error) {
+	line := p.currentToken.Line
+	if err := p.expect("@"); err != nil {
+		return Decorator{}, err
+	}
+	if p.currentToken.Type != TokenIdentifier && p.currentToken.Type != TokenKeyword {
+		return Decorator{}, fmt.Errorf("expected decorator name after '@' at line %d", p.currentToken.Line)
+	}
+	name := p.currentToken.Value
+	p.nextToken()
+
+	d := Decorator{Name: name, Line: line}
+
+	// Optional argument list
+	if !(p.currentToken.Type == TokenSymbol && p.currentToken.Value == "(") {
+		return d, nil
+	}
+	p.nextToken() // consume "("
+
+	// Empty arg list?
+	if p.currentToken.Type == TokenSymbol && p.currentToken.Value == ")" {
+		p.nextToken()
+		return d, nil
+	}
+
+	for {
+		// A kwarg looks like `<ident> :`. Peek by trying identifier first.
+		if (p.currentToken.Type == TokenIdentifier || p.currentToken.Type == TokenKeyword) && p.peekIsColon() {
+			kwName := p.currentToken.Value
+			p.nextToken() // consume name
+			p.nextToken() // consume ":"
+			arg, err := p.parseDecoratorScalar()
+			if err != nil {
+				return Decorator{}, err
+			}
+			d.Kwargs = append(d.Kwargs, DecoratorKwarg{Name: kwName, Arg: arg})
+		} else {
+			if len(d.Kwargs) > 0 {
+				return Decorator{}, fmt.Errorf("positional decorator argument after kwarg at line %d", p.currentToken.Line)
+			}
+			arg, err := p.parseDecoratorScalar()
+			if err != nil {
+				return Decorator{}, err
+			}
+			d.Args = append(d.Args, arg)
+		}
+
+		if p.currentToken.Type == TokenSymbol && p.currentToken.Value == "," {
+			p.nextToken()
+			continue
+		}
+		break
+	}
+
+	if err := p.expect(")"); err != nil {
+		return Decorator{}, err
+	}
+	return d, nil
+}
+
+// peekIsColon reports whether the token immediately after the current one is
+// a `:`. Implemented by snapshotting the lexer state, advancing once, and
+// restoring — there is no general lookahead in this parser.
+func (p *Parser) peekIsColon() bool {
+	savedPos := p.lexer.position
+	savedLine := p.lexer.line
+	next := p.lexer.NextToken()
+	// Skip over any comments the same way nextToken would.
+	for next.Type == TokenComment {
+		next = p.lexer.NextToken()
+	}
+	p.lexer.position = savedPos
+	p.lexer.line = savedLine
+	return next.Type == TokenSymbol && next.Value == ":"
+}
+
+func (p *Parser) parseDecoratorScalar() (DecoratorArg, error) {
+	switch p.currentToken.Type {
+	case TokenString:
+		v := p.currentToken.Value
+		p.nextToken()
+		return DecoratorArg{Kind: "string", Value: v}, nil
+	case TokenNumber:
+		v := p.currentToken.Value
+		p.nextToken()
+		return DecoratorArg{Kind: "number", Value: v}, nil
+	case TokenIdentifier, TokenKeyword:
+		if p.currentToken.Value == "true" || p.currentToken.Value == "false" {
+			v := p.currentToken.Value
+			p.nextToken()
+			return DecoratorArg{Kind: "bool", Value: v}, nil
+		}
+	}
+	return DecoratorArg{}, fmt.Errorf("expected string, number, or bool decorator argument, got %q at line %d", p.currentToken.Value, p.currentToken.Line)
+}
+
+// parseGroup parses `group <path> { ... }` and recurses into the body with
+// the combined prefix and path parameters.
+func (p *Parser) parseGroup(endpoints *[]EndpointDef, parentPrefix string, parentParams []ParamDef) error {
+	// Discard any comments that preceded `group` — we don't currently surface
+	// them on individual endpoints, since one group can wrap many.
+	p.getComments()
+
+	if err := p.expect("group"); err != nil {
+		return err
+	}
+
+	groupPath, groupParams, err := p.parsePath()
+	if err != nil {
+		return err
+	}
+
+	combined, err := mergePathParams(parentParams, groupParams, "group")
+	if err != nil {
+		return err
+	}
+
+	if err := p.expect("{"); err != nil {
+		return err
+	}
+
+	if err := p.parseServerBody(endpoints, parentPrefix+groupPath, combined); err != nil {
+		return err
+	}
+
+	return p.expect("}")
+}
+
+// mergePathParams concatenates two parameter lists and rejects duplicate
+// names. context is used purely to format the error message.
+func mergePathParams(parent, child []ParamDef, context string) ([]ParamDef, error) {
+	if len(child) == 0 {
+		return parent, nil
+	}
+	seen := make(map[string]bool, len(parent))
+	for _, p := range parent {
+		seen[p.Name] = true
+	}
+	combined := make([]ParamDef, len(parent), len(parent)+len(child))
+	copy(combined, parent)
+	for _, c := range child {
+		if seen[c.Name] {
+			return nil, fmt.Errorf("duplicate path parameter %q in %s", c.Name, context)
+		}
+		seen[c.Name] = true
+		combined = append(combined, c)
+	}
+	return combined, nil
+}
+
+func (p *Parser) parseEndpoint(prefix string, prefixParams []ParamDef) (*EndpointDef, error) {
 	// Get comments that appeared before this endpoint
 	comments := p.getComments()
 
@@ -1097,7 +1309,18 @@ func (p *Parser) parseEndpoint() (*EndpointDef, error) {
 		return nil, err
 	}
 
-	path, pathParams, err := p.parsePath()
+	var path string
+	var pathParams []ParamDef
+	if p.currentToken.Value == "/" {
+		path, pathParams, err = p.parsePath()
+		if err != nil {
+			return nil, err
+		}
+	} else if prefix == "" {
+		return nil, fmt.Errorf("expected path starting with '/' at line %d", p.currentToken.Line)
+	}
+
+	combinedParams, err := mergePathParams(prefixParams, pathParams, fmt.Sprintf("endpoint %q", name))
 	if err != nil {
 		return nil, err
 	}
@@ -1105,8 +1328,8 @@ func (p *Parser) parseEndpoint() (*EndpointDef, error) {
 	endpoint := &EndpointDef{
 		Name:       name,
 		Method:     method,
-		Path:       path,
-		PathParams: pathParams,
+		Path:       prefix + path,
+		PathParams: combinedParams,
 		Comments:   comments,
 	}
 
@@ -1185,7 +1408,7 @@ func (p *Parser) parsePath() (string, []ParamDef, error) {
 			pathParts = append(pathParts, "-")
 			p.nextToken()
 			afterSeparator = true
-		} else if p.currentToken.Value == "{" {
+		} else if afterSeparator && p.currentToken.Value == "{" {
 			// Parse path parameter
 			p.nextToken()
 			paramName, err := p.expectIdentifier()

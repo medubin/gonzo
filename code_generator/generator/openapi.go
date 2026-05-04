@@ -144,6 +144,63 @@ func (r *openapiRenderer) renderOperation(b *strings.Builder, ep *EndpointDef) {
 	r.renderParameters(b, ep, indent+"  ")
 	r.renderRequestBody(b, ep, indent+"  ")
 	r.renderResponses(b, ep, indent+"  ")
+	r.renderSecurity(b, ep, indent+"  ")
+}
+
+// renderSecurity emits the per-operation `security:` requirement when an
+// endpoint carries an @auth decorator. `@auth("none")` is treated as an
+// explicit opt-out (no requirement emitted) so that a default-on auth
+// middleware can be overridden in-source. Unknown scheme names are passed
+// through verbatim — `renderComponents` will declare a generic scheme for them
+// so the document still validates.
+func (r *openapiRenderer) renderSecurity(b *strings.Builder, ep *EndpointDef, indent string) {
+	scheme := authSchemeFor(ep)
+	if scheme == "" || scheme == "none" {
+		return
+	}
+	b.WriteString(indent + "security:\n")
+	b.WriteString(indent + "  - " + securitySchemeID(scheme) + ": []\n")
+}
+
+// authSchemeFor returns the @auth scheme name on ep, or "". Last @auth wins.
+func authSchemeFor(ep *EndpointDef) string {
+	scheme := ""
+	for _, d := range ep.Decorators {
+		if d.Name == "auth" && len(d.Args) >= 1 && d.Args[0].Kind == "string" {
+			scheme = d.Args[0].Value
+		}
+	}
+	return scheme
+}
+
+// securitySchemeID maps an @auth scheme name to the OpenAPI components key
+// used to reference it. Stable, lowercase, suffixed with "Auth" for
+// readability ("bearer" → "bearerAuth", "apiKey" → "apiKeyAuth", "foo" →
+// "fooAuth").
+func securitySchemeID(scheme string) string {
+	return scheme + "Auth"
+}
+
+// collectAuthSchemes walks every endpoint and returns the deduplicated set of
+// non-"none" @auth scheme names actually used in the document, sorted for
+// stable output.
+func (r *openapiRenderer) collectAuthSchemes() []string {
+	seen := make(map[string]bool)
+	for i := range r.api.Servers {
+		for j := range r.api.Servers[i].Endpoints {
+			s := authSchemeFor(&r.api.Servers[i].Endpoints[j])
+			if s == "" || s == "none" {
+				continue
+			}
+			seen[s] = true
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for s := range seen {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, indent string) {
@@ -228,11 +285,14 @@ func (r *openapiRenderer) renderResponses(b *strings.Builder, ep *EndpointDef, i
 }
 
 func (r *openapiRenderer) renderComponents(b *strings.Builder) {
+	authSchemes := r.collectAuthSchemes()
+
 	if len(r.api.Types) == 0 && len(r.api.Enums) == 0 {
 		// Still need GonzoError so default error responses can resolve.
 		b.WriteString("components:\n")
 		b.WriteString("  schemas:\n")
 		b.WriteString(r.gonzoErrorSchema(4))
+		r.renderSecuritySchemes(b, authSchemes, 2)
 		return
 	}
 
@@ -262,6 +322,40 @@ func (r *openapiRenderer) renderComponents(b *strings.Builder) {
 	}
 
 	b.WriteString(r.gonzoErrorSchema(4))
+	r.renderSecuritySchemes(b, authSchemes, 2)
+}
+
+// renderSecuritySchemes writes a `securitySchemes:` block under `components:`
+// declaring one entry per used @auth scheme. Defaults are conservative:
+//
+//   - "bearer" → http bearer with bearerFormat: JWT
+//   - "apiKey" → apiKey in header X-API-Key
+//   - any other name → http bearer (a permissive fallback so unknown schemes
+//     still produce a valid document; a future top-level scheme-declaration
+//     syntax will let users override these defaults)
+func (r *openapiRenderer) renderSecuritySchemes(b *strings.Builder, schemes []string, baseIndent int) {
+	if len(schemes) == 0 {
+		return
+	}
+	pad := strings.Repeat(" ", baseIndent)
+	body := strings.Repeat(" ", baseIndent+2)
+	b.WriteString(pad + "securitySchemes:\n")
+	for _, s := range schemes {
+		b.WriteString(body + securitySchemeID(s) + ":\n")
+		switch s {
+		case "apiKey":
+			b.WriteString(body + "  type: apiKey\n")
+			b.WriteString(body + "  in: header\n")
+			b.WriteString(body + "  name: X-API-Key\n")
+		case "bearer":
+			b.WriteString(body + "  type: http\n")
+			b.WriteString(body + "  scheme: bearer\n")
+			b.WriteString(body + "  bearerFormat: JWT\n")
+		default:
+			b.WriteString(body + "  type: http\n")
+			b.WriteString(body + "  scheme: bearer\n")
+		}
+	}
 }
 
 func (r *openapiRenderer) gonzoErrorSchema(baseIndent int) string {

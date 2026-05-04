@@ -116,7 +116,8 @@ templates:
       Endpoint: "{{.Name}}",
       Server: "{{$.Server.Name}}",
       RequiresBody: {{.RequiresBody}},
-      IsMultipart: {{.IsMultipart}},
+      IsMultipart: {{.IsMultipart}},{{if .AuthScheme}}
+      AuthScheme: "{{.AuthScheme}}",{{end}}
       }); err != nil {
     		return err
     	}

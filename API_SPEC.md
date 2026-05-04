@@ -307,6 +307,29 @@ GetUserNotifications GET /users/{userId UserID}/notifications returns(repeated(N
 - Can be `repeated(Type)` for arrays
 - Can be omitted if endpoint returns no data
 
+### Route Groups
+
+Endpoints sharing a common path prefix can be nested in a `group` block. The group's path and any path parameters it declares are inherited by every endpoint inside it. Endpoints inside a group may omit their own path entirely (the endpoint then resolves to the group prefix). Groups can nest arbitrarily.
+
+```api
+server UserService {
+  group /users/{id UserID} {
+    GetUser    GET                                returns(DetailedUser)
+    UpdateUser PUT          body(UpdateUserRequest) returns(User)
+    PatchProfile PATCH /profile body(UserProfileUpdate) returns(UserProfile)
+
+    group /notifications {
+      ListUserNotifications GET                       returns(repeated(Notification))
+      MarkRead              PUT /{nid NotificationID}
+    }
+  }
+
+  CreateUser POST /users body(CreateUserRequest) returns(User)
+}
+```
+
+Reusing a path-parameter name across nesting levels is an error.
+
 ### Multiple Servers
 
 Multiple servers can be defined in a single file:
@@ -319,6 +342,97 @@ server UserService {
 
 server NotificationService {
   GetUserNotifications GET /users/{userId UserID}/notifications returns(repeated(Notification))
+}
+```
+
+### API Versioning
+
+Gonzo has no dedicated `version` keyword — versioning is composed from two existing features:
+
+1. **Path versioning** uses a `group` for the version prefix. Endpoints inside the group inherit `/vN` automatically.
+2. **Type versioning** uses namespaced imports. Each version lives in its own `.api` file; the root file imports them with an alias so `User` from v1 and v2 become distinct generated symbols (`V1User`, `V2User`) without manual renaming.
+
+```api
+// v1.api
+type User { Name string }
+
+// v2.api
+type User { Name string; Email string }
+
+// api.api
+import "v1.api" as "v1"
+import "v2.api" as "v2"
+
+server API {
+  group /v1 {
+    GetUser GET /users/{id int64} returns(v1.User)
+  }
+  group /v2 {
+    GetUser GET /users/{id int64} returns(v2.User)
+  }
+}
+```
+
+This covers URL-based versioning and type evolution. Header- or content-negotiation-based versioning (`Accept: application/vnd.api.v2+json`) is not currently supported and would need middleware in the consuming app.
+
+### Decorators
+
+Endpoints can be annotated with `@decorator` lines stacked above the declaration. Decorators are open-vocabulary metadata: the parser collects them verbatim, and individual generators decide which names to honor. Unknown names are ignored, so templates can evolve independently.
+
+```api
+server UserService {
+  @deprecated
+  @auth("bearer")
+  GetUser GET /users/{id UserID} returns(User)
+}
+```
+
+**Syntax:**
+
+- `@name` — no-arg form
+- `@name(arg, arg, ...)` — positional args (string, number, bool literals)
+- `@name(key: value, ...)` — named args, must come after any positional args
+
+Decorators stack arbitrarily. They are not currently allowed on `group` declarations.
+
+**Built-in decorators:**
+
+#### `@auth("<scheme>")`
+
+Marks the route as requiring a particular authentication scheme. The scheme name is a contract label — Gonzo does **not** generate any auth verification code. Two things happen:
+
+1. The Go server template populates `RouteInfo.AuthScheme` with the scheme name. The consuming app's middleware reads this field and decides what to enforce (token validation, scope checks, etc.).
+2. The OpenAPI generator emits a per-operation `security:` requirement and declares the scheme under `components.securitySchemes`.
+
+Recognized scheme names with default OpenAPI mappings:
+
+- `"bearer"` → `http` `bearer` with `bearerFormat: JWT`
+- `"apiKey"` → `apiKey` in header `X-API-Key`
+- `"none"` → explicit opt-out (no security emitted; useful when default-on auth middleware should skip a public route)
+- Any other name → falls back to `http bearer` in the spec; `RouteInfo.AuthScheme` carries the name verbatim so app middleware can dispatch on it
+
+```api
+server PaymentService {
+  @auth("bearer")
+  Charge POST /charges body(ChargeReq) returns(Charge)
+
+  @auth("none")
+  Health GET /health
+}
+```
+
+In the consuming app:
+
+```go
+func RequireAuth(next handle.Handler) handle.Handler {
+    return func(req handle.Request) handle.Response {
+        info := req.RouteInfo()
+        if info.AuthScheme == "" || info.AuthScheme == "none" {
+            return next(req) // public
+        }
+        // app's own token verification keyed off info.AuthScheme
+        ...
+    }
 }
 ```
 

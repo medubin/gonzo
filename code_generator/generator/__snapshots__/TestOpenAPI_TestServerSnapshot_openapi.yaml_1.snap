@@ -52,6 +52,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GonzoError'
+      security:
+        - bearerAuth: []
     delete:
       operationId: DeleteUser
       parameters:
@@ -79,6 +81,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GonzoError'
+      security:
+        - bearerAuth: []
     head:
       operationId: CheckUserExists
       parameters:
@@ -573,3 +577,8 @@ components:
           description: 'Error envelope: "<code>: <message>"'
       required:
         - error
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

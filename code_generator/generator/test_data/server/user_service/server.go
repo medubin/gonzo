@@ -62,6 +62,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Server:       "UserService",
 		RequiresBody: true,
 		IsMultipart:  false,
+		AuthScheme:   "bearer",
 	}); err != nil {
 		return err
 	}
@@ -72,6 +73,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Server:       "UserService",
 		RequiresBody: false,
 		IsMultipart:  false,
+		AuthScheme:   "bearer",
 	}); err != nil {
 		return err
 	}

@@ -116,6 +116,18 @@
       "kind": "reference",
       "name": "UpdateUserRequest"
      },
+     "decorators": [
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "bearer"
+        }
+       ],
+       "line": 152,
+       "name": "auth"
+      }
+     ],
      "method": "PUT",
      "name": "UpdateUser",
      "path": "/users/{id}",
@@ -135,6 +147,18 @@
       "kind": "reference",
       "name": "DeleteUserRequest"
      },
+     "decorators": [
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "bearer"
+        }
+       ],
+       "line": 154,
+       "name": "auth"
+      }
+     ],
      "method": "DELETE",
      "name": "DeleteUser",
      "path": "/users/{id}",
@@ -172,7 +196,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 156,
+       "line": 158,
        "type": "single"
       }
      ],
@@ -224,7 +248,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 161,
+       "line": 163,
        "type": "single"
       }
      ],
@@ -280,7 +304,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 180,
+     "line": 182,
      "type": "single"
     }
    ],

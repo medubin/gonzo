@@ -122,7 +122,8 @@ type TemplateEndpoint struct {
 	HasBody     bool
 	HasReturn   bool
 	HasParams   bool
-	IsMultipart bool // body type is a multipart struct
+	IsMultipart bool   // body type is a multipart struct
+	AuthScheme  string // populated from @auth("<scheme>"); empty when no @auth decorator
 }
 
 // RequiresBody determines if this endpoint requires a request body
@@ -566,6 +567,13 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 	te.HasParams = endpoint.Parameters != nil
 	if endpoint.Parameters != nil {
 		te.Parameters = tg.mapTypeExpr(endpoint.Parameters)
+	}
+
+	// @auth("<scheme>") → AuthScheme. Last @auth wins if duplicated.
+	for _, d := range endpoint.Decorators {
+		if d.Name == "auth" && len(d.Args) >= 1 && d.Args[0].Kind == "string" {
+			te.AuthScheme = d.Args[0].Value
+		}
 	}
 
 	return te
