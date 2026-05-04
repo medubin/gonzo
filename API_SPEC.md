@@ -397,6 +397,19 @@ Decorators stack arbitrarily. They are not currently allowed on `group` declarat
 
 **Built-in decorators:**
 
+#### `@deprecated` / `@deprecated("message")`
+
+Marks an endpoint as deprecated. The optional message is surfaced wherever the host language has a convention:
+
+- **Go server**: `// Deprecated: <message>` doc comment on the interface method (`gopls` flags callers).
+- **TypeScript client**: `/** @deprecated <message> */` JSDoc on the client method.
+- **OpenAPI**: `deprecated: true` on the operation; tooling like Swagger UI strikes the route through.
+
+```api
+@deprecated("use SearchUsers instead")
+GetUsersByRole GET /users/role/{role UserRole} returns(UserCollection)
+```
+
 #### `@auth("<scheme>")`
 
 Marks the route as requiring a particular authentication scheme. The scheme name is a contract label — Gonzo does **not** generate any auth verification code. Two things happen:

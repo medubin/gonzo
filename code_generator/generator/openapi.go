@@ -140,6 +140,9 @@ func (r *openapiRenderer) renderOperation(b *strings.Builder, ep *EndpointDef) {
 	indent := "    "
 	b.WriteString(fmt.Sprintf("%s%s:\n", indent, method))
 	b.WriteString(fmt.Sprintf("%s  operationId: %s\n", indent, ep.Name))
+	if hasDecorator(ep, "deprecated") {
+		b.WriteString(indent + "  deprecated: true\n")
+	}
 
 	r.renderParameters(b, ep, indent+"  ")
 	r.renderRequestBody(b, ep, indent+"  ")
@@ -160,6 +163,16 @@ func (r *openapiRenderer) renderSecurity(b *strings.Builder, ep *EndpointDef, in
 	}
 	b.WriteString(indent + "security:\n")
 	b.WriteString(indent + "  - " + securitySchemeID(scheme) + ": []\n")
+}
+
+// hasDecorator reports whether ep carries a decorator with the given name.
+func hasDecorator(ep *EndpointDef, name string) bool {
+	for _, d := range ep.Decorators {
+		if d.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // authSchemeFor returns the @auth scheme name on ep, or "". Last @auth wins.

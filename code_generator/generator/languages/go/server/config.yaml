@@ -106,6 +106,7 @@ templates:
     {{if .Server.Comments}}{{formatComments .Server.Comments}}
     {{end}}type {{.Server.Name}} interface {
     {{range .Server.Endpoints}}{{if .Comments}}{{formatComments .Comments | indent 1}}
+    {{end}}{{if .Deprecated}}	// Deprecated:{{if .DeprecationMessage}} {{.DeprecationMessage}}{{end}}
     {{end}}	{{.Name}}(ctx context.Context, body {{qual $.PackageName .BodyType}}, cookie cookies.Cookies, url url.URL[{{if .HasParams}}{{qual $.PackageName .Parameters}}{{else}}struct{}{{end}}, {{qual $.PackageName .URLType}}]) (*handle.Response[{{.ReturnType | replace "*" "" | qual $.PackageName}}], error)
     {{end}}}
 

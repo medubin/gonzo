@@ -240,6 +240,7 @@ paths:
   /users/role/{role}:
     get:
       operationId: GetUsersByRole
+      deprecated: true
       parameters:
         - name: role
           in: path

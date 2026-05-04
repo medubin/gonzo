@@ -158,6 +158,7 @@ server UserService {
   // Endpoints can take a struct of parameters
   ListUsers GET /users parameters(UserListParams) returns(UserCollection)
   SearchUsers GET /users/search parameters(UserSearchParams) returns(UserCollection)
+  @deprecated("use SearchUsers instead")
   GetUsersByRole GET /users/role/{role UserRole} parameters(UserListParams) returns(UserCollection)
 
   // HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight

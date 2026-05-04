@@ -6,7 +6,7 @@
 
 - [x] **Options/decorators syntax** — `@name(args, kw: value, ...)` decorators can be stacked above any endpoint. Open-vocabulary: parser collects them verbatim and individual generators decide which to honor. `@auth("<scheme>")` is wired through the Go server template (populates `RouteInfo.AuthScheme`) and the OpenAPI generator (per-operation `security:` + `components.securitySchemes`). Adding more decorators (`@cache`, `@rateLimit`, `@tag`, etc.) is now a template-only change. Decorators on `group` declarations and on types/fields are not yet supported.
 
-- [ ] **Deprecation markers** — Allow marking endpoints and types as deprecated in the API definition, so generators can emit deprecation warnings in generated code.
+- [x] **Deprecation markers** — `@deprecated` / `@deprecated("message")` decorator on endpoints emits a Go `// Deprecated:` doc comment, a TypeScript `/** @deprecated */` JSDoc, and `deprecated: true` on the OpenAPI operation. Type-level / field-level deprecation requires lifting decorator support to those nodes (tracked under "Options/decorators syntax").
 
 - [x] **API versioning** — URL-based versioning is composed from `group` (path prefix) plus namespaced `import` (per-version types). See "API Versioning" in `API_SPEC.md`. Remaining gaps are tracked separately: per-version package layout (file splitting TODO), deprecation signaling (deprecation markers TODO), and header/content-negotiation versioning (header definitions TODO).
 

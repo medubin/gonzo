@@ -226,6 +226,18 @@
      }
     },
     {
+     "decorators": [
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "use SearchUsers instead"
+        }
+       ],
+       "line": 161,
+       "name": "deprecated"
+      }
+     ],
      "method": "GET",
      "name": "GetUsersByRole",
      "parameters": {
@@ -248,7 +260,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 163,
+       "line": 164,
        "type": "single"
       }
      ],
@@ -304,7 +316,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 182,
+     "line": 183,
      "type": "single"
     }
    ],

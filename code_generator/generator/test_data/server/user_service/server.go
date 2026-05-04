@@ -28,6 +28,7 @@ type UserService interface {
 	// Endpoints can take a struct of parameters
 	ListUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[server.UserListParams, struct{}]) (*handle.Response[server.UserCollection], error)
 	SearchUsers(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[server.UserSearchParams, struct{}]) (*handle.Response[server.UserCollection], error)
+	// Deprecated: use SearchUsers instead
 	GetUsersByRole(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[server.UserListParams, server.GetUsersByRoleUrl]) (*handle.Response[server.UserCollection], error)
 	// HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight
 	CheckUserExists(ctx context.Context, body *struct{}, cookie cookies.Cookies, url url.URL[struct{}, server.CheckUserExistsUrl]) (*handle.Response[struct{}], error)

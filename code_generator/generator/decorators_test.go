@@ -111,6 +111,34 @@ server S {
 	assert.Empty(t, api.Servers[0].Endpoints[1].Decorators)
 }
 
+func TestDecorator_DeprecatedInOpenAPI(t *testing.T) {
+	api := parseDecorated(t, `
+type User { Name string }
+server S {
+  @deprecated("use v2 GetUser")
+  Get GET /users/{id int64} returns(User)
+
+  @deprecated
+  OldList GET /list returns(User)
+
+  Fresh GET /fresh returns(User)
+}
+`)
+	out, err := generator.RenderOpenAPI(api, "Test")
+	require.NoError(t, err)
+
+	// Both deprecated endpoints emit `deprecated: true`; the fresh one doesn't.
+	assert.Contains(t, out, "operationId: Get\n      deprecated: true")
+	assert.Contains(t, out, "operationId: OldList\n      deprecated: true")
+	freshIdx := strings.Index(out, "operationId: Fresh")
+	require.True(t, freshIdx > 0)
+	// The next line after Fresh's operationId must NOT be `deprecated: true`.
+	tail := out[freshIdx:]
+	nl := strings.Index(tail, "\n")
+	require.True(t, nl > 0)
+	assert.NotContains(t, tail[nl:nl+30], "deprecated: true")
+}
+
 func TestDecorator_AuthInOpenAPIOutput(t *testing.T) {
 	api := parseDecorated(t, `
 type User { Name string }

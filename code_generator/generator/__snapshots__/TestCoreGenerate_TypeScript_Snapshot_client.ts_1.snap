@@ -185,6 +185,7 @@ export class UserServiceClient {
 
     return response.json();
   }
+  /** @deprecated use SearchUsers instead */
   async getUsersByRole(params: GetUsersByRoleParams, parameters: UserListParams, options?: RequestOptions): Promise<UserCollection> {
     let url = `${this.baseUrl}/users/role/{role}`;
 
