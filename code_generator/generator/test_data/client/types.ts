@@ -62,8 +62,6 @@ export function parseUserSomething(v: number): UserSomething {
   return v;
 }
 
-// this is a comment
-/* this is a multiline comment */
 // you can define primitives like this
 export type UserID = number;
 
@@ -76,6 +74,8 @@ export type Score = number;
 
 export type IsActive = boolean;
 
+// Primitives and enums live in a separate file to exercise the import
+// machinery end-to-end through the snapshot suite.
 // you can defined lists this way
 export type UserList = Array<User>;
 
@@ -185,11 +185,20 @@ export function validateCreateUserRequest(v: CreateUserRequest): string | null {
   if (v.username === undefined || v.username === null) {
     return "field 'Username' is required";
   }
+  if (v.username !== undefined && v.username !== null) {
+    if ((v.username as string).length < 3) return "field 'Username' must be at least 3 characters";
+    if ((v.username as string).length > 32) return "field 'Username' must be at most 32 characters";
+    if (!new RegExp("^[a-z0-9_]+$").test(v.username as string)) return "field 'Username' does not match required pattern";
+  }
   if (v.email === undefined || v.email === null) {
     return "field 'Email' is required";
   }
   if (v.password === undefined || v.password === null) {
     return "field 'Password' is required";
+  }
+  if (v.password !== undefined && v.password !== null) {
+    if ((v.password as string).length < 8) return "field 'Password' must be at least 8 characters";
+    if ((v.password as string).length > 128) return "field 'Password' must be at most 128 characters";
   }
   return null;
 }
