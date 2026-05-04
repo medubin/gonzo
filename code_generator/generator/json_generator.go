@@ -40,6 +40,7 @@ var keywords = map[string]struct{}{
 	"enum":       {},
 	"server":     {},
 	"group":      {},
+	"info":       {},
 	"required":   {},
 	"repeated":   {},
 	"map":        {},
@@ -312,9 +313,23 @@ func parseCommentContent(tokenValue string) Comment {
 
 // AST Node types for JSON output with comments
 type APIDefinition struct {
+	Info    *InfoDef    `json:"info,omitempty"`
 	Types   []TypeDef   `json:"types"`
 	Enums   []EnumDef   `json:"enums"`
 	Servers []ServerDef `json:"servers"`
+}
+
+// InfoDef carries top-level metadata about the API. Each field is optional.
+// Currently consumed only by the OpenAPI generator; Go and TS targets ignore
+// it. Source-of-truth for human-facing facts about the API (version,
+// description, contact, license) so they live alongside the routes rather
+// than in build-script flags.
+type InfoDef struct {
+	Title       string `json:"title,omitempty"`
+	Version     string `json:"version,omitempty"`
+	Description string `json:"description,omitempty"`
+	Contact     string `json:"contact,omitempty"`
+	License     string `json:"license,omitempty"`
 }
 
 type TypeDef struct {
@@ -483,6 +498,15 @@ func (p *Parser) Parse() (*APIDefinition, error) {
 			if err := p.parseImport(api, typeNames, enumNames, serverNames); err != nil {
 				return nil, err
 			}
+		case "info":
+			info, err := p.parseInfoDef()
+			if err != nil {
+				return nil, err
+			}
+			if api.Info != nil {
+				return nil, fmt.Errorf("info block already defined; only one is allowed")
+			}
+			api.Info = info
 		case "type":
 			typeDef, err := p.parseTypeDef()
 			if err != nil {
@@ -1071,6 +1095,64 @@ func (p *Parser) parseEnumDef() (*EnumDef, error) {
 		Values:   values,
 		Comments: comments,
 	}, nil
+}
+
+// parseInfoDef parses an `info { key "value" ... }` block. Recognized keys
+// are version, title, description, contact, license. Each may appear at most
+// once; unknown keys are an error so typos surface immediately rather than
+// silently dropping metadata.
+func (p *Parser) parseInfoDef() (*InfoDef, error) {
+	// Comments preceding `info` are not surfaced — there is no obvious place
+	// to attach them in the OpenAPI output.
+	p.getComments()
+	if err := p.expect("info"); err != nil {
+		return nil, err
+	}
+	if err := p.expect("{"); err != nil {
+		return nil, err
+	}
+
+	info := &InfoDef{}
+	seen := make(map[string]bool)
+
+	for p.currentToken.Value != "}" {
+		// Allow comments interleaved with fields.
+		p.getComments()
+
+		key, err := p.expectIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		if seen[key] {
+			return nil, fmt.Errorf("info: field %q already set", key)
+		}
+		if p.currentToken.Type != TokenString {
+			return nil, fmt.Errorf("info: expected string value for %q at line %d", key, p.currentToken.Line)
+		}
+		value := p.currentToken.Value
+		p.nextToken()
+
+		switch key {
+		case "title":
+			info.Title = value
+		case "version":
+			info.Version = value
+		case "description":
+			info.Description = value
+		case "contact":
+			info.Contact = value
+		case "license":
+			info.License = value
+		default:
+			return nil, fmt.Errorf("info: unknown field %q (recognized: title, version, description, contact, license)", key)
+		}
+		seen[key] = true
+	}
+
+	if err := p.expect("}"); err != nil {
+		return nil, err
+	}
+	return info, nil
 }
 
 func (p *Parser) parseServerDef() (*ServerDef, error) {

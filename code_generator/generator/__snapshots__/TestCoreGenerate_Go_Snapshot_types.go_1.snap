@@ -155,8 +155,6 @@ func UserSomethingIsValid(e UserSomething) bool {
 }
 }
 
-// this is a comment
-/* this is a multiline comment */
 // you can define primitives like this
 type UserID int64
 

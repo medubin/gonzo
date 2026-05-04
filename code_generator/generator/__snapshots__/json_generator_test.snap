@@ -7,12 +7,12 @@
    "comments": [
     {
      "content": "enums can be defined like this",
-     "line": 13,
+     "line": 20,
      "type": "single"
     },
     {
      "content": "enums can be any primitive type",
-     "line": 14,
+     "line": 21,
      "type": "single"
     }
    ],
@@ -49,12 +49,18 @@
    }
   }
  ],
+ "info": {
+  "contact": "api@example.com",
+  "description": "Test API exercising every language feature",
+  "license": "MIT",
+  "version": "1.0.0"
+ },
  "servers": [
   {
    "comments": [
     {
      "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
-     "line": 141,
+     "line": 148,
      "type": "multi"
     }
    ],
@@ -63,12 +69,12 @@
      "comments": [
       {
        "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
-       "line": 145,
+       "line": 152,
        "type": "single"
       },
       {
        "content": "GET endpoints do not contain a body",
-       "line": 146,
+       "line": 153,
        "type": "single"
       }
      ],
@@ -94,12 +100,12 @@
      "comments": [
       {
        "content": "All other urls can contain a body",
-       "line": 149,
+       "line": 156,
        "type": "single"
       },
       {
        "content": "body and return always refer to a struct type",
-       "line": 150,
+       "line": 157,
        "type": "single"
       }
      ],
@@ -124,7 +130,7 @@
          "value": "bearer"
         }
        ],
-       "line": 152,
+       "line": 159,
        "name": "auth"
       }
      ],
@@ -155,7 +161,7 @@
          "value": "bearer"
         }
        ],
-       "line": 154,
+       "line": 161,
        "name": "auth"
       }
      ],
@@ -196,7 +202,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 158,
+       "line": 165,
        "type": "single"
       }
      ],
@@ -234,7 +240,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 161,
+       "line": 168,
        "name": "deprecated"
       }
      ],
@@ -260,7 +266,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 164,
+       "line": 171,
        "type": "single"
       }
      ],
@@ -316,7 +322,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 183,
+     "line": 190,
      "type": "single"
     }
    ],
@@ -351,18 +357,8 @@
   {
    "comments": [
     {
-     "content": "this is a comment",
-     "line": 1,
-     "type": "single"
-    },
-    {
-     "content": "this is a multiline comment",
-     "line": 2,
-     "type": "multi"
-    },
-    {
      "content": "you can define primitives like this",
-     "line": 6,
+     "line": 13,
      "type": "single"
     }
    ],
@@ -374,7 +370,7 @@
    "comments": [
     {
      "content": "this is also a comment",
-     "line": 7,
+     "line": 14,
      "type": "single"
     }
    ],
@@ -401,7 +397,7 @@
    "comments": [
     {
      "content": "you can defined lists this way",
-     "line": 38,
+     "line": 45,
      "type": "single"
     }
    ],
@@ -416,7 +412,7 @@
    "comments": [
     {
      "content": "you can use types before they are defined",
-     "line": 40,
+     "line": 47,
      "type": "single"
     }
    ],
@@ -428,7 +424,7 @@
    "comments": [
     {
      "content": "lists can be complex",
-     "line": 43,
+     "line": 50,
      "type": "single"
     }
    ],
@@ -457,7 +453,7 @@
    "comments": [
     {
      "content": "you can defined maps this way",
-     "line": 47,
+     "line": 54,
      "type": "single"
     }
    ],
@@ -476,7 +472,7 @@
    "comments": [
     {
      "content": "maps can be complex",
-     "line": 49,
+     "line": 56,
      "type": "single"
     }
    ],
@@ -505,7 +501,7 @@
    "comments": [
     {
      "content": "structs can be defined like this",
-     "line": 52,
+     "line": 59,
      "type": "single"
     }
    ],
@@ -550,7 +546,7 @@
    "comments": [
     {
      "content": "Struct fields can contain:\n** any primitives\n** repeated fields\n** map fields \n** any defined types\n** other structs",
-     "line": 60,
+     "line": 67,
      "type": "multi"
     }
    ],
@@ -559,7 +555,7 @@
      "comments": [
       {
        "content": "fields are optional unless marked with 'required'",
-       "line": 68,
+       "line": 75,
        "type": "single"
       }
      ],
@@ -650,7 +646,7 @@
    "comments": [
     {
      "content": "both lists and maps can contain structs",
-     "line": 82,
+     "line": 89,
      "type": "single"
     }
    ],
@@ -677,7 +673,7 @@
    "comments": [
     {
      "content": "Allowed in parameter structs:\n- Primitives: string, int32, int64, float32, float64, bool\n- Enums (serialize to underlying primitive)\n- Simple arrays: repeated(primitive) or repeated(enum)\n- Maybe simple maps: map(string: primitive)",
-     "line": 86,
+     "line": 93,
      "type": "multi"
     }
    ],

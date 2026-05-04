@@ -1,10 +1,21 @@
 openapi: 3.1.0
 info:
   title: Gonzo Test API
-  version: 0.0.0
+  version: 1.0.0
+  description: Test API exercising every language feature
+  contact:
+    email: api@example.com
+  license:
+    name: MIT
+tags:
+  - name: UserService
+  - name: MediaService
+  - name: NotificationService
 paths:
   /users/{id}:
     get:
+      tags:
+        - UserService
       operationId: GetUser
       parameters:
         - name: id
@@ -26,6 +37,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/GonzoError'
     put:
+      tags:
+        - UserService
       operationId: UpdateUser
       parameters:
         - name: id
@@ -55,6 +68,8 @@ paths:
       security:
         - bearerAuth: []
     delete:
+      tags:
+        - UserService
       operationId: DeleteUser
       parameters:
         - name: id
@@ -84,6 +99,8 @@ paths:
       security:
         - bearerAuth: []
     head:
+      tags:
+        - UserService
       operationId: CheckUserExists
       parameters:
         - name: id
@@ -101,6 +118,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/GonzoError'
     options:
+      tags:
+        - UserService
       operationId: UserOptions
       parameters:
         - name: id
@@ -119,6 +138,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users:
     post:
+      tags:
+        - UserService
       operationId: CreateUser
       requestBody:
         required: true
@@ -140,6 +161,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/GonzoError'
     get:
+      tags:
+        - UserService
       operationId: ListUsers
       parameters:
         - name: page
@@ -175,6 +198,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users/{id}/profile:
     patch:
+      tags:
+        - UserService
       operationId: PatchUserProfile
       parameters:
         - name: id
@@ -203,6 +228,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users/search:
     get:
+      tags:
+        - UserService
       operationId: SearchUsers
       parameters:
         - name: query
@@ -239,6 +266,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users/role/{role}:
     get:
+      tags:
+        - UserService
       operationId: GetUsersByRole
       deprecated: true
       parameters:
@@ -280,6 +309,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users/{id}/avatar:
     post:
+      tags:
+        - MediaService
       operationId: UploadAvatar
       parameters:
         - name: id
@@ -308,6 +339,8 @@ paths:
                 $ref: '#/components/schemas/GonzoError'
   /users/{userId}/notifications:
     get:
+      tags:
+        - NotificationService
       operationId: GetUserNotifications
       parameters:
         - name: userId

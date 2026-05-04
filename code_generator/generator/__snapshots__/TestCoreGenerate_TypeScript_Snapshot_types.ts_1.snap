@@ -62,8 +62,6 @@ export function parseUserSomething(v: number): UserSomething {
   return v;
 }
 
-// this is a comment
-/* this is a multiline comment */
 // you can define primitives like this
 export type UserID = number;
 

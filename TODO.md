@@ -30,7 +30,7 @@
 
 ### OpenAPI follow-ups
 
-- [ ] **OpenAPI tags / server grouping** — Today every endpoint lives in a flat `paths` block. Group endpoints by their parent `server` declaration via OpenAPI `tags` so Swagger UI / Redoc render them in sections.
+- [x] **OpenAPI tags / server grouping** — Each `server` declaration emits a top-level `tags` entry, and every operation references its parent server via `tags: [<ServerName>]`. Swagger UI / Redoc now render a section per server.
 
 - [x] **OpenAPI security schemes** — Driven by `@auth("<scheme>")` decorators. The OpenAPI generator collects every used scheme, emits per-operation `security:` requirements, and declares the schemes under `components.securitySchemes` with sensible defaults (`bearer` → http+JWT, `apiKey` → header `X-API-Key`). User-overridable scheme declarations (custom header names, OAuth flows, etc.) remain a future extension.
 
@@ -40,7 +40,7 @@
 
 - [ ] **OpenAPI request/response headers** — Depends on the broader header-definition TODO. Once headers are first-class in the `.api` language, surface them as `parameters: { in: header }` and per-response `headers:` blocks in the spec.
 
-- [ ] **OpenAPI info block** — `version` is hardcoded to `0.0.0` and `title` is the `-package` flag. Add `-api-version` plus optional `description`, `contact`, `license` flags so the generated `info` block can be populated without post-processing.
+- [x] **OpenAPI info block** — Added an `info { ... }` block to the `.api` language with title, version, description, contact, and license fields. The OpenAPI generator now populates the spec's `info` object from it; the CLI `-package` arg is the title fallback. Version/contact/license are content of the API and belong next to the routes — putting them in the language rather than CLI flags keeps any tool that reads the `.api` file alone fully informed.
 
 - [ ] **Mock implementation generation** — Generate mock server implementations and stub client instances for use in tests. Currently every consumer must hand-roll their own mocks.
 

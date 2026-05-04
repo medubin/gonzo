@@ -1,7 +1,14 @@
 // this is a comment
-/* 
+/*
 this is a multiline comment
 */
+
+info {
+  version "1.0.0"
+  description "Test API exercising every language feature"
+  contact "api@example.com"
+  license "MIT"
+}
 
 // you can define primitives like this
 type UserID int64//this is also a comment

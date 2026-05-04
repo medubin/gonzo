@@ -23,6 +23,31 @@ Comments can appear at the end of lines:
 type UserID int64 // This is also a comment
 ```
 
+## Info Block
+
+A single optional `info { ... }` block at the top level carries human-facing metadata about the API — version, description, contact, license. It is consumed by the OpenAPI generator to populate the spec's `info` object; Go and TypeScript targets ignore it.
+
+```api
+info {
+  title "Customer API"
+  version "1.4.2"
+  description "Public-facing customer endpoints"
+  contact "api@example.com"
+  license "Apache-2.0"
+}
+```
+
+**Recognized fields** (all optional, all string-valued):
+- `title` — overrides the CLI `-package` flag as the OpenAPI title
+- `version` — emitted as the OpenAPI `info.version` (default `0.0.0`)
+- `description`
+- `contact` — rendered as `contact.email` if it contains `@`, otherwise `contact.name`
+- `license` — rendered as `license.name`
+
+Unknown fields are an error (typos surface immediately rather than silently dropping metadata). At most one `info` block is allowed per file; duplicates are rejected.
+
+The motivation for putting these in the language file rather than in CLI flags: version and contact are *content of the API*, not parameters of how it's generated. They belong next to the routes, version-controlled with them, so any tool that reads the `.api` file alone has enough context.
+
 ## Primitive Types
 
 The language supports the following built-in primitive types:

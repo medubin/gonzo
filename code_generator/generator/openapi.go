@@ -87,19 +87,66 @@ func indexMultipartTypes(api *APIDefinition) map[string]bool {
 
 func (r *openapiRenderer) render(title string) (string, error) {
 	var b strings.Builder
-	if title == "" {
-		title = "API"
+
+	// Resolve fields from the `info { ... }` block if present, with the
+	// caller-supplied title as a last-resort fallback.
+	resolved := r.api.Info
+	if resolved == nil {
+		resolved = &InfoDef{}
+	}
+	if resolved.Title == "" {
+		resolved.Title = title
+	}
+	if resolved.Title == "" {
+		resolved.Title = "API"
+	}
+	version := resolved.Version
+	if version == "" {
+		version = "0.0.0"
 	}
 
 	b.WriteString("openapi: 3.1.0\n")
 	b.WriteString("info:\n")
-	b.WriteString(fmt.Sprintf("  title: %s\n", yamlQuote(title)))
-	b.WriteString("  version: 0.0.0\n")
+	b.WriteString(fmt.Sprintf("  title: %s\n", yamlQuote(resolved.Title)))
+	b.WriteString(fmt.Sprintf("  version: %s\n", yamlQuote(version)))
+	if resolved.Description != "" {
+		b.WriteString(fmt.Sprintf("  description: %s\n", yamlQuote(resolved.Description)))
+	}
+	// Contact is treated as an email when it contains '@', otherwise as a
+	// free-form name. OpenAPI's contact object accepts either; this keeps
+	// the language surface to a single string while still emitting a valid
+	// spec.
+	if resolved.Contact != "" {
+		b.WriteString("  contact:\n")
+		if strings.Contains(resolved.Contact, "@") {
+			b.WriteString(fmt.Sprintf("    email: %s\n", yamlQuote(resolved.Contact)))
+		} else {
+			b.WriteString(fmt.Sprintf("    name: %s\n", yamlQuote(resolved.Contact)))
+		}
+	}
+	if resolved.License != "" {
+		b.WriteString("  license:\n")
+		b.WriteString(fmt.Sprintf("    name: %s\n", yamlQuote(resolved.License)))
+	}
 
+	r.renderTags(&b)
 	r.renderPaths(&b)
 	r.renderComponents(&b)
 
 	return b.String(), nil
+}
+
+// renderTags emits a top-level `tags:` block listing each server declaration,
+// so explorers like Swagger UI / Redoc render a section per server. Operations
+// reference these via per-operation `tags:` (see renderOperation).
+func (r *openapiRenderer) renderTags(b *strings.Builder) {
+	if len(r.api.Servers) == 0 {
+		return
+	}
+	b.WriteString("tags:\n")
+	for i := range r.api.Servers {
+		b.WriteString("  - name: " + yamlQuote(r.api.Servers[i].Name) + "\n")
+	}
 }
 
 func (r *openapiRenderer) renderPaths(b *strings.Builder) {
@@ -130,15 +177,19 @@ func (r *openapiRenderer) renderPaths(b *strings.Builder) {
 	for _, path := range pathOrder {
 		b.WriteString(fmt.Sprintf("  %s:\n", yamlQuote(path)))
 		for _, entry := range byPath[path] {
-			r.renderOperation(b, entry.ep)
+			r.renderOperation(b, entry.ep, entry.server.Name)
 		}
 	}
 }
 
-func (r *openapiRenderer) renderOperation(b *strings.Builder, ep *EndpointDef) {
+func (r *openapiRenderer) renderOperation(b *strings.Builder, ep *EndpointDef, serverName string) {
 	method := strings.ToLower(ep.Method)
 	indent := "    "
 	b.WriteString(fmt.Sprintf("%s%s:\n", indent, method))
+	if serverName != "" {
+		b.WriteString(indent + "  tags:\n")
+		b.WriteString(indent + "    - " + yamlQuote(serverName) + "\n")
+	}
 	b.WriteString(fmt.Sprintf("%s  operationId: %s\n", indent, ep.Name))
 	if hasDecorator(ep, "deprecated") {
 		b.WriteString(indent + "  deprecated: true\n")
