@@ -118,7 +118,8 @@ templates:
       Server: "{{$.Server.Name}}",
       RequiresBody: {{.RequiresBody}},
       IsMultipart: {{.IsMultipart}},{{if .AuthScheme}}
-      AuthScheme: "{{.AuthScheme}}",{{end}}
+      AuthScheme: "{{.AuthScheme}}",{{end}}{{if .DecoratorsLiteral}}
+      Decorators: {{.DecoratorsLiteral}},{{end}}
       }); err != nil {
     		return err
     	}

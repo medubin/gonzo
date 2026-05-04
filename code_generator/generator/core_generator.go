@@ -126,6 +126,7 @@ type TemplateEndpoint struct {
 	AuthScheme         string // populated from @auth("<scheme>"); empty when no @auth decorator
 	Deprecated         bool   // true if endpoint has @deprecated decorator
 	DeprecationMessage string // optional message from @deprecated("...")
+	DecoratorsLiteral  string // Go-literal source for `[]types.Decorator{...}`, or "" if no decorators
 }
 
 // RequiresBody determines if this endpoint requires a request body
@@ -586,8 +587,56 @@ func (tg *TemplateGenerator) convertEndpoint(endpoint *EndpointDef) TemplateEndp
 			}
 		}
 	}
+	te.DecoratorsLiteral = formatDecoratorsLiteral(endpoint.Decorators)
 
 	return te
+}
+
+// formatDecoratorsLiteral renders a `[]types.Decorator{...}` Go expression
+// from the AST decorators. Returns "" when there are none, so the template
+// can omit the field entirely.
+func formatDecoratorsLiteral(decorators []Decorator) string {
+	if len(decorators) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("[]types.Decorator{")
+	for i, d := range decorators {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(fmt.Sprintf("{Name: %q", d.Name))
+		if len(d.Args) > 0 {
+			b.WriteString(", Args: []types.DecoratorArg{")
+			for j, a := range d.Args {
+				if j > 0 {
+					b.WriteString(", ")
+				}
+				b.WriteString(formatDecoratorArgLiteral(a))
+			}
+			b.WriteString("}")
+		}
+		if len(d.Kwargs) > 0 {
+			b.WriteString(", Kwargs: map[string]types.DecoratorArg{")
+			for j, kw := range d.Kwargs {
+				if j > 0 {
+					b.WriteString(", ")
+				}
+				b.WriteString(fmt.Sprintf("%q: %s", kw.Name, formatDecoratorArgLiteral(kw.Arg)))
+			}
+			b.WriteString("}")
+		}
+		b.WriteString("}")
+	}
+	b.WriteString("}")
+	return b.String()
+}
+
+func formatDecoratorArgLiteral(a DecoratorArg) string {
+	// Number and bool values are already validated by the parser, but we
+	// re-quote them as strings — DecoratorArg.Value is a string at runtime,
+	// callers parse it on demand. This keeps the runtime type tiny.
+	return fmt.Sprintf("{Kind: %q, Value: %q}", a.Kind, a.Value)
 }
 
 // Helper functions

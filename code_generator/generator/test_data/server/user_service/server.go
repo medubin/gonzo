@@ -64,6 +64,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		RequiresBody: true,
 		IsMultipart:  false,
 		AuthScheme:   "bearer",
+		Decorators:   []types.Decorator{{Name: "auth", Args: []types.DecoratorArg{{Kind: "string", Value: "bearer"}}}},
 	}); err != nil {
 		return err
 	}
@@ -75,6 +76,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		RequiresBody: false,
 		IsMultipart:  false,
 		AuthScheme:   "bearer",
+		Decorators:   []types.Decorator{{Name: "auth", Args: []types.DecoratorArg{{Kind: "string", Value: "bearer"}}}},
 	}); err != nil {
 		return err
 	}
@@ -115,6 +117,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Server:       "UserService",
 		RequiresBody: false,
 		IsMultipart:  false,
+		Decorators:   []types.Decorator{{Name: "deprecated", Args: []types.DecoratorArg{{Kind: "string", Value: "use SearchUsers instead"}}}},
 	}); err != nil {
 		return err
 	}

@@ -395,6 +395,23 @@ server UserService {
 
 Decorators stack arbitrarily. They are not currently allowed on `group` declarations.
 
+**Reaching arbitrary decorators from middleware:** every decorator on an endpoint — known or not — is emitted into `RouteInfo.Decorators`. Middleware can dispatch on names the generator does not consume itself:
+
+```go
+func CacheMiddleware(next handle.Handler) handle.Handler {
+    return func(req handle.Request) handle.Response {
+        if d := req.RouteInfo().Find("cache"); d != nil {
+            if maxAge, ok := d.Kwargs["maxAge"]; ok {
+                req.ResponseHeader().Set("Cache-Control", "max-age="+maxAge.Value)
+            }
+        }
+        return next(req)
+    }
+}
+```
+
+So `@cache(maxAge: 60)` works end-to-end without any code-generator change — just write the middleware that reads it. Argument values are exposed as `(Kind, Value)` pairs where `Kind` is `"string"`, `"number"`, or `"bool"` and `Value` is the raw lexeme; numeric/bool callers parse on demand.
+
 **Built-in decorators:**
 
 #### `@deprecated` / `@deprecated("message")`
