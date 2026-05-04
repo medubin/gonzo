@@ -352,10 +352,11 @@ type TypeExpr struct {
 }
 
 type FieldDef struct {
-	Name     string    `json:"name"`
-	Type     *TypeExpr `json:"type"`
-	Required bool      `json:"required"`
-	Comments []Comment `json:"comments,omitempty"` // Associated comments
+	Name       string      `json:"name"`
+	Type       *TypeExpr   `json:"type"`
+	Required   bool        `json:"required"`
+	Decorators []Decorator `json:"decorators,omitempty"`
+	Comments   []Comment   `json:"comments,omitempty"` // Associated comments
 }
 
 type EnumDef struct {
@@ -1019,6 +1020,18 @@ func (p *Parser) parseField() (*FieldDef, error) {
 	comments := p.getComments()
 
 	field := &FieldDef{Comments: comments}
+
+	// Collect leading @decorator lines that annotate this field. Decorators
+	// stack above the field declaration in the same shape they do above
+	// endpoints; the parser is open-vocabulary, individual generators decide
+	// which names to honor (e.g. @validation).
+	for p.currentToken.Type == TokenSymbol && p.currentToken.Value == "@" {
+		d, err := p.parseDecorator()
+		if err != nil {
+			return nil, err
+		}
+		field.Decorators = append(field.Decorators, d)
+	}
 
 	// Check for required keyword
 	if p.currentToken.Value == "required" {

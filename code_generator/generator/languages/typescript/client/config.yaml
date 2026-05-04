@@ -111,6 +111,13 @@ templates:
     {{range .Fields}}{{if .Required}}  if (v.{{camelCase .Name}} === undefined || v.{{camelCase .Name}} === null) {
         return "field '{{.Name}}' is required";
       }
+    {{end}}{{if .HasValidation}}  if (v.{{camelCase .Name}} !== undefined && v.{{camelCase .Name}} !== null) {
+    {{if .Min}}    if ((v.{{camelCase .Name}} as number) < {{.Min}}) return "field '{{.Name}}' must be >= {{.Min}}";
+    {{end}}{{if .Max}}    if ((v.{{camelCase .Name}} as number) > {{.Max}}) return "field '{{.Name}}' must be <= {{.Max}}";
+    {{end}}{{if .MinLength}}    if ((v.{{camelCase .Name}} as string).length < {{.MinLength}}) return "field '{{.Name}}' must be at least {{.MinLength}} characters";
+    {{end}}{{if .MaxLength}}    if ((v.{{camelCase .Name}} as string).length > {{.MaxLength}}) return "field '{{.Name}}' must be at most {{.MaxLength}} characters";
+    {{end}}{{if .Pattern}}    if (!new RegExp({{quote .Pattern}}).test(v.{{camelCase .Name}} as string)) return "field '{{.Name}}' does not match required pattern";
+    {{end}}  }
     {{end}}{{end}}  return null;
     }
     {{else if eq .Kind "repeated"}}export type {{.Name}} = {{.MappedType}};

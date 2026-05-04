@@ -402,7 +402,7 @@ This covers URL-based versioning and type evolution. Header- or content-negotiat
 
 ### Decorators
 
-Endpoints can be annotated with `@decorator` lines stacked above the declaration. Decorators are open-vocabulary metadata: the parser collects them verbatim, and individual generators decide which names to honor. Unknown names are ignored, so templates can evolve independently.
+Endpoints, `group` declarations, and struct fields can be annotated with `@decorator` lines stacked above the declaration. Decorators are open-vocabulary metadata: the parser collects them verbatim, and individual generators decide which names to honor. Unknown names are ignored, so templates can evolve independently.
 
 ```api
 server UserService {
@@ -453,6 +453,43 @@ func CacheMiddleware(next handle.Handler) handle.Handler {
 So `@cache(maxAge: 60)` works end-to-end without any code-generator change — just write the middleware that reads it. Argument values are exposed as `(Kind, Value)` pairs where `Kind` is `"string"`, `"number"`, or `"bool"` and `Value` is the raw lexeme; numeric/bool callers parse on demand.
 
 **Built-in decorators:**
+
+#### `@validation(...)` (field-level)
+
+Attach constraint metadata to a struct field. Surfaces in three places:
+
+- **Go server**: the generated `Validate()` method enforces each constraint after the existing required-field checks. Failures return `gerrors.InvalidArgumentError` (HTTP 400).
+- **TypeScript client**: the generated `validate{TypeName}` helper applies the same checks before sending a request.
+- **OpenAPI**: constraints become `minLength`/`maxLength`/`minimum`/`maximum`/`pattern`/`format` on the field schema.
+
+```api
+type CreateUserRequest {
+  @validation(minLength: 3, maxLength: 32, pattern: "^[a-z0-9_]+$")
+  required Username string
+
+  @validation(format: "email")
+  required Email string
+
+  @validation(minLength: 8, maxLength: 128)
+  required Password string
+
+  @validation(min: 13, max: 120)
+  Age int32
+}
+```
+
+**Recognized kwargs** (all optional):
+
+- `min`, `max` — numeric bounds (inclusive). Apply to int/float fields.
+- `minLength`, `maxLength` — string-length bounds (inclusive).
+- `pattern` — RE2 regex; must match the entire value at runtime in Go (uses `regexp.MatchString`) and in TS (uses `RegExp.test`).
+- `format` — semantic hint passed through to OpenAPI as `format`. No runtime check today; useful for `"email"`, `"uuid"`, `"url"`, etc.
+
+Constraints on optional fields only run when the field is present (non-nil in Go, defined in TS). Constraints on required fields run after the nil check.
+
+There is no parser-side check that constraints match the field type — putting `min` on a string is silently ignored by the runtime checks but emitted into OpenAPI as `minimum`. Treat that as user discipline for now.
+
+When a field's type renders as an OpenAPI `$ref` (i.e., a named non-primitive type), validation keywords are dropped from the spec to avoid producing an invalid document. The Go/TS runtime checks still fire — only the spec is lossy in that case.
 
 #### `@deprecated` / `@deprecated("message")`
 

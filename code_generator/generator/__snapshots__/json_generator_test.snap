@@ -60,7 +60,7 @@
    "comments": [
     {
      "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
-     "line": 120,
+     "line": 123,
      "type": "multi"
     }
    ],
@@ -69,12 +69,12 @@
      "comments": [
       {
        "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
-       "line": 124,
+       "line": 127,
        "type": "single"
       },
       {
        "content": "GET endpoints do not contain a body",
-       "line": 125,
+       "line": 128,
        "type": "single"
       }
      ],
@@ -100,12 +100,12 @@
      "comments": [
       {
        "content": "All other urls can contain a body",
-       "line": 128,
+       "line": 131,
        "type": "single"
       },
       {
        "content": "body and return always refer to a struct type",
-       "line": 129,
+       "line": 132,
        "type": "single"
       }
      ],
@@ -130,7 +130,7 @@
          "value": "bearer"
         }
        ],
-       "line": 131,
+       "line": 134,
        "name": "auth"
       }
      ],
@@ -161,7 +161,7 @@
          "value": "bearer"
         }
        ],
-       "line": 133,
+       "line": 136,
        "name": "auth"
       }
      ],
@@ -202,7 +202,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 137,
+       "line": 140,
        "type": "single"
       }
      ],
@@ -240,7 +240,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 140,
+       "line": 143,
        "name": "deprecated"
       }
      ],
@@ -266,7 +266,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 143,
+       "line": 146,
        "type": "single"
       }
      ],
@@ -322,7 +322,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 162,
+     "line": 165,
      "type": "single"
     }
    ],
@@ -768,6 +768,35 @@
   {
    "fields": [
     {
+     "decorators": [
+      {
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "number",
+          "value": "3"
+         },
+         "name": "minLength"
+        },
+        {
+         "arg": {
+          "kind": "number",
+          "value": "32"
+         },
+         "name": "maxLength"
+        },
+        {
+         "arg": {
+          "kind": "string",
+          "value": "^[a-z0-9_]+$"
+         },
+         "name": "pattern"
+        }
+       ],
+       "line": 86,
+       "name": "validation"
+      }
+     ],
      "name": "Username",
      "required": true,
      "type": {
@@ -776,6 +805,21 @@
      }
     },
     {
+     "decorators": [
+      {
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "string",
+          "value": "email"
+         },
+         "name": "format"
+        }
+       ],
+       "line": 88,
+       "name": "validation"
+      }
+     ],
      "name": "Email",
      "required": true,
      "type": {
@@ -784,6 +828,28 @@
      }
     },
     {
+     "decorators": [
+      {
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "number",
+          "value": "8"
+         },
+         "name": "minLength"
+        },
+        {
+         "arg": {
+          "kind": "number",
+          "value": "128"
+         },
+         "name": "maxLength"
+        }
+       ],
+       "line": 90,
+       "name": "validation"
+      }
+     ],
      "name": "Password",
      "required": true,
      "type": {

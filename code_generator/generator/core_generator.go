@@ -87,6 +87,34 @@ type TemplateField struct {
 	FormTag     string
 	IsFile      bool // field type is the file primitive
 	IsMultipart bool // parent struct has file fields; use form: tags
+
+	// Constraint fields populated from @validation. Each is the raw lexeme
+	// from the .api source so the template can emit it verbatim — `13` works
+	// as an untyped int constant against any numeric Go type, and quoted
+	// strings are already string literals. Empty string means "not set".
+	Min       string // numeric lower bound (inclusive)
+	Max       string // numeric upper bound (inclusive)
+	MinLength string // string length lower bound (inclusive)
+	MaxLength string // string length upper bound (inclusive)
+	Pattern   string // regex (Go syntax / RE2). Stored as the unescaped source string.
+	Format    string // semantic hint passed through to OpenAPI ("email", "uuid", "url", ...). No runtime check today.
+}
+
+// HasNumericConstraint reports whether this field carries any min/max bound.
+func (tf TemplateField) HasNumericConstraint() bool {
+	return tf.Min != "" || tf.Max != ""
+}
+
+// HasLengthConstraint reports whether this field carries any min/max length bound.
+func (tf TemplateField) HasLengthConstraint() bool {
+	return tf.MinLength != "" || tf.MaxLength != ""
+}
+
+// HasValidation reports whether this field carries any runtime-checkable
+// constraint. Format is excluded since it's a documentation hint with no
+// runtime check.
+func (tf TemplateField) HasValidation() bool {
+	return tf.HasNumericConstraint() || tf.HasLengthConstraint() || tf.Pattern != ""
 }
 
 type TemplateEnum struct {
@@ -474,7 +502,7 @@ func (tg *TemplateGenerator) convertField(field *FieldDef) TemplateField {
 	camelName := strcase.ToLowerCamel(field.Name)
 	isFile := field.Type != nil && field.Type.Kind == "reference" && field.Type.Name == "file"
 
-	return TemplateField{
+	tf := TemplateField{
 		Name:     field.Name,
 		Type:     tg.mapTypeExpr(field.Type),
 		Required: field.Required,
@@ -483,6 +511,32 @@ func (tg *TemplateGenerator) convertField(field *FieldDef) TemplateField {
 		FormTag:  camelName,
 		IsFile:   isFile,
 	}
+
+	// Read @validation kwargs. Last @validation wins on duplicates; multiple
+	// @validation decorators on the same field merge field-by-field.
+	for _, d := range field.Decorators {
+		if d.Name != "validation" {
+			continue
+		}
+		for _, kw := range d.Kwargs {
+			switch kw.Name {
+			case "min":
+				tf.Min = kw.Arg.Value
+			case "max":
+				tf.Max = kw.Arg.Value
+			case "minLength":
+				tf.MinLength = kw.Arg.Value
+			case "maxLength":
+				tf.MaxLength = kw.Arg.Value
+			case "pattern":
+				tf.Pattern = kw.Arg.Value
+			case "format":
+				tf.Format = kw.Arg.Value
+			}
+		}
+	}
+
+	return tf
 }
 
 // convertEnum converts EnumDef to TemplateEnum

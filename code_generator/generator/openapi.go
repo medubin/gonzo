@@ -459,6 +459,56 @@ func (r *openapiRenderer) renderTypeDefSchema(td *TypeDef, indent int) string {
 	return pad + "{}\n"
 }
 
+// renderValidationConstraints emits OpenAPI keywords for any @validation
+// decorator on the field. Keys are placed at the same indent as the rest of
+// the schema body so they sit alongside `type:`, `format:`, etc.
+//
+// Skipped when the field renders as a `$ref` (a reference to a named
+// non-primitive type). OpenAPI 3.1 forbids most validation keywords next to
+// `$ref`; honoring constraints there would produce an invalid spec. The
+// runtime `Validate()` still enforces them — the spec is just lossy in this
+// edge case until we fix it via an `allOf` wrapper.
+func renderValidationConstraints(f *FieldDef, indent int) string {
+	if rendersAsRef(f.Type) {
+		return ""
+	}
+	pad := strings.Repeat(" ", indent)
+	var b strings.Builder
+	for _, d := range f.Decorators {
+		if d.Name != "validation" {
+			continue
+		}
+		for _, kw := range d.Kwargs {
+			switch kw.Name {
+			case "min":
+				b.WriteString(pad + "minimum: " + kw.Arg.Value + "\n")
+			case "max":
+				b.WriteString(pad + "maximum: " + kw.Arg.Value + "\n")
+			case "minLength":
+				b.WriteString(pad + "minLength: " + kw.Arg.Value + "\n")
+			case "maxLength":
+				b.WriteString(pad + "maxLength: " + kw.Arg.Value + "\n")
+			case "pattern":
+				b.WriteString(pad + "pattern: " + yamlQuote(kw.Arg.Value) + "\n")
+			case "format":
+				b.WriteString(pad + "format: " + yamlQuote(kw.Arg.Value) + "\n")
+			}
+		}
+	}
+	return b.String()
+}
+
+// rendersAsRef reports whether the type expression would emit `$ref: ...` in
+// the generated schema. References to primitives render inline as
+// `type: string` etc., so they are not refs for this purpose.
+func rendersAsRef(expr *TypeExpr) bool {
+	if expr == nil || expr.Kind != "reference" {
+		return false
+	}
+	_, isPrimitive := primitiveOpenAPI(expr.Name)
+	return !isPrimitive
+}
+
 func (r *openapiRenderer) renderStructBody(fields []FieldDef, indent int) string {
 	pad := strings.Repeat(" ", indent)
 	var b strings.Builder
@@ -472,6 +522,7 @@ func (r *openapiRenderer) renderStructBody(fields []FieldDef, indent int) string
 	for _, f := range fields {
 		b.WriteString(pad + "  " + yamlQuote(f.Name) + ":\n")
 		b.WriteString(r.renderSchema(f.Type, indent+4))
+		b.WriteString(renderValidationConstraints(&f, indent+4))
 		if f.Required {
 			required = append(required, f.Name)
 		}

@@ -3,6 +3,7 @@ package server
 
 import (
   "github.com/medubin/gonzo/runtime/gerrors"
+  "regexp"
   "mime/multipart"
 )
 
@@ -274,15 +275,36 @@ type CreateUserRequest struct {
   Profile *UserProfile `json:"profile,omitempty"`
 }
 
+var _validatePattern_CreateUserRequest_Username = regexp.MustCompile("^[a-z0-9_]+$")
+
 func (v CreateUserRequest) Validate() error {
   if v.Username == nil {
     return gerrors.MissingArgumentError("field 'Username' is required")
+  }
+  if v.Username != nil {
+    if len(*v.Username) < 3 {
+      return gerrors.InvalidArgumentError("field 'Username' must be at least 3 characters")
+    }
+    if len(*v.Username) > 32 {
+      return gerrors.InvalidArgumentError("field 'Username' must be at most 32 characters")
+    }
+    if !_validatePattern_CreateUserRequest_Username.MatchString(*v.Username) {
+      return gerrors.InvalidArgumentError("field 'Username' does not match required pattern")
+    }
   }
   if v.Email == nil {
     return gerrors.MissingArgumentError("field 'Email' is required")
   }
   if v.Password == nil {
     return gerrors.MissingArgumentError("field 'Password' is required")
+  }
+  if v.Password != nil {
+    if len(*v.Password) < 8 {
+      return gerrors.InvalidArgumentError("field 'Password' must be at least 8 characters")
+    }
+    if len(*v.Password) > 128 {
+      return gerrors.InvalidArgumentError("field 'Password' must be at most 128 characters")
+    }
   }
   return nil
 }

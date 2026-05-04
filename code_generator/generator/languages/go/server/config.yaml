@@ -31,9 +31,10 @@ templates:
   types: |
     {{.Settings.PackageComment}}
     package {{.PackageName}}
-    {{$needsValidation := false}}{{$needsMultipart := false}}{{range .Types}}{{if eq .Kind "struct"}}{{if .IsMultipart}}{{$needsMultipart = true}}{{end}}{{range .Fields}}{{if .Required}}{{$needsValidation = true}}{{end}}{{end}}{{end}}{{end}}{{if or $needsValidation $needsMultipart}}
+    {{$needsValidation := false}}{{$needsMultipart := false}}{{$needsRegexp := false}}{{range .Types}}{{if eq .Kind "struct"}}{{if .IsMultipart}}{{$needsMultipart = true}}{{end}}{{range .Fields}}{{if .Required}}{{$needsValidation = true}}{{end}}{{if .HasValidation}}{{$needsValidation = true}}{{end}}{{if .Pattern}}{{$needsRegexp = true}}{{end}}{{end}}{{end}}{{end}}{{if or $needsValidation $needsMultipart}}
     import (
     {{if $needsValidation}}  "github.com/medubin/gonzo/runtime/gerrors"
+    {{end}}{{if $needsRegexp}}  "regexp"
     {{end}}{{if $needsMultipart}}  "mime/multipart"
     {{end}}){{end}}
     {{range .Enums}}
@@ -74,11 +75,30 @@ templates:
     {{range .Fields}}{{if .Comments}}{{formatComments .Comments | indent 1}}
     {{end}}  {{capitalize .Name}} *{{.Type}} `{{if .IsMultipart}}form:"{{.FormTag}}"{{else}}json:"{{.JSONTag}}"{{end}}`
     {{end}}}
+    {{$structName := .Name}}{{range .Fields}}{{if .Pattern}}
+    var _validatePattern_{{$structName}}_{{capitalize .Name}} = regexp.MustCompile({{quote .Pattern}}){{end}}{{end}}
 
     func (v {{.Name}}) Validate() error {
     {{range .Fields}}{{if .Required}}  if v.{{capitalize .Name}} == nil {
         return gerrors.MissingArgumentError("field '{{.Name}}' is required")
       }
+    {{end}}{{if .HasValidation}}  if v.{{capitalize .Name}} != nil {
+    {{if .Min}}    if *v.{{capitalize .Name}} < {{.Min}} {
+          return gerrors.InvalidArgumentError("field '{{.Name}}' must be >= {{.Min}}")
+        }
+    {{end}}{{if .Max}}    if *v.{{capitalize .Name}} > {{.Max}} {
+          return gerrors.InvalidArgumentError("field '{{.Name}}' must be <= {{.Max}}")
+        }
+    {{end}}{{if .MinLength}}    if len(*v.{{capitalize .Name}}) < {{.MinLength}} {
+          return gerrors.InvalidArgumentError("field '{{.Name}}' must be at least {{.MinLength}} characters")
+        }
+    {{end}}{{if .MaxLength}}    if len(*v.{{capitalize .Name}}) > {{.MaxLength}} {
+          return gerrors.InvalidArgumentError("field '{{.Name}}' must be at most {{.MaxLength}} characters")
+        }
+    {{end}}{{if .Pattern}}    if !_validatePattern_{{$structName}}_{{capitalize .Name}}.MatchString(*v.{{capitalize .Name}}) {
+          return gerrors.InvalidArgumentError("field '{{.Name}}' does not match required pattern")
+        }
+    {{end}}  }
     {{end}}{{end}}  return nil
     }
     {{else if eq .Kind "repeated"}}type {{.Name}} {{.MappedType}}

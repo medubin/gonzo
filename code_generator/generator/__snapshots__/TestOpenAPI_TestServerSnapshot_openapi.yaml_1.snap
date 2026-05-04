@@ -388,10 +388,15 @@ components:
       properties:
         Username:
           type: string
+          minLength: 3
+          maxLength: 32
+          pattern: ^[a-z0-9_]+$
         Email:
           $ref: '#/components/schemas/Email'
         Password:
           type: string
+          minLength: 8
+          maxLength: 128
         Role:
           $ref: '#/components/schemas/UserRole'
         Profile:

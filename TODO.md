@@ -14,7 +14,7 @@
 
 - [x] **HEAD and OPTIONS HTTP methods** — The parser only recognizes GET, POST, PUT, DELETE, and PATCH. HEAD and OPTIONS are standard HTTP methods with practical uses (health checks, CORS preflight) and should be supported.
 
-- [ ] **Type and field validation** — Add constraint syntax for fields (e.g., min/max length for strings, numeric ranges, regex patterns). The generator would emit validation logic in the target language rather than requiring manual validation in every handler.
+- [x] **Type and field validation** — Field-level `@validation(...)` decorator with `min`, `max`, `minLength`, `maxLength`, `pattern`, and `format` kwargs. Constraints are enforced at runtime by the generated Go `Validate()` method (returns `gerrors.InvalidArgumentError`) and the generated TypeScript `validate*` helpers, and surfaced in OpenAPI as `minimum`/`maximum`/`minLength`/`maxLength`/`pattern`/`format`. No parser-side check yet that a constraint matches its field's type (e.g., `min` on a string is ignored at runtime); treat as user discipline.
 
 - [ ] **Typed cookies** — The runtime `cookies` package exists but there is no way to declare typed cookies in the `.api` language. Add syntax so cookie shapes are part of the API contract and generated code is type-safe.
 
@@ -50,7 +50,7 @@
 
 - [ ] **WebSocket endpoints** — Add support for declaring WebSocket endpoints in the API definition and generating the corresponding connection-handling scaffolding on server and client.
 
-- [ ] **Validation decorators / middleware** — Add built-in middleware for enforcing schema-level constraints (field lengths, value ranges, enum membership) automatically, without requiring manual validation in each handler.
+- [x] **Validation decorators / middleware** — Subsumed by field-level `@validation(...)`: each request body type's generated `Validate()` method enforces field-length, value-range, and pattern constraints automatically. Handlers don't write any of the checks; the existing `RequireBody`-shaped path that already calls `Validate()` returns `gerrors.InvalidArgumentError` on a constraint failure. (Enum membership is already enforced via the generated `<Enum>IsValid` helpers.)
 
 ### Correctness
 

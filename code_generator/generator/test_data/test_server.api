@@ -83,8 +83,11 @@ type UserListParams {
 }
 
 type CreateUserRequest {
+  @validation(minLength: 3, maxLength: 32, pattern: "^[a-z0-9_]+$")
   required Username string
+  @validation(format: "email")
   required Email Email
+  @validation(minLength: 8, maxLength: 128)
   required Password string
   Role UserRole
   Profile UserProfile
