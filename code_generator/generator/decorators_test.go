@@ -79,18 +79,85 @@ server S {
 	assert.Contains(t, err.Error(), "positional decorator argument after kwarg")
 }
 
-func TestDecorator_GroupRejected(t *testing.T) {
-	_, err := generator.NewParser(`
+func TestDecorator_CascadesFromGroupToEndpoints(t *testing.T) {
+	api := parseDecorated(t, `
 type UserID int64
+type User { Name string }
+
 server S {
   @auth("bearer")
-  group /users/{id UserID} {
-    Get GET
+  group /admin {
+    DeleteUser DELETE /users/{id UserID}
+    @deprecated
+    PurgeAll DELETE /purge
+  }
+  Public GET /health
+}
+`)
+	endpoints := api.Servers[0].Endpoints
+	require.Len(t, endpoints, 3)
+
+	// Both group endpoints inherit @auth("bearer").
+	assert.Equal(t, "DeleteUser", endpoints[0].Name)
+	require.Len(t, endpoints[0].Decorators, 1)
+	assert.Equal(t, "auth", endpoints[0].Decorators[0].Name)
+	assert.Equal(t, "bearer", endpoints[0].Decorators[0].Args[0].Value)
+
+	// Endpoint with its own decorator gets both, group first.
+	assert.Equal(t, "PurgeAll", endpoints[1].Name)
+	require.Len(t, endpoints[1].Decorators, 2)
+	assert.Equal(t, "auth", endpoints[1].Decorators[0].Name)
+	assert.Equal(t, "deprecated", endpoints[1].Decorators[1].Name)
+
+	// Endpoint outside the group is untouched.
+	assert.Equal(t, "Public", endpoints[2].Name)
+	assert.Empty(t, endpoints[2].Decorators)
+}
+
+func TestDecorator_EndpointOverridesGroupAuth(t *testing.T) {
+	api := parseDecorated(t, `
+server S {
+  @auth("bearer")
+  group /admin {
+    @auth("none")
+    Heartbeat GET /heartbeat
   }
 }
-`).Parse()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "decorators on groups")
+`)
+	ep := api.Servers[0].Endpoints[0]
+	require.Len(t, ep.Decorators, 2)
+
+	// Both decorators are present in source order. The generator's last-wins
+	// loop is what makes "none" effective; verify the slice ordering here.
+	assert.Equal(t, "bearer", ep.Decorators[0].Args[0].Value)
+	assert.Equal(t, "none", ep.Decorators[1].Args[0].Value)
+
+	// Render through OpenAPI to confirm last-wins applies end-to-end:
+	// "none" means no `security:` block on the operation.
+	out, err := generator.RenderOpenAPI(api, "Test")
+	require.NoError(t, err)
+	hbIdx := strings.Index(out, "operationId: Heartbeat")
+	require.True(t, hbIdx > 0)
+	// No security: between the operation and the next path or end of doc.
+	assert.NotContains(t, out[hbIdx:], "security:\n        - bearerAuth")
+}
+
+func TestDecorator_NestedGroupsStackDecorators(t *testing.T) {
+	api := parseDecorated(t, `
+server S {
+  @auth("bearer")
+  group /v1 {
+    @deprecated
+    group /legacy {
+      Get GET /thing
+    }
+  }
+}
+`)
+	ep := api.Servers[0].Endpoints[0]
+	require.Len(t, ep.Decorators, 2)
+	assert.Equal(t, "auth", ep.Decorators[0].Name)
+	assert.Equal(t, "deprecated", ep.Decorators[1].Name)
 }
 
 func TestDecorator_AuthAppearsInGoServerOutput(t *testing.T) {

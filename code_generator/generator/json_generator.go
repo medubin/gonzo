@@ -1091,7 +1091,7 @@ func (p *Parser) parseServerDef() (*ServerDef, error) {
 	}
 
 	var endpoints []EndpointDef
-	if err := p.parseServerBody(&endpoints, "", nil); err != nil {
+	if err := p.parseServerBody(&endpoints, "", nil, nil); err != nil {
 		return nil, err
 	}
 
@@ -1107,13 +1107,16 @@ func (p *Parser) parseServerDef() (*ServerDef, error) {
 }
 
 // parseServerBody parses the contents of a server or group body. Endpoints
-// inherit the accumulated path prefix and path parameters from any enclosing
-// groups; nested groups stack arbitrarily deep and are flattened into the
-// server's endpoint list at parse time.
-func (p *Parser) parseServerBody(endpoints *[]EndpointDef, prefix string, prefixParams []ParamDef) error {
+// inherit the accumulated path prefix, path parameters, and decorators from
+// any enclosing groups; nested groups stack arbitrarily deep and are flattened
+// into the server's endpoint list at parse time. Inherited decorators are
+// prepended to each endpoint's own decorators in source order, so the
+// existing "last wins" rule in the generator lets an endpoint override a
+// group-level decorator with the same name.
+func (p *Parser) parseServerBody(endpoints *[]EndpointDef, prefix string, prefixParams []ParamDef, inheritedDecorators []Decorator) error {
 	for p.currentToken.Value != "}" {
 		// Collect any leading @decorator lines; they attach to whatever
-		// declaration follows. Groups can't carry decorators yet.
+		// declaration follows (an endpoint or a group).
 		var decorators []Decorator
 		for p.currentToken.Type == TokenSymbol && p.currentToken.Value == "@" {
 			d, err := p.parseDecorator()
@@ -1124,10 +1127,7 @@ func (p *Parser) parseServerBody(endpoints *[]EndpointDef, prefix string, prefix
 		}
 
 		if p.currentToken.Type == TokenKeyword && p.currentToken.Value == "group" {
-			if len(decorators) > 0 {
-				return fmt.Errorf("decorators on groups are not yet supported (line %d)", decorators[0].Line)
-			}
-			if err := p.parseGroup(endpoints, prefix, prefixParams); err != nil {
+			if err := p.parseGroup(endpoints, prefix, prefixParams, inheritedDecorators, decorators); err != nil {
 				return err
 			}
 			continue
@@ -1136,7 +1136,15 @@ func (p *Parser) parseServerBody(endpoints *[]EndpointDef, prefix string, prefix
 		if err != nil {
 			return err
 		}
-		endpoint.Decorators = decorators
+		// inheritedDecorators come first (outermost group wins least), then
+		// the endpoint's own decorators. Generator-side `switch d.Name` loops
+		// already let later entries overwrite earlier ones with the same name.
+		if len(inheritedDecorators) > 0 || len(decorators) > 0 {
+			combined := make([]Decorator, 0, len(inheritedDecorators)+len(decorators))
+			combined = append(combined, inheritedDecorators...)
+			combined = append(combined, decorators...)
+			endpoint.Decorators = combined
+		}
 		*endpoints = append(*endpoints, *endpoint)
 	}
 	return nil
@@ -1242,8 +1250,10 @@ func (p *Parser) parseDecoratorScalar() (DecoratorArg, error) {
 }
 
 // parseGroup parses `group <path> { ... }` and recurses into the body with
-// the combined prefix and path parameters.
-func (p *Parser) parseGroup(endpoints *[]EndpointDef, parentPrefix string, parentParams []ParamDef) error {
+// the combined prefix, path parameters, and decorators. inheritedDecorators
+// are the decorators accumulated from any outer groups; ownDecorators are the
+// decorators that immediately preceded this `group` keyword.
+func (p *Parser) parseGroup(endpoints *[]EndpointDef, parentPrefix string, parentParams []ParamDef, inheritedDecorators, ownDecorators []Decorator) error {
 	// Discard any comments that preceded `group` — we don't currently surface
 	// them on individual endpoints, since one group can wrap many.
 	p.getComments()
@@ -1262,11 +1272,18 @@ func (p *Parser) parseGroup(endpoints *[]EndpointDef, parentPrefix string, paren
 		return err
 	}
 
+	combinedDecorators := inheritedDecorators
+	if len(ownDecorators) > 0 {
+		combinedDecorators = make([]Decorator, 0, len(inheritedDecorators)+len(ownDecorators))
+		combinedDecorators = append(combinedDecorators, inheritedDecorators...)
+		combinedDecorators = append(combinedDecorators, ownDecorators...)
+	}
+
 	if err := p.expect("{"); err != nil {
 		return err
 	}
 
-	if err := p.parseServerBody(endpoints, parentPrefix+groupPath, combined); err != nil {
+	if err := p.parseServerBody(endpoints, parentPrefix+groupPath, combined, combinedDecorators); err != nil {
 		return err
 	}
 

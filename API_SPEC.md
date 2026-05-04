@@ -393,7 +393,22 @@ server UserService {
 - `@name(arg, arg, ...)` — positional args (string, number, bool literals)
 - `@name(key: value, ...)` — named args, must come after any positional args
 
-Decorators stack arbitrarily. They are not currently allowed on `group` declarations.
+Decorators stack arbitrarily and may be placed above a `group` to cascade onto every endpoint inside (including endpoints inside nested groups). When the same decorator name appears on both a group and a nested endpoint, the endpoint's value wins (last-wins). Useful for `@auth`-style annotations that apply to whole sections of an API:
+
+```api
+server AdminAPI {
+  @auth("bearer")
+  group /admin {
+    DeleteUser DELETE /users/{id UserID}
+    PurgeAll   DELETE /purge
+
+    @auth("none")
+    Heartbeat GET /heartbeat   // exempt
+  }
+
+  Public GET /health           // unaffected
+}
+```
 
 **Reaching arbitrary decorators from middleware:** every decorator on an endpoint — known or not — is emitted into `RouteInfo.Decorators`. Middleware can dispatch on names the generator does not consume itself:
 
