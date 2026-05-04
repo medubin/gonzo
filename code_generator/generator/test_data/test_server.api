@@ -10,37 +10,9 @@ info {
   license "MIT"
 }
 
-// you can define primitives like this
-type UserID int64//this is also a comment
-type Email string
-type Timestamp int64
-type Score float32
-type IsActive bool
-
-// enums can be defined like this
-// enums can be any primitive type
-enum UserRole string {
-  ADMIN = "admin"
-  MODERATOR = "moderator"
-  USER = "user"
-}
-
-enum UserStatus string {
-  ACTIVE = "active"
-  SUSPENDED = "suspended"
-  PENDING = "pending"
-}
-
-enum WelcomeMessage string {
-  WELCOME = "Welcome to \"MyApp\""
-}
-
-
-enum UserSomething int32 {
-  ONE = 0
-  TWO = 1
-  THREE = 2
-}
+// Primitives and enums live in a separate file to exercise the import
+// machinery end-to-end through the snapshot suite.
+import "common.api"
 
 // you can defined lists this way
 type UserList repeated(User)

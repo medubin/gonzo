@@ -167,6 +167,8 @@ type Score float32
 
 type IsActive bool
 
+// Primitives and enums live in a separate file to exercise the import
+// machinery end-to-end through the snapshot suite.
 // you can defined lists this way
 type UserList []User
 

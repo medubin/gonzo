@@ -74,6 +74,8 @@ export type Score = number;
 
 export type IsActive = boolean;
 
+// Primitives and enums live in a separate file to exercise the import
+// machinery end-to-end through the snapshot suite.
 // you can defined lists this way
 export type UserList = Array<User>;
 

@@ -294,7 +294,7 @@ func TestCoreGenerate_Go_Snapshot(t *testing.T) {
 	input, err := fileio.ParseFile("test_data/test_server.api")
 	require.NoError(t, err)
 
-	parser := generator.NewParser(string(input))
+	parser := generator.NewParser(string(input), "test_data/test_server.api")
 	api, err := parser.Parse()
 	require.NoError(t, err)
 
@@ -328,7 +328,7 @@ func TestCoreGenerate_TypeScript_Snapshot(t *testing.T) {
 	input, err := fileio.ParseFile("test_data/test_server.api")
 	require.NoError(t, err)
 
-	parser := generator.NewParser(string(input))
+	parser := generator.NewParser(string(input), "test_data/test_server.api")
 	api, err := parser.Parse()
 	require.NoError(t, err)
 

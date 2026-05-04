@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -93,6 +94,25 @@ server S { Get GET /x returns(X) }
 `).Parse()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `info: field "version" already set`)
+}
+
+func TestInfo_RejectedInImportedFile(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "child.api", `
+info { version "1.0.0" }
+type Foo { Bar string }
+`)
+	writeFile(t, dir, "parent.api", `
+import "child.api"
+type Wrapper { F Foo }
+server S { Get GET /x returns(Wrapper) }
+`)
+	parentPath := dir + "/parent.api"
+	bytes, err := os.ReadFile(parentPath)
+	require.NoError(t, err)
+	_, err = generator.NewParser(string(bytes), parentPath).Parse()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "info blocks are only allowed in the entry-point file")
 }
 
 func TestInfo_UnknownFieldErrors(t *testing.T) {

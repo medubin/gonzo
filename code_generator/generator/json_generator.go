@@ -752,6 +752,14 @@ func (p *Parser) parseImport(api *APIDefinition, typeNames, enumNames, serverNam
 		return fmt.Errorf("error in import %q: %v", importPath, err)
 	}
 
+	// `info` is metadata about *this* API, not vocabulary that travels with
+	// imports. Silently dropping it would hide bugs (a version field that
+	// quietly disappears when files get reorganized), so reject it loudly
+	// and instruct the user to move it to the entry-point file.
+	if imported.Info != nil {
+		return fmt.Errorf("import %q: info blocks are only allowed in the entry-point file; move it to the file that imports this one", importPath)
+	}
+
 	// If a namespace was given, rewrite all names and internal type references
 	if nsPrefix != "" {
 		imported = applyNamespacePrefix(imported, nsPrefix)
