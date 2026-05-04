@@ -28,6 +28,20 @@
 
 - [x] **OpenAPI/Swagger export** — Generate an OpenAPI 3.x spec from the `.api` definition. This would enable integration with API explorers (Swagger UI, Redoc), auto-generated docs, and third-party tooling that consumes OpenAPI specs.
 
+### OpenAPI follow-ups
+
+- [ ] **OpenAPI tags / server grouping** — Today every endpoint lives in a flat `paths` block. Group endpoints by their parent `server` declaration via OpenAPI `tags` so Swagger UI / Redoc render them in sections.
+
+- [ ] **OpenAPI security schemes** — No `securitySchemes` or per-operation `security` is emitted today. Add a way to declare auth schemes (bearer, api key, etc.) in the `.api` language or via a CLI flag and surface them in the spec.
+
+- [ ] **OpenAPI multi-status responses** — Every endpoint declares a single 200/204 plus a `default` error. Allow declaring additional response codes per endpoint (e.g. 201 Created, 404 Not Found) in the `.api` language and emit each.
+
+- [ ] **OpenAPI examples** — `requestBody` / `responses` schemas have no `example` or `examples`. Add a way to attach example payloads to types or endpoints so the spec renders runnable samples in API explorers.
+
+- [ ] **OpenAPI request/response headers** — Depends on the broader header-definition TODO. Once headers are first-class in the `.api` language, surface them as `parameters: { in: header }` and per-response `headers:` blocks in the spec.
+
+- [ ] **OpenAPI info block** — `version` is hardcoded to `0.0.0` and `title` is the `-package` flag. Add `-api-version` plus optional `description`, `contact`, `license` flags so the generated `info` block can be populated without post-processing.
+
 - [ ] **Mock implementation generation** — Generate mock server implementations and stub client instances for use in tests. Currently every consumer must hand-roll their own mocks.
 
 ## Runtime & Middleware
