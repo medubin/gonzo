@@ -1,0 +1,10 @@
+language: openapi
+file_ext: .yaml
+primitives: {}
+type_patterns: {}
+default_imports: []
+settings:
+  package_comment: ""
+templates:
+  openapi: |-
+    {{openapiDoc .API .PackageName}}

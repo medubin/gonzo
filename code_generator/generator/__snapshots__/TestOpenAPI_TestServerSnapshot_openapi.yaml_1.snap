@@ -1,0 +1,575 @@
+openapi: 3.1.0
+info:
+  title: Gonzo Test API
+  version: 0.0.0
+paths:
+  /users/{id}:
+    get:
+      operationId: GetUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedUser'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+    put:
+      operationId: UpdateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+    delete:
+      operationId: DeleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteUserRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+    head:
+      operationId: CheckUserExists
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      responses:
+        '204':
+          description: No Content
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+    options:
+      operationId: UserOptions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      responses:
+        '204':
+          description: No Content
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users:
+    post:
+      operationId: CreateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+    get:
+      operationId: ListUsers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCollection'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users/{id}/profile:
+    patch:
+      operationId: PatchUserProfile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users/search:
+    get:
+      operationId: SearchUsers
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: roles
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/UserRole'
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCollection'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users/role/{role}:
+    get:
+      operationId: GetUsersByRole
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCollection'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users/{id}/avatar:
+    post:
+      operationId: UploadAvatar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadAvatarRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+  /users/{userId}/notifications:
+    get:
+      operationId: GetUserNotifications
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserID'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GonzoError'
+components:
+  schemas:
+    CreateUserRequest:
+      type: object
+      properties:
+        Username:
+          type: string
+        Email:
+          $ref: '#/components/schemas/Email'
+        Password:
+          type: string
+        Role:
+          $ref: '#/components/schemas/UserRole'
+        Profile:
+          $ref: '#/components/schemas/UserProfile'
+      required:
+        - Username
+        - Email
+        - Password
+    DeleteUserRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        transferDataTo:
+          $ref: '#/components/schemas/UserID'
+    DetailedUser:
+      type: object
+      properties:
+        ID:
+          $ref: '#/components/schemas/UserID'
+        Usernames:
+          type: array
+          items:
+            type: string
+        LoginCount:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        Profile:
+          $ref: '#/components/schemas/UserProfile'
+      required:
+        - ID
+    Email:
+      type: string
+    IsActive:
+      type: boolean
+    NestedUserGroups:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: '#/components/schemas/UserList'
+    Notification:
+      type: object
+      properties:
+        ID:
+          $ref: '#/components/schemas/NotificationID'
+        Title:
+          type: string
+        Message:
+          type: string
+        CreatedAt:
+          $ref: '#/components/schemas/Timestamp'
+        IsRead:
+          type: boolean
+    NotificationID:
+      type: integer
+      format: int32
+    Score:
+      type: number
+      format: float
+    Timestamp:
+      type: integer
+      format: int64
+    UpdateUserRequest:
+      type: object
+      properties:
+        Username:
+          type: string
+        Email:
+          $ref: '#/components/schemas/Email'
+        Role:
+          $ref: '#/components/schemas/UserRole'
+        Status:
+          $ref: '#/components/schemas/UserStatus'
+    UploadAvatarRequest:
+      type: object
+      properties:
+        Image:
+          type: string
+          format: binary
+        Caption:
+          type: string
+      required:
+        - Image
+    UploadResult:
+      type: object
+      properties:
+        Url:
+          type: string
+        Size:
+          type: integer
+          format: int64
+    User:
+      type: object
+      properties:
+        ID:
+          $ref: '#/components/schemas/UserID'
+        Username:
+          type: string
+        Email:
+          $ref: '#/components/schemas/Email'
+        Role:
+          $ref: '#/components/schemas/UserRole'
+    UserActivityByMonth:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            type: integer
+            format: int32
+    UserCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
+    UserID:
+      type: integer
+      format: int64
+    UserList:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
+    UserListParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        sortBy:
+          type: string
+        sortOrder:
+          type: string
+    UserPermissions:
+      type: object
+      additionalProperties:
+        type: boolean
+    UserProfile:
+      type: object
+      properties:
+        FirstName:
+          type: string
+        LastName:
+          type: string
+        Bio:
+          type: string
+        AvatarUrl:
+          type: string
+    UserProfileUpdate:
+      type: object
+      properties:
+        FirstName:
+          type: string
+        LastName:
+          type: string
+        Bio:
+          type: string
+        AvatarUrl:
+          type: string
+    UserRole:
+      type: string
+      enum:
+        - admin
+        - moderator
+        - user
+    UserRoleHistory:
+      type: array
+      items:
+        type: array
+        items:
+          type: string
+    UserSearchParams:
+      type: object
+      properties:
+        query:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRole'
+        isActive:
+          type: boolean
+        limit:
+          type: integer
+          format: int32
+    UserSomething:
+      type: integer
+      format: int32
+      enum:
+        - 0
+        - 1
+        - 2
+    UserStatus:
+      type: string
+      enum:
+        - active
+        - pending
+        - suspended
+    UsersByDepartment:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/User'
+    WelcomeMessage:
+      type: string
+      enum:
+        - Welcome to "MyApp"
+    GonzoError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 'Error envelope: "<code>: <message>"'
+      required:
+        - error

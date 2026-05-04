@@ -59,6 +59,7 @@ type TemplateData struct {
 	Servers      []TemplateServer
 	Settings     LanguageSettings
 	ErrorCodes   []TemplateErrorCode
+	API          *APIDefinition // raw parsed definition; used by generators that render structured output (e.g. OpenAPI)
 }
 
 // TemplateComment represents a comment with its type for templates
@@ -214,6 +215,9 @@ func (tg *TemplateGenerator) setupTemplateFunctions() {
 	tg.funcMap["qual"] = func(alias, typeStr string) string {
 		return qualifyTypeString(typeStr, alias)
 	}
+	tg.funcMap["openapiDoc"] = func(api *APIDefinition, title string) (string, error) {
+		return RenderOpenAPI(api, title)
+	}
 }
 
 // loadLanguageConfig loads language configuration from YAML
@@ -350,6 +354,7 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 		Language:    tg.config.Language,
 		Imports:     tg.config.Imports,
 		Settings:    tg.config.Settings,
+		API:         api,
 	}
 
 	// Convert types

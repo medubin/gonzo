@@ -1,0 +1,488 @@
+package generator
+
+import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+)
+
+// numericLess compares two enum value strings as floats, falling back to
+// string comparison if either fails to parse.
+func numericLess(a, b string) bool {
+	af, aerr := strconv.ParseFloat(a, 64)
+	bf, berr := strconv.ParseFloat(b, 64)
+	if aerr == nil && berr == nil {
+		return af < bf
+	}
+	return a < b
+}
+
+// RenderOpenAPI produces an OpenAPI 3.1 document for the given API definition.
+// The output is YAML and intended to be written verbatim into openapi.yaml.
+//
+// Scope (v1):
+//   - paths: every endpoint with method, path/query params, JSON or multipart
+//     request body, and a 200 JSON response (or 204 No Content if the endpoint
+//     declares no return type).
+//   - components.schemas: every defined type and enum, plus a shared GonzoError
+//     schema that backs the default error response.
+//   - HTTP methods: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS.
+//
+// Out of scope: tags/grouping, security schemes, multi-status responses,
+// example values, header declarations, OpenAPI extensions.
+func RenderOpenAPI(api *APIDefinition, title string) (string, error) {
+	if api == nil {
+		return "", fmt.Errorf("openapi: nil APIDefinition")
+	}
+	r := &openapiRenderer{
+		api:        api,
+		typeKinds:  indexTypes(api),
+		multiparts: indexMultipartTypes(api),
+		enums:      indexEnums(api),
+	}
+	return r.render(title)
+}
+
+type openapiRenderer struct {
+	api        *APIDefinition
+	typeKinds  map[string]string // name -> Kind ("alias", "struct", "repeated", "map")
+	multiparts map[string]bool   // struct names that contain a file field
+	enums      map[string]*EnumDef
+}
+
+func indexTypes(api *APIDefinition) map[string]string {
+	out := make(map[string]string, len(api.Types))
+	for _, t := range api.Types {
+		out[t.Name] = t.Kind
+	}
+	return out
+}
+
+func indexEnums(api *APIDefinition) map[string]*EnumDef {
+	out := make(map[string]*EnumDef, len(api.Enums))
+	for i := range api.Enums {
+		out[api.Enums[i].Name] = &api.Enums[i]
+	}
+	return out
+}
+
+// indexMultipartTypes returns the set of struct type names that contain a
+// `file` field (which makes the struct a multipart request body).
+func indexMultipartTypes(api *APIDefinition) map[string]bool {
+	out := make(map[string]bool)
+	for _, t := range api.Types {
+		if t.Kind != "struct" {
+			continue
+		}
+		for _, f := range t.Fields {
+			if f.Type != nil && f.Type.Kind == "reference" && f.Type.Name == "file" {
+				out[t.Name] = true
+				break
+			}
+		}
+	}
+	return out
+}
+
+func (r *openapiRenderer) render(title string) (string, error) {
+	var b strings.Builder
+	if title == "" {
+		title = "API"
+	}
+
+	b.WriteString("openapi: 3.1.0\n")
+	b.WriteString("info:\n")
+	b.WriteString(fmt.Sprintf("  title: %s\n", yamlQuote(title)))
+	b.WriteString("  version: 0.0.0\n")
+
+	r.renderPaths(&b)
+	r.renderComponents(&b)
+
+	return b.String(), nil
+}
+
+func (r *openapiRenderer) renderPaths(b *strings.Builder) {
+	// Group endpoints by path so methods on the same path nest under one key.
+	type endpointEntry struct {
+		server *ServerDef
+		ep     *EndpointDef
+	}
+	byPath := make(map[string][]endpointEntry)
+	var pathOrder []string
+	for i := range r.api.Servers {
+		server := &r.api.Servers[i]
+		for j := range server.Endpoints {
+			ep := &server.Endpoints[j]
+			if _, exists := byPath[ep.Path]; !exists {
+				pathOrder = append(pathOrder, ep.Path)
+			}
+			byPath[ep.Path] = append(byPath[ep.Path], endpointEntry{server, ep})
+		}
+	}
+
+	if len(pathOrder) == 0 {
+		b.WriteString("paths: {}\n")
+		return
+	}
+
+	b.WriteString("paths:\n")
+	for _, path := range pathOrder {
+		b.WriteString(fmt.Sprintf("  %s:\n", yamlQuote(path)))
+		for _, entry := range byPath[path] {
+			r.renderOperation(b, entry.ep)
+		}
+	}
+}
+
+func (r *openapiRenderer) renderOperation(b *strings.Builder, ep *EndpointDef) {
+	method := strings.ToLower(ep.Method)
+	indent := "    "
+	b.WriteString(fmt.Sprintf("%s%s:\n", indent, method))
+	b.WriteString(fmt.Sprintf("%s  operationId: %s\n", indent, ep.Name))
+
+	r.renderParameters(b, ep, indent+"  ")
+	r.renderRequestBody(b, ep, indent+"  ")
+	r.renderResponses(b, ep, indent+"  ")
+}
+
+func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, indent string) {
+	type param struct {
+		name     string
+		in       string
+		required bool
+		schema   *TypeExpr
+	}
+	var params []param
+	for _, p := range ep.PathParams {
+		params = append(params, param{
+			name:     p.Name,
+			in:       "path",
+			required: true,
+			schema:   &TypeExpr{Kind: "reference", Name: p.Type},
+		})
+	}
+	if ep.Parameters != nil {
+		// Resolve the parameters TypeExpr to the underlying struct fields.
+		fields := r.resolveStructFields(ep.Parameters)
+		for _, f := range fields {
+			params = append(params, param{
+				name:     f.Name,
+				in:       "query",
+				required: f.Required,
+				schema:   f.Type,
+			})
+		}
+	}
+	if len(params) == 0 {
+		return
+	}
+	b.WriteString(indent + "parameters:\n")
+	for _, p := range params {
+		b.WriteString(indent + "  - name: " + yamlQuote(p.name) + "\n")
+		b.WriteString(indent + "    in: " + p.in + "\n")
+		if p.required {
+			b.WriteString(indent + "    required: true\n")
+		}
+		b.WriteString(indent + "    schema:\n")
+		b.WriteString(r.renderSchema(p.schema, len(indent)+6))
+	}
+}
+
+func (r *openapiRenderer) renderRequestBody(b *strings.Builder, ep *EndpointDef, indent string) {
+	if ep.Body == nil {
+		return
+	}
+	b.WriteString(indent + "requestBody:\n")
+	b.WriteString(indent + "  required: true\n")
+	b.WriteString(indent + "  content:\n")
+
+	contentType := "application/json"
+	if ep.Body.Kind == "reference" && r.multiparts[ep.Body.Name] {
+		contentType = "multipart/form-data"
+	}
+	b.WriteString(indent + "    " + contentType + ":\n")
+	b.WriteString(indent + "      schema:\n")
+	b.WriteString(r.renderSchema(ep.Body, len(indent)+8))
+}
+
+func (r *openapiRenderer) renderResponses(b *strings.Builder, ep *EndpointDef, indent string) {
+	b.WriteString(indent + "responses:\n")
+	if ep.Returns == nil {
+		b.WriteString(indent + "  '204':\n")
+		b.WriteString(indent + "    description: No Content\n")
+	} else {
+		b.WriteString(indent + "  '200':\n")
+		b.WriteString(indent + "    description: OK\n")
+		b.WriteString(indent + "    content:\n")
+		b.WriteString(indent + "      application/json:\n")
+		b.WriteString(indent + "        schema:\n")
+		b.WriteString(r.renderSchema(ep.Returns, len(indent)+10))
+	}
+	b.WriteString(indent + "  default:\n")
+	b.WriteString(indent + "    description: Error\n")
+	b.WriteString(indent + "    content:\n")
+	b.WriteString(indent + "      application/json:\n")
+	b.WriteString(indent + "        schema:\n")
+	b.WriteString(indent + "          $ref: '#/components/schemas/GonzoError'\n")
+}
+
+func (r *openapiRenderer) renderComponents(b *strings.Builder) {
+	if len(r.api.Types) == 0 && len(r.api.Enums) == 0 {
+		// Still need GonzoError so default error responses can resolve.
+		b.WriteString("components:\n")
+		b.WriteString("  schemas:\n")
+		b.WriteString(r.gonzoErrorSchema(4))
+		return
+	}
+
+	b.WriteString("components:\n")
+	b.WriteString("  schemas:\n")
+
+	// Stable order: alphabetical by name across both types and enums.
+	type entry struct {
+		name   string
+		render func(indent int) string
+	}
+	var entries []entry
+	for i := range r.api.Types {
+		td := &r.api.Types[i]
+		entries = append(entries, entry{td.Name, func(ind int) string { return r.renderTypeDefSchema(td, ind) }})
+	}
+	for name, ed := range r.enums {
+		ed := ed
+		_ = name
+		entries = append(entries, entry{ed.Name, func(ind int) string { return r.renderEnumSchema(ed, ind) }})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].name < entries[j].name })
+
+	for _, e := range entries {
+		b.WriteString(fmt.Sprintf("    %s:\n", e.name))
+		b.WriteString(e.render(6))
+	}
+
+	b.WriteString(r.gonzoErrorSchema(4))
+}
+
+func (r *openapiRenderer) gonzoErrorSchema(baseIndent int) string {
+	pad := strings.Repeat(" ", baseIndent)
+	body := strings.Repeat(" ", baseIndent+2)
+	return pad + "GonzoError:\n" +
+		body + "type: object\n" +
+		body + "properties:\n" +
+		body + "  error:\n" +
+		body + "    type: string\n" +
+		body + "    description: 'Error envelope: \"<code>: <message>\"'\n" +
+		body + "required:\n" +
+		body + "  - error\n"
+}
+
+func (r *openapiRenderer) renderTypeDefSchema(td *TypeDef, indent int) string {
+	pad := strings.Repeat(" ", indent)
+	switch td.Kind {
+	case "alias":
+		// Alias to a primitive renders as the primitive type; alias to a named
+		// type renders as a $ref to that schema.
+		if mapping, ok := primitiveOpenAPI(td.Target); ok {
+			return mapping.toYAML(indent)
+		}
+		return pad + fmt.Sprintf("$ref: '#/components/schemas/%s'\n", td.Target)
+	case "struct":
+		return r.renderStructBody(td.Fields, indent)
+	case "repeated":
+		out := pad + "type: array\n" + pad + "items:\n"
+		out += r.renderSchema(td.ElementType, indent+2)
+		return out
+	case "map":
+		out := pad + "type: object\n" + pad + "additionalProperties:\n"
+		out += r.renderSchema(td.ValueType, indent+2)
+		return out
+	}
+	return pad + "{}\n"
+}
+
+func (r *openapiRenderer) renderStructBody(fields []FieldDef, indent int) string {
+	pad := strings.Repeat(" ", indent)
+	var b strings.Builder
+	b.WriteString(pad + "type: object\n")
+	if len(fields) == 0 {
+		b.WriteString(pad + "properties: {}\n")
+		return b.String()
+	}
+	b.WriteString(pad + "properties:\n")
+	var required []string
+	for _, f := range fields {
+		b.WriteString(pad + "  " + yamlQuote(f.Name) + ":\n")
+		b.WriteString(r.renderSchema(f.Type, indent+4))
+		if f.Required {
+			required = append(required, f.Name)
+		}
+	}
+	if len(required) > 0 {
+		b.WriteString(pad + "required:\n")
+		for _, name := range required {
+			b.WriteString(pad + "  - " + yamlQuote(name) + "\n")
+		}
+	}
+	return b.String()
+}
+
+func (r *openapiRenderer) renderEnumSchema(ed *EnumDef, indent int) string {
+	pad := strings.Repeat(" ", indent)
+	mapping, ok := primitiveOpenAPI(ed.BaseType)
+	if !ok {
+		mapping = openapiPrimitive{Type: "string"}
+	}
+	var b strings.Builder
+	b.WriteString(pad + "type: " + mapping.Type + "\n")
+	if mapping.Format != "" {
+		b.WriteString(pad + "format: " + mapping.Format + "\n")
+	}
+
+	// Emit values in deterministic order: numeric ascending for integer-based
+	// enums, lexical ascending for everything else. (The parser stores values
+	// in a map, so source order is unrecoverable.)
+	values := make([]string, 0, len(ed.Values))
+	for _, v := range ed.Values {
+		values = append(values, v)
+	}
+	if mapping.Type == "integer" || mapping.Type == "number" {
+		sort.Slice(values, func(i, j int) bool { return numericLess(values[i], values[j]) })
+	} else {
+		sort.Strings(values)
+	}
+
+	b.WriteString(pad + "enum:\n")
+	for _, v := range values {
+		if mapping.Type == "string" {
+			b.WriteString(pad + "  - " + yamlQuote(v) + "\n")
+		} else {
+			b.WriteString(pad + "  - " + v + "\n")
+		}
+	}
+	return b.String()
+}
+
+func (r *openapiRenderer) renderSchema(expr *TypeExpr, indent int) string {
+	pad := strings.Repeat(" ", indent)
+	if expr == nil {
+		return pad + "{}\n"
+	}
+	switch expr.Kind {
+	case "reference":
+		if mapping, ok := primitiveOpenAPI(expr.Name); ok {
+			return mapping.toYAML(indent)
+		}
+		return pad + fmt.Sprintf("$ref: '#/components/schemas/%s'\n", expr.Name)
+	case "repeated":
+		out := pad + "type: array\n" + pad + "items:\n"
+		out += r.renderSchema(expr.ElementType, indent+2)
+		return out
+	case "map":
+		out := pad + "type: object\n" + pad + "additionalProperties:\n"
+		out += r.renderSchema(expr.ValueType, indent+2)
+		return out
+	}
+	return pad + "{}\n"
+}
+
+// resolveStructFields walks an alias chain and returns the underlying struct's
+// fields. Returns nil if the expression doesn't resolve to a struct (e.g. a
+// repeated/map type used as `parameters(...)`).
+func (r *openapiRenderer) resolveStructFields(expr *TypeExpr) []FieldDef {
+	if expr == nil || expr.Kind != "reference" {
+		return nil
+	}
+	visited := make(map[string]bool)
+	name := expr.Name
+	for !visited[name] {
+		visited[name] = true
+		for i := range r.api.Types {
+			td := &r.api.Types[i]
+			if td.Name != name {
+				continue
+			}
+			switch td.Kind {
+			case "struct":
+				return td.Fields
+			case "alias":
+				name = td.Target
+			default:
+				return nil
+			}
+		}
+		// name not found among defined types
+		return nil
+	}
+	return nil
+}
+
+type openapiPrimitive struct {
+	Type   string
+	Format string
+}
+
+func (p openapiPrimitive) toYAML(indent int) string {
+	pad := strings.Repeat(" ", indent)
+	out := pad + "type: " + p.Type + "\n"
+	if p.Format != "" {
+		out += pad + "format: " + p.Format + "\n"
+	}
+	return out
+}
+
+func primitiveOpenAPI(name string) (openapiPrimitive, bool) {
+	switch name {
+	case "string":
+		return openapiPrimitive{Type: "string"}, true
+	case "int32":
+		return openapiPrimitive{Type: "integer", Format: "int32"}, true
+	case "int64":
+		return openapiPrimitive{Type: "integer", Format: "int64"}, true
+	case "float32":
+		return openapiPrimitive{Type: "number", Format: "float"}, true
+	case "float64":
+		return openapiPrimitive{Type: "number", Format: "double"}, true
+	case "bool":
+		return openapiPrimitive{Type: "boolean"}, true
+	case "file":
+		return openapiPrimitive{Type: "string", Format: "binary"}, true
+	}
+	return openapiPrimitive{}, false
+}
+
+// yamlQuote single-quotes any string that could be misinterpreted as a non-string
+// scalar by a YAML 1.2 parser. Anything containing a colon, quote, brace,
+// bracket, leading dash, or whitespace at the boundaries gets quoted; pure
+// identifiers are emitted bare. Single quotes in the input are doubled.
+func yamlQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	if needsYAMLQuote(s) {
+		return "'" + strings.ReplaceAll(s, "'", "''") + "'"
+	}
+	return s
+}
+
+func needsYAMLQuote(s string) bool {
+	if s != strings.TrimSpace(s) {
+		return true
+	}
+	// Reserved scalar values.
+	switch strings.ToLower(s) {
+	case "true", "false", "null", "yes", "no", "on", "off", "~":
+		return true
+	}
+	// First-character constraints.
+	switch s[0] {
+	case '-', '?', ':', ',', '[', ']', '{', '}', '#', '&', '*', '!', '|', '>', '\'', '"', '%', '@', '`':
+		return true
+	}
+	for _, c := range s {
+		if c == ':' || c == '#' || c == '\n' || c == '\t' {
+			return true
+		}
+	}
+	return false
+}

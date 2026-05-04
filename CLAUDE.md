@@ -25,6 +25,11 @@ go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_
 go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_server.api -language typescript -stack client -output code_generator/generator/test_data/client -package client
 ```
 
+**Generate OpenAPI 3.1 spec:**
+```bash
+go run bin/gonzo-api.go generate -input code_generator/generator/test_data/test_server.api -language openapi -stack spec -output /tmp/openapi -package "Gonzo Test API"
+```
+
 **Run the example server:**
 ```bash
 go run code_generator/generator/test_data/main.go
