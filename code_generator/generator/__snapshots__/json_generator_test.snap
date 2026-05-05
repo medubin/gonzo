@@ -60,7 +60,7 @@
    "comments": [
     {
      "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
-     "line": 125,
+     "line": 129,
      "type": "multi"
     }
    ],
@@ -69,12 +69,12 @@
      "comments": [
       {
        "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
-       "line": 129,
+       "line": 133,
        "type": "single"
       },
       {
        "content": "GET endpoints do not contain a body",
-       "line": 130,
+       "line": 134,
        "type": "single"
       }
      ],
@@ -100,12 +100,12 @@
      "comments": [
       {
        "content": "All other urls can contain a body",
-       "line": 133,
+       "line": 137,
        "type": "single"
       },
       {
        "content": "body and return always refer to a struct type",
-       "line": 134,
+       "line": 138,
        "type": "single"
       }
      ],
@@ -133,7 +133,7 @@
          "name": "description"
         }
        ],
-       "line": 135,
+       "line": 139,
        "name": "header"
       },
       {
@@ -143,7 +143,7 @@
          "value": "Idempotency-Key"
         }
        ],
-       "line": 136,
+       "line": 140,
        "name": "header"
       },
       {
@@ -190,7 +190,7 @@
          "name": "sameSite"
         }
        ],
-       "line": 137,
+       "line": 141,
        "name": "cookie"
       },
       {
@@ -209,8 +209,54 @@
          "name": "description"
         }
        ],
-       "line": 138,
+       "line": 142,
        "name": "cookie"
+      },
+      {
+       "args": [
+        {
+         "kind": "number",
+         "value": "201"
+        },
+        {
+         "kind": "reference",
+         "value": "User"
+        }
+       ],
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "string",
+          "value": "User created"
+         },
+         "name": "description"
+        }
+       ],
+       "line": 143,
+       "name": "response"
+      },
+      {
+       "args": [
+        {
+         "kind": "number",
+         "value": "409"
+        },
+        {
+         "kind": "reference",
+         "value": "ConflictError"
+        }
+       ],
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "string",
+          "value": "Username already exists"
+         },
+         "name": "description"
+        }
+       ],
+       "line": 144,
+       "name": "response"
       }
      ],
      "method": "POST",
@@ -234,7 +280,7 @@
          "value": "bearer"
         }
        ],
-       "line": 140,
+       "line": 146,
        "name": "auth"
       }
      ],
@@ -265,7 +311,7 @@
          "value": "bearer"
         }
        ],
-       "line": 142,
+       "line": 148,
        "name": "auth"
       }
      ],
@@ -306,7 +352,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 146,
+       "line": 152,
        "type": "single"
       }
      ],
@@ -344,7 +390,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 149,
+       "line": 155,
        "name": "deprecated"
       }
      ],
@@ -370,7 +416,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 152,
+       "line": 158,
        "type": "single"
       }
      ],
@@ -426,7 +472,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 171,
+     "line": 177,
      "type": "single"
     }
    ],
@@ -1038,6 +1084,20 @@
    ],
    "kind": "struct",
    "name": "UpdateUserRequest"
+  },
+  {
+   "fields": [
+    {
+     "name": "reason",
+     "required": false,
+     "type": {
+      "kind": "reference",
+      "name": "string"
+     }
+    }
+   ],
+   "kind": "struct",
+   "name": "ConflictError"
   },
   {
    "fields": [

@@ -536,6 +536,36 @@ func RequireHeaders(next handle.Handler) handle.Handler {
 }
 ```
 
+#### `@response(code, type?, description: ...)` (endpoint-level)
+
+Document additional HTTP status codes the endpoint can return. Each `@response` becomes one entry under the operation's `responses:` map in OpenAPI. Doc-only — handlers still return `*handle.Response[T]` shaped by `returns(...)`, and the runtime allows any status code at runtime.
+
+```api
+server UserService {
+  @response(201, User, description: "User created")
+  @response(404, NotFoundError)
+  @response(409, ConflictError, description: "Username already exists")
+  CreateUser POST /users body(CreateUserRequest) returns(User)
+}
+```
+
+**Args:**
+- Positional first arg: HTTP status code, integer 100–599. Required.
+- Positional second arg (optional): response body type. Bare identifier (`User`) or quoted string (`"User"`). Omit for bodyless responses (204, 304, etc.).
+- `description: "..."` kwarg (optional): defaults to the standard HTTP reason phrase ("Created", "Not Found", ...) when omitted.
+
+**Composition with `returns(...)`:**
+
+`returns(T)` declares the success body shape — the handler's `Response[T]` is constrained to T, but the actual status code is whatever the handler picks at runtime (defaulting to 200). The OpenAPI generator emits an implicit 200 entry from `returns` *only when no explicit `@response(2xx, ...)` is declared*. Three rules:
+
+1. **`returns(User)` alone** → spec emits 200 with User body. (Existing behavior, unchanged.)
+2. **`returns(User)` + `@response(201, User)`** → spec emits 201 only. The implicit 200 is suppressed.
+3. **`returns(User)` + `@response(404, NotFoundError)`** → spec emits 200 with User AND 404 with NotFoundError. (Only non-2xx declared, so implicit 200 stays.)
+
+This lets you document a 201-only POST without an extra 200 entry hanging around, and lets you list extra error responses without losing the success entry.
+
+The catch-all `default:` error response (referencing `GonzoError`) is always emitted regardless.
+
 #### `@cookie(name, ...)` (endpoint-level)
 
 Document a cookie the endpoint reads or sets, and bake security attributes into a generated set-helper. Two distinct concerns surface from the same decorator:

@@ -214,6 +214,14 @@ export function validateUpdateUserRequest(v: UpdateUserRequest): string | null {
   return null;
 }
 
+export interface ConflictError {
+  reason?: string;
+}
+
+export function validateConflictError(v: ConflictError): string | null {
+  return null;
+}
+
 export interface DeleteUserRequest {
   reason?: string;
   transferDataTo?: UserID;

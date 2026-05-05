@@ -102,6 +102,10 @@ type UpdateUserRequest {
   Status UserStatus
 }
 
+type ConflictError {
+  reason string
+}
+
 type DeleteUserRequest {
   reason string
   transferDataTo UserID
@@ -136,6 +140,8 @@ server UserService {
   @header("Idempotency-Key")
   @cookie("session", required: true, description: "Session token", httpOnly: true, secure: true, sameSite: "Lax")
   @cookie("locale", description: "User-preferred locale")
+  @response(201, User, description: "User created")
+  @response(409, ConflictError, description: "Username already exists")
   CreateUser POST /users body(CreateUserRequest) returns(User)
   @auth("bearer")
   UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)

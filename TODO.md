@@ -34,7 +34,7 @@
 
 - [x] **OpenAPI security schemes** — Driven by `@auth("<scheme>")` decorators. The OpenAPI generator collects every used scheme, emits per-operation `security:` requirements, and declares the schemes under `components.securitySchemes` with sensible defaults (`bearer` → http+JWT, `apiKey` → header `X-API-Key`). User-overridable scheme declarations (custom header names, OAuth flows, etc.) remain a future extension.
 
-- [ ] **OpenAPI multi-status responses** — Every endpoint declares a single 200/204 plus a `default` error. Allow declaring additional response codes per endpoint (e.g. 201 Created, 404 Not Found) in the `.api` language and emit each.
+- [x] **OpenAPI multi-status responses** — Endpoint-level `@response(code, type?, description: ...)` decorator. Bodyless codes supported (omit the type arg for 204/304/etc.). Composes with `returns(...)`: declaring any explicit 2xx suppresses the implicit 200 default, so a 201-only create no longer carries a stale 200 entry. Description defaults to the standard HTTP reason phrase. Doc-only — handlers continue to set status freely on `*handle.Response[T]`. Decorator parser also gained a `reference`-kind arg so type names can appear bare (`@response(201, User)`) without quoting.
 
 - [x] **OpenAPI examples** — Field-level `@example(value)` decorator emits `example:` on the field schema. Accepts string/number/bool literal. Skipped on `$ref` fields to keep the spec conservatively valid.
 

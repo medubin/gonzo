@@ -1348,8 +1348,17 @@ func (p *Parser) parseDecoratorScalar() (DecoratorArg, error) {
 			p.nextToken()
 			return DecoratorArg{Kind: "bool", Value: v}, nil
 		}
+		// A bare identifier in a decorator argument refers to a type,
+		// enum, or other named declaration — most usefully `@response(201,
+		// User)` where User is a struct. The parser doesn't resolve the
+		// reference; consumers (e.g. OpenAPI) interpret the string value
+		// as a type-name lookup. Quoted form (`"User"`) is also accepted
+		// by extractors so users can pick whichever is more readable.
+		v := p.currentToken.Value
+		p.nextToken()
+		return DecoratorArg{Kind: "reference", Value: v}, nil
 	}
-	return DecoratorArg{}, fmt.Errorf("expected string, number, or bool decorator argument, got %q at line %d", p.currentToken.Value, p.currentToken.Line)
+	return DecoratorArg{}, fmt.Errorf("expected string, number, bool, or identifier decorator argument, got %q at line %d", p.currentToken.Value, p.currentToken.Line)
 }
 
 // parseGroup parses `group <path> { ... }` and recurses into the body with

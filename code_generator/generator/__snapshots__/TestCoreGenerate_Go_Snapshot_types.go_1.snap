@@ -320,6 +320,14 @@ func (v UpdateUserRequest) Validate() error {
   return nil
 }
 
+type ConflictError struct {
+  Reason *string `json:"reason,omitempty"`
+}
+
+func (v ConflictError) Validate() error {
+  return nil
+}
+
 type DeleteUserRequest struct {
   Reason *string `json:"reason,omitempty"`
   TransferDataTo *UserID `json:"transferDataTo,omitempty"`

@@ -354,6 +354,98 @@ func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, 
 	}
 }
 
+// responseDecorator is the parsed shape of a single @response(...) decorator.
+// Code is the HTTP status as a string (preserves the source lexeme for use
+// as a YAML map key); Type is the body schema or nil for bodyless responses.
+type responseDecorator struct {
+	Code        string
+	Type        *TypeExpr
+	Description string
+}
+
+// extractResponseDecorator parses an @response(code, type?, description: ...)
+// decorator. First positional arg is the status code (number); optional second
+// positional arg is the body type (a type-name identifier, surfaced as a
+// reference DecoratorArg by the parser). `description:` kwarg overrides the
+// default reason phrase. Returns false if the decorator is malformed (bad
+// status code, etc) so the caller can skip without crashing the renderer.
+func extractResponseDecorator(d Decorator) (responseDecorator, bool) {
+	out := responseDecorator{}
+	if len(d.Args) < 1 || d.Args[0].Kind != "number" {
+		return out, false
+	}
+	code, err := strconv.Atoi(d.Args[0].Value)
+	if err != nil || code < 100 || code > 599 {
+		return out, false
+	}
+	out.Code = d.Args[0].Value
+	if len(d.Args) >= 2 {
+		// Bare identifier (User) → reference; quoted ("User") also accepted.
+		switch d.Args[1].Kind {
+		case "reference", "string":
+			if d.Args[1].Value != "" {
+				out.Type = &TypeExpr{Kind: "reference", Name: d.Args[1].Value}
+			}
+		}
+	}
+	for _, kw := range d.Kwargs {
+		if kw.Name == "description" && kw.Arg.Kind == "string" {
+			out.Description = kw.Arg.Value
+		}
+	}
+	if out.Description == "" {
+		out.Description = httpReasonPhrase(out.Code)
+	}
+	return out, true
+}
+
+// httpReasonPhrase returns the standard reason phrase for a status code,
+// or "" for codes we don't have a phrase for. Used as a default
+// description so users don't have to type "Created" / "Not Found" / etc.
+func httpReasonPhrase(code string) string {
+	switch code {
+	case "200":
+		return "OK"
+	case "201":
+		return "Created"
+	case "202":
+		return "Accepted"
+	case "204":
+		return "No Content"
+	case "301":
+		return "Moved Permanently"
+	case "302":
+		return "Found"
+	case "304":
+		return "Not Modified"
+	case "400":
+		return "Bad Request"
+	case "401":
+		return "Unauthorized"
+	case "403":
+		return "Forbidden"
+	case "404":
+		return "Not Found"
+	case "405":
+		return "Method Not Allowed"
+	case "409":
+		return "Conflict"
+	case "410":
+		return "Gone"
+	case "422":
+		return "Unprocessable Entity"
+	case "429":
+		return "Too Many Requests"
+	case "500":
+		return "Internal Server Error"
+	case "502":
+		return "Bad Gateway"
+	case "503":
+		return "Service Unavailable"
+	}
+	return ""
+}
+
 // CookieDecorator is the parsed shape of a single @cookie(...) decorator.
 // Read-side fields (Name, Required, Description) feed OpenAPI parameter
 // emission. Write-side fields (HttpOnly, Secure, SameSite, MaxAge, Path,
@@ -476,17 +568,59 @@ func (r *openapiRenderer) renderRequestBody(b *strings.Builder, ep *EndpointDef,
 }
 
 func (r *openapiRenderer) renderResponses(b *strings.Builder, ep *EndpointDef, indent string) {
+	// Collect every @response decorator on the endpoint, ordered by code.
+	// Any 2xx declared explicitly suppresses the implicit success response
+	// derived from `returns(...)`, so users can document a 201-only create
+	// without a stale 200 entry hanging around.
+	type entry struct {
+		code        string
+		description string
+		typeExpr    *TypeExpr // nil → no body
+	}
+	declared := map[string]bool{}
+	any2xx := false
+	var entries []entry
+	for _, d := range ep.Decorators {
+		if d.Name != "response" {
+			continue
+		}
+		rd, ok := extractResponseDecorator(d)
+		if !ok || declared[rd.Code] {
+			continue
+		}
+		declared[rd.Code] = true
+		if codeNum, _ := strconv.Atoi(rd.Code); codeNum >= 200 && codeNum < 300 {
+			any2xx = true
+		}
+		entries = append(entries, entry{rd.Code, rd.Description, rd.Type})
+	}
+
+	// If no explicit 2xx, fall back to the historical default: 200 with
+	// `returns` body, or 204 No Content if `returns` was absent.
+	if !any2xx {
+		if ep.Returns == nil {
+			entries = append(entries, entry{"204", "No Content", nil})
+		} else {
+			entries = append(entries, entry{"200", "OK", ep.Returns})
+		}
+	}
+
+	sort.Slice(entries, func(i, j int) bool { return entries[i].code < entries[j].code })
+
 	b.WriteString(indent + "responses:\n")
-	if ep.Returns == nil {
-		b.WriteString(indent + "  '204':\n")
-		b.WriteString(indent + "    description: No Content\n")
-	} else {
-		b.WriteString(indent + "  '200':\n")
-		b.WriteString(indent + "    description: OK\n")
-		b.WriteString(indent + "    content:\n")
-		b.WriteString(indent + "      application/json:\n")
-		b.WriteString(indent + "        schema:\n")
-		b.WriteString(r.renderSchema(ep.Returns, len(indent)+10))
+	for _, e := range entries {
+		b.WriteString(indent + "  '" + e.code + "':\n")
+		desc := e.description
+		if desc == "" {
+			desc = "Response"
+		}
+		b.WriteString(indent + "    description: " + yamlQuote(desc) + "\n")
+		if e.typeExpr != nil {
+			b.WriteString(indent + "    content:\n")
+			b.WriteString(indent + "      application/json:\n")
+			b.WriteString(indent + "        schema:\n")
+			b.WriteString(r.renderSchema(e.typeExpr, len(indent)+10))
+		}
 	}
 	b.WriteString(indent + "  default:\n")
 	b.WriteString(indent + "    description: Error\n")
