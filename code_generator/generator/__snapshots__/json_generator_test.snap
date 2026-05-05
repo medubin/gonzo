@@ -145,6 +145,72 @@
        ],
        "line": 136,
        "name": "header"
+      },
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "session"
+        }
+       ],
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "bool",
+          "value": "true"
+         },
+         "name": "required"
+        },
+        {
+         "arg": {
+          "kind": "string",
+          "value": "Session token"
+         },
+         "name": "description"
+        },
+        {
+         "arg": {
+          "kind": "bool",
+          "value": "true"
+         },
+         "name": "httpOnly"
+        },
+        {
+         "arg": {
+          "kind": "bool",
+          "value": "true"
+         },
+         "name": "secure"
+        },
+        {
+         "arg": {
+          "kind": "string",
+          "value": "Lax"
+         },
+         "name": "sameSite"
+        }
+       ],
+       "line": 137,
+       "name": "cookie"
+      },
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "locale"
+        }
+       ],
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "string",
+          "value": "User-preferred locale"
+         },
+         "name": "description"
+        }
+       ],
+       "line": 138,
+       "name": "cookie"
       }
      ],
      "method": "POST",
@@ -168,7 +234,7 @@
          "value": "bearer"
         }
        ],
-       "line": 138,
+       "line": 140,
        "name": "auth"
       }
      ],
@@ -199,7 +265,7 @@
          "value": "bearer"
         }
        ],
-       "line": 140,
+       "line": 142,
        "name": "auth"
       }
      ],
@@ -240,7 +306,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 144,
+       "line": 146,
        "type": "single"
       }
      ],
@@ -278,7 +344,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 147,
+       "line": 149,
        "name": "deprecated"
       }
      ],
@@ -304,7 +370,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 150,
+       "line": 152,
        "type": "single"
       }
      ],
@@ -360,7 +426,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 169,
+     "line": 171,
      "type": "single"
     }
    ],

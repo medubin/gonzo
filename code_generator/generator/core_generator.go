@@ -57,9 +57,29 @@ type TemplateData struct {
 	Types        []TemplateType
 	Enums        []TemplateEnum
 	Servers      []TemplateServer
+	Cookies      []TemplateCookie // unique @cookie declarations across the project
 	Settings     LanguageSettings
 	ErrorCodes   []TemplateErrorCode
 	API          *APIDefinition // raw parsed definition; used by generators that render structured output (e.g. OpenAPI)
+}
+
+// TemplateCookie is a single project-wide cookie declaration. The first
+// declaration of a name (in source order across servers/endpoints) wins for
+// the write-time attributes. ConstName is the Go identifier used in the
+// generated constants file (e.g. "SessionCookieName"). HasWriteAttrs gates
+// emission of a SetXxx helper; cookies that only appear with read-side
+// metadata get a name constant but no helper.
+type TemplateCookie struct {
+	Name         string
+	ConstName    string
+	GoSetterName string // e.g. "SetSession"
+	HttpOnly     bool
+	Secure       bool
+	SameSite     string
+	MaxAge       string
+	Path         string
+	Domain       string
+	HasWriteAttrs bool
 }
 
 // TemplateComment represents a comment with its type for templates
@@ -425,6 +445,8 @@ func (tg *TemplateGenerator) prepareTemplateData(api *APIDefinition, packageName
 			}
 		}
 	}
+
+	data.Cookies = CollectCookies(api)
 
 	// Parse error codes from Go source if configured
 	if tg.config.Settings.ErrorCodesSource != "" {
@@ -960,4 +982,59 @@ func SaveGeneratedFiles(files map[string]string, outputDir string) error {
 	}
 
 	return nil
+}
+
+// CollectCookies walks every server/endpoint and folds @cookie decorators
+// into a deduplicated, source-ordered list. The first declaration of each
+// cookie name wins for the write-time attributes; subsequent declarations
+// of the same name with conflicting attributes are silently dropped (not
+// merged or errored). This keeps the generator simple — users are expected
+// to keep declarations consistent across endpoints. A future check could
+// upgrade this to an explicit error.
+func CollectCookies(api *APIDefinition) []TemplateCookie {
+	if api == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var out []TemplateCookie
+	for i := range api.Servers {
+		for j := range api.Servers[i].Endpoints {
+			for _, d := range api.Servers[i].Endpoints[j].Decorators {
+				if d.Name != "cookie" {
+					continue
+				}
+				cd := extractCookieDecorator(d)
+				if cd.Name == "" || seen[cd.Name] {
+					continue
+				}
+				seen[cd.Name] = true
+				out = append(out, TemplateCookie{
+					Name:          cd.Name,
+					ConstName:     cookieConstName(cd.Name),
+					GoSetterName:  cookieSetterName(cd.Name),
+					HttpOnly:      cd.HttpOnly,
+					Secure:        cd.Secure,
+					SameSite:      cd.SameSite,
+					MaxAge:        cd.MaxAge,
+					Path:          cd.Path,
+					Domain:        cd.Domain,
+					HasWriteAttrs: cd.HasWriteAttrs(),
+				})
+			}
+		}
+	}
+	return out
+}
+
+// cookieConstName turns a header-style name like "X-Tenant-Id" or "session"
+// into a Go-friendly exported identifier suffixed with "CookieName" (e.g.
+// "XTenantIdCookieName", "SessionCookieName").
+func cookieConstName(name string) string {
+	return strcase.ToCamel(name) + "CookieName"
+}
+
+// cookieSetterName produces the helper name (e.g. "SetSession",
+// "SetXTenantId") for a cookie. Matches Go's convention for setter funcs.
+func cookieSetterName(name string) string {
+	return "Set" + strcase.ToCamel(name)
 }

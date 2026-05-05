@@ -146,6 +146,43 @@ templates:
     {{end}}	return nil
     }
 
+  cookies: |
+    {{.Settings.PackageComment}}
+    package {{.PackageName}}
+    {{if .Cookies}}{{$hasSetters := false}}{{range .Cookies}}{{if .HasWriteAttrs}}{{$hasSetters = true}}{{end}}{{end}}
+    import (
+      {{if $hasSetters}}"net/http"
+
+      "github.com/medubin/gonzo/runtime/cookies"{{end}}
+    )
+
+    // Cookie name constants — use these instead of string literals so a typo
+    // is a compile error and the set of declared cookies is discoverable.
+    const ({{range .Cookies}}
+      {{.ConstName}} = "{{.Name}}"{{end}}
+    )
+    {{range .Cookies}}{{if .HasWriteAttrs}}
+    // {{.GoSetterName}} sets the {{.Name}} cookie. The security attributes
+    // declared via @cookie in the .api file are baked in; opts can extend
+    // (e.g., MaxAge, Path) but cannot disable a declared attribute.
+    func {{.GoSetterName}}(c cookies.Cookies, value string, opts ...cookies.Opt) {
+      cookie := &http.Cookie{
+        Name:     {{.ConstName}},
+        Value:    value,{{if .HttpOnly}}
+        HttpOnly: true,{{end}}{{if .Secure}}
+        Secure:   true,{{end}}{{if .SameSite}}
+        SameSite: http.SameSite{{.SameSite}}Mode,{{end}}{{if .MaxAge}}
+        MaxAge:   {{.MaxAge}},{{end}}{{if .Path}}
+        Path:     "{{.Path}}",{{end}}{{if .Domain}}
+        Domain:   "{{.Domain}}",{{end}}
+      }
+      for _, opt := range opts {
+        opt(cookie)
+      }
+      c.Set(cookie)
+    }
+    {{end}}{{end}}{{end}}
+
   server_impl: |
     {{.Settings.PackageComment}}
     package {{.Server.PackageName}}

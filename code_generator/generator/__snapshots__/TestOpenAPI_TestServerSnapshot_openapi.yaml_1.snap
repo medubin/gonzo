@@ -152,6 +152,17 @@ paths:
           in: header
           schema:
             type: string
+        - name: session
+          in: cookie
+          required: true
+          description: Session token
+          schema:
+            type: string
+        - name: locale
+          in: cookie
+          description: User-preferred locale
+          schema:
+            type: string
       requestBody:
         required: true
         content:

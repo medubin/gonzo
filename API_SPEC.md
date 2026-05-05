@@ -536,6 +536,67 @@ func RequireHeaders(next handle.Handler) handle.Handler {
 }
 ```
 
+#### `@cookie(name, ...)` (endpoint-level)
+
+Document a cookie the endpoint reads or sets, and bake security attributes into a generated set-helper. Two distinct concerns surface from the same decorator:
+
+- **Read-side metadata** — `name`, `required`, `description`. Emit OpenAPI `parameters: { in: cookie, ... }`. Reachable from middleware via `RouteInfo.Decorators`.
+- **Write-side attributes** — `httpOnly`, `secure`, `sameSite`, `maxAge`, `path`, `domain`. Drive a generated `Set<Name>` helper in the consuming Go package; never appear in OpenAPI (they're not part of the parameter contract there).
+
+```api
+server SessionService {
+  @cookie("session", required: true, description: "Session token",
+          httpOnly: true, secure: true, sameSite: "Lax")
+  @cookie("locale", description: "User-preferred locale")
+  Login POST /login body(LoginRequest) returns(User)
+}
+```
+
+**Generated Go output (`cookies.go` in the package root):**
+
+```go
+const (
+    SessionCookieName = "session"
+    LocaleCookieName  = "locale"
+)
+
+// SetSession bakes in HttpOnly + Secure + SameSite=Lax. Opts can extend
+// (MaxAge, Path, Domain) but cannot disable the declared security flags.
+func SetSession(c cookies.Cookies, value string, opts ...cookies.Opt) {
+    cookie := &http.Cookie{
+        Name:     SessionCookieName,
+        Value:    value,
+        HttpOnly: true,
+        Secure:   true,
+        SameSite: http.SameSiteLaxMode,
+    }
+    for _, opt := range opts {
+        opt(cookie)
+    }
+    c.Set(cookie)
+}
+```
+
+Handlers use the generated helpers:
+
+```go
+server.SetSession(c, sessionToken, cookies.MaxAge(3600))
+```
+
+**Why a generated `Set` helper instead of typed cookie values?** Real cookie values are usually opaque tokens (random session IDs that key into a server-side store) or signed/encrypted blobs. The decode path is app-specific — gonzo can't generate it. The actual ergonomic and security wins are (a) typo-proof cookie names via constants and (b) declared security attributes that the runtime can't forget to set. Both are delivered without trying to type the value itself.
+
+**Recognized kwargs:**
+
+- `name` — positional first arg or `name:` kwarg. Required for the decorator to take effect.
+- `required: bool` — marks the cookie as required in OpenAPI. Enforcement is opt-in via middleware that reads `RouteInfo.Decorators`.
+- `description: string` — emitted in OpenAPI.
+- `httpOnly: bool`, `secure: bool` — booleans baked into the SetXxx helper.
+- `sameSite: "Lax" | "Strict" | "None"` — emitted as `http.SameSiteLaxMode` etc.
+- `maxAge: int` — Max-Age in seconds.
+- `path: string`, `domain: string` — scoping attributes.
+
+**Conflict handling:** if the same cookie name is declared on multiple endpoints, the *first* declaration's write-side attributes win; subsequent declarations of the same name with conflicting attributes are silently ignored. Keep your declarations consistent across endpoints.
+
 #### `@example(value)` (field-level)
 
 Attach a sample value to a field. Surfaces in the OpenAPI spec as `example: <value>` on the field schema, so explorers like Swagger UI / Redoc render runnable samples. Go and TS generators ignore it.

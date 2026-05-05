@@ -134,6 +134,8 @@ server UserService {
   // body and return always refer to a struct type
   @header("X-Tenant-Id", required: true, description: "Tenant identifier")
   @header("Idempotency-Key")
+  @cookie("session", required: true, description: "Session token", httpOnly: true, secure: true, sameSite: "Lax")
+  @cookie("locale", description: "User-preferred locale")
   CreateUser POST /users body(CreateUserRequest) returns(User)
   @auth("bearer")
   UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)

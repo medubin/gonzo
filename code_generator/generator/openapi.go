@@ -316,6 +316,26 @@ func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, 
 			schema:      &TypeExpr{Kind: "reference", Name: "string"},
 		})
 	}
+	// `@cookie` decorators are like `@header` but with `in: cookie`. Set-time
+	// attributes (httpOnly, secure, sameSite, maxAge, path, domain) are not
+	// part of OpenAPI's parameter object; they live on the generated SetXxx
+	// helpers in the consuming Go package.
+	for _, d := range ep.Decorators {
+		if d.Name != "cookie" {
+			continue
+		}
+		c := extractCookieDecorator(d)
+		if c.Name == "" {
+			continue
+		}
+		params = append(params, param{
+			name:        c.Name,
+			in:          "cookie",
+			required:    c.Required,
+			description: c.Description,
+			schema:      &TypeExpr{Kind: "reference", Name: "string"},
+		})
+	}
 	if len(params) == 0 {
 		return
 	}
@@ -332,6 +352,75 @@ func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, 
 		b.WriteString(indent + "    schema:\n")
 		b.WriteString(r.renderSchema(p.schema, len(indent)+6))
 	}
+}
+
+// CookieDecorator is the parsed shape of a single @cookie(...) decorator.
+// Read-side fields (Name, Required, Description) feed OpenAPI parameter
+// emission. Write-side fields (HttpOnly, Secure, SameSite, MaxAge, Path,
+// Domain) are baked into the generated Set<Name> helpers in the consuming
+// Go package and never appear in OpenAPI.
+type CookieDecorator struct {
+	Name        string
+	Required    bool
+	Description string
+	HttpOnly    bool
+	Secure      bool
+	SameSite    string // "Lax", "Strict", "None", or "" (omit)
+	MaxAge      string // raw lexeme; emitted verbatim into Go source
+	Path        string
+	Domain      string
+}
+
+// HasWriteAttrs reports whether the decorator declares any Set-time security
+// or scoping attribute. When true, the generator emits a typed Set<Name>
+// helper for this cookie.
+func (c CookieDecorator) HasWriteAttrs() bool {
+	return c.HttpOnly || c.Secure || c.SameSite != "" || c.MaxAge != "" || c.Path != "" || c.Domain != ""
+}
+
+// extractCookieDecorator pulls supported fields out of a @cookie decorator.
+// Accepts a positional string for name or a `name:` kwarg. Unknown kwargs
+// are silently ignored (open-vocabulary surface).
+func extractCookieDecorator(d Decorator) CookieDecorator {
+	out := CookieDecorator{}
+	if len(d.Args) > 0 && d.Args[0].Kind == "string" {
+		out.Name = d.Args[0].Value
+	}
+	for _, kw := range d.Kwargs {
+		switch kw.Name {
+		case "name":
+			if kw.Arg.Kind == "string" {
+				out.Name = kw.Arg.Value
+			}
+		case "required":
+			out.Required = kw.Arg.Kind == "bool" && kw.Arg.Value == "true"
+		case "description":
+			if kw.Arg.Kind == "string" {
+				out.Description = kw.Arg.Value
+			}
+		case "httpOnly":
+			out.HttpOnly = kw.Arg.Kind == "bool" && kw.Arg.Value == "true"
+		case "secure":
+			out.Secure = kw.Arg.Kind == "bool" && kw.Arg.Value == "true"
+		case "sameSite":
+			if kw.Arg.Kind == "string" {
+				out.SameSite = kw.Arg.Value
+			}
+		case "maxAge":
+			if kw.Arg.Kind == "number" {
+				out.MaxAge = kw.Arg.Value
+			}
+		case "path":
+			if kw.Arg.Kind == "string" {
+				out.Path = kw.Arg.Value
+			}
+		case "domain":
+			if kw.Arg.Kind == "string" {
+				out.Domain = kw.Arg.Value
+			}
+		}
+	}
+	return out
 }
 
 // headerDecorator is the parsed shape of a single @header(...) decorator.
