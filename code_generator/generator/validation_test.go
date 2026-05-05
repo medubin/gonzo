@@ -53,6 +53,48 @@ server S { Get GET /r returns(R) }
 	assert.Contains(t, out, "maximum: 100")
 }
 
+func TestExample_EmittedInOpenAPI(t *testing.T) {
+	api, err := generator.NewParser(`
+type R {
+  @example("alice_2024")
+  required Username string
+
+  @example(42)
+  Count int32
+
+  @example(true)
+  Verified bool
+}
+server S { Get GET /r returns(R) }
+`).Parse()
+	require.NoError(t, err)
+	out, err := generator.RenderOpenAPI(api, "T")
+	require.NoError(t, err)
+
+	assert.Contains(t, out, "example: alice_2024")
+	assert.Contains(t, out, "example: 42")
+	assert.Contains(t, out, "example: true")
+}
+
+func TestExample_SkippedOnRefFields(t *testing.T) {
+	// Same $ref-skip rule as @validation: keep the spec valid even though
+	// 3.1 technically allows example next to $ref.
+	api, err := generator.NewParser(`
+type Email string
+type R {
+  @example("alice@example.com")
+  required Addr Email
+}
+server S { Get GET /r returns(R) }
+`).Parse()
+	require.NoError(t, err)
+	out, err := generator.RenderOpenAPI(api, "T")
+	require.NoError(t, err)
+	addrIdx := strings.Index(out, "Addr:")
+	require.True(t, addrIdx > 0)
+	assert.NotContains(t, out[addrIdx:addrIdx+200], "example:")
+}
+
 func TestValidation_OpenAPISkipsConstraintsOnRefFields(t *testing.T) {
 	// `format: email` on a field whose type renders as a $ref must be
 	// dropped, since OpenAPI 3.1 forbids most keywords alongside $ref.

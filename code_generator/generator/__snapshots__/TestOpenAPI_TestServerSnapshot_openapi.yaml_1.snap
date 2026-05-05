@@ -391,12 +391,14 @@ components:
           minLength: 3
           maxLength: 32
           pattern: ^[a-z0-9_]+$
+          example: alice_2024
         Email:
           $ref: '#/components/schemas/Email'
         Password:
           type: string
           minLength: 8
           maxLength: 128
+          example: hunter2hunter2
         Role:
           $ref: '#/components/schemas/UserRole'
         Profile:

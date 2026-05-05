@@ -60,7 +60,7 @@
    "comments": [
     {
      "content": "Servers contain endpoints. \nEach endpoint is defined as a name, verb url, optional body and optional returns",
-     "line": 123,
+     "line": 125,
      "type": "multi"
     }
    ],
@@ -69,12 +69,12 @@
      "comments": [
       {
        "content": "Endpoints can contain url parameters, which can be any primitive type or enum",
-       "line": 127,
+       "line": 129,
        "type": "single"
       },
       {
        "content": "GET endpoints do not contain a body",
-       "line": 128,
+       "line": 130,
        "type": "single"
       }
      ],
@@ -100,12 +100,12 @@
      "comments": [
       {
        "content": "All other urls can contain a body",
-       "line": 131,
+       "line": 133,
        "type": "single"
       },
       {
        "content": "body and return always refer to a struct type",
-       "line": 132,
+       "line": 134,
        "type": "single"
       }
      ],
@@ -130,7 +130,7 @@
          "value": "bearer"
         }
        ],
-       "line": 134,
+       "line": 136,
        "name": "auth"
       }
      ],
@@ -161,7 +161,7 @@
          "value": "bearer"
         }
        ],
-       "line": 136,
+       "line": 138,
        "name": "auth"
       }
      ],
@@ -202,7 +202,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 140,
+       "line": 142,
        "type": "single"
       }
      ],
@@ -240,7 +240,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 143,
+       "line": 145,
        "name": "deprecated"
       }
      ],
@@ -266,7 +266,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 146,
+       "line": 148,
        "type": "single"
       }
      ],
@@ -322,7 +322,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 165,
+     "line": 167,
      "type": "single"
     }
    ],
@@ -795,6 +795,16 @@
        ],
        "line": 86,
        "name": "validation"
+      },
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "alice_2024"
+        }
+       ],
+       "line": 87,
+       "name": "example"
       }
      ],
      "name": "Username",
@@ -816,7 +826,7 @@
          "name": "format"
         }
        ],
-       "line": 88,
+       "line": 89,
        "name": "validation"
       }
      ],
@@ -846,8 +856,18 @@
          "name": "maxLength"
         }
        ],
-       "line": 90,
+       "line": 91,
        "name": "validation"
+      },
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "hunter2hunter2"
+        }
+       ],
+       "line": 92,
+       "name": "example"
       }
      ],
      "name": "Password",

@@ -491,6 +491,25 @@ There is no parser-side check that constraints match the field type — putting 
 
 When a field's type renders as an OpenAPI `$ref` (i.e., a named non-primitive type), validation keywords are dropped from the spec to avoid producing an invalid document. The Go/TS runtime checks still fire — only the spec is lossy in that case.
 
+#### `@example(value)` (field-level)
+
+Attach a sample value to a field. Surfaces in the OpenAPI spec as `example: <value>` on the field schema, so explorers like Swagger UI / Redoc render runnable samples. Go and TS generators ignore it.
+
+```api
+type CreateUserRequest {
+  @example("alice_2024")
+  required Username string
+
+  @example(42)
+  Age int32
+
+  @example(true)
+  Verified bool
+}
+```
+
+The argument is a single positional string, number, or bool literal. Skipped from the spec when the field renders as a `$ref` (named non-primitive type), to keep the document conservative.
+
 #### `@deprecated` / `@deprecated("message")`
 
 Marks an endpoint as deprecated. The optional message is surfaced wherever the host language has a convention:

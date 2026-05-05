@@ -498,6 +498,30 @@ func renderValidationConstraints(f *FieldDef, indent int) string {
 	return b.String()
 }
 
+// renderExample emits `example: <value>` for the first @example decorator on
+// the field, if any. Skipped when the field renders as a $ref (same
+// reasoning as renderValidationConstraints — keep the spec valid even though
+// 3.1 technically allows it).
+func renderExample(f *FieldDef, indent int) string {
+	if rendersAsRef(f.Type) {
+		return ""
+	}
+	for _, d := range f.Decorators {
+		if d.Name != "example" || len(d.Args) == 0 {
+			continue
+		}
+		arg := d.Args[0]
+		pad := strings.Repeat(" ", indent)
+		switch arg.Kind {
+		case "string":
+			return pad + "example: " + yamlQuote(arg.Value) + "\n"
+		case "number", "bool":
+			return pad + "example: " + arg.Value + "\n"
+		}
+	}
+	return ""
+}
+
 // rendersAsRef reports whether the type expression would emit `$ref: ...` in
 // the generated schema. References to primitives render inline as
 // `type: string` etc., so they are not refs for this purpose.
@@ -523,6 +547,7 @@ func (r *openapiRenderer) renderStructBody(fields []FieldDef, indent int) string
 		b.WriteString(pad + "  " + yamlQuote(f.Name) + ":\n")
 		b.WriteString(r.renderSchema(f.Type, indent+4))
 		b.WriteString(renderValidationConstraints(&f, indent+4))
+		b.WriteString(renderExample(&f, indent+4))
 		if f.Required {
 			required = append(required, f.Name)
 		}

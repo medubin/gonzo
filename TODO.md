@@ -36,7 +36,7 @@
 
 - [ ] **OpenAPI multi-status responses** — Every endpoint declares a single 200/204 plus a `default` error. Allow declaring additional response codes per endpoint (e.g. 201 Created, 404 Not Found) in the `.api` language and emit each.
 
-- [ ] **OpenAPI examples** — `requestBody` / `responses` schemas have no `example` or `examples`. Add a way to attach example payloads to types or endpoints so the spec renders runnable samples in API explorers.
+- [x] **OpenAPI examples** — Field-level `@example(value)` decorator emits `example:` on the field schema. Accepts string/number/bool literal. Skipped on `$ref` fields to keep the spec conservatively valid.
 
 - [ ] **OpenAPI request/response headers** — Depends on the broader header-definition TODO. Once headers are first-class in the `.api` language, surface them as `parameters: { in: header }` and per-response `headers:` blocks in the spec.
 
@@ -57,7 +57,7 @@
 - [x] **Unguarded type assertion in `GetTypedParamsFromContext`** — [url/utils.go:36](runtime/url/utils.go#L36)
   `ctx.Value(ParamKey{}).(map[string]string)` panics if the context holds a wrong type. Add a two-value assertion with an `!ok` guard.
 
-- [ ] **Silent parameter conversion failure** — [url/utils.go:103](runtime/url/utils.go#L103)
+- [x] **Silent parameter conversion failure** — [url/utils.go:103](runtime/url/utils.go#L103) Conversion failures now log a warning (`gonzo: param "X": cannot convert "abc" to int32; field left at zero value`) instead of dropping the failure entirely. Field still ends up at zero value for backwards compatibility.
   When a query/path param can't be converted to the target type (e.g. `"abc"` → `int`), the field is silently set to its zero value. Should at minimum log a warning.
 
 - [x] **Inconsistent JSON encoding error handling** — [router/router.go:96](runtime/router/router.go#L96) vs [handle/handle.go:63](runtime/handle/handle.go#L63)

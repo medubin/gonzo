@@ -2,6 +2,7 @@ package url
 
 import (
 	"context"
+	"log"
 	"net/url"
 	"reflect"
 	"regexp"
@@ -98,8 +99,13 @@ func setFieldsFromValues(structPtr interface{}, values url.Values, tagName strin
 		}
 		if isSliceField(field.Type()) {
 			setSliceField(field, raw)
-		} else {
-			setFieldValue(field, raw[0])
+		} else if !setFieldValue(field, raw[0]) {
+			// Conversion failure used to silently leave the field at its
+			// zero value, which made misformatted query/path params
+			// indistinguishable from missing ones. Log a warning so the
+			// failure is at least observable; the field still ends up zero
+			// for backwards compatibility.
+			log.Printf("gonzo: param %q: cannot convert %q to %s; field left at zero value", m.tag, raw[0], field.Type())
 		}
 	}
 }
@@ -145,29 +151,35 @@ func setFieldsFromMap(structPtr interface{}, paramMap map[string]string, tagName
 	v := reflect.ValueOf(structPtr).Elem()
 	for _, m := range getFieldMeta(v.Type(), tagName) {
 		if value, exists := paramMap[m.tag]; exists {
-			setFieldValue(v.Field(m.index), value)
+			if !setFieldValue(v.Field(m.index), value) {
+				log.Printf("gonzo: param %q: cannot convert %q to %s; field left at zero value", m.tag, value, v.Field(m.index).Type())
+			}
 		}
 	}
 }
 
-// setFieldValue sets a struct field value from a string, handling type conversion
-func setFieldValue(field reflect.Value, value string) {
+// setFieldValue sets a struct field value from a string, handling type
+// conversion. Returns true on success; false when the field can't be set or
+// the value can't be parsed into the field's type. On failure the field is
+// left at its zero value, matching pre-existing behavior.
+func setFieldValue(field reflect.Value, value string) bool {
 	if !field.CanSet() {
-		return
+		return false
 	}
-	
+
 	fieldType := field.Type()
-	
+
 	// Handle pointer types
 	if fieldType.Kind() == reflect.Ptr {
 		elemType := fieldType.Elem()
 		newValue := reflect.New(elemType)
 		if setScalarValue(newValue.Elem(), value) {
 			field.Set(newValue)
+			return true
 		}
-	} else {
-		setScalarValue(field, value)
+		return false
 	}
+	return setScalarValue(field, value)
 }
 
 // setScalarValue sets a non-pointer field value from a string
