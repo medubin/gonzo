@@ -109,6 +109,44 @@
        "type": "single"
       }
      ],
+     "decorators": [
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "X-Tenant-Id"
+        }
+       ],
+       "kwargs": [
+        {
+         "arg": {
+          "kind": "bool",
+          "value": "true"
+         },
+         "name": "required"
+        },
+        {
+         "arg": {
+          "kind": "string",
+          "value": "Tenant identifier"
+         },
+         "name": "description"
+        }
+       ],
+       "line": 135,
+       "name": "header"
+      },
+      {
+       "args": [
+        {
+         "kind": "string",
+         "value": "Idempotency-Key"
+        }
+       ],
+       "line": 136,
+       "name": "header"
+      }
+     ],
      "method": "POST",
      "name": "CreateUser",
      "path": "/users",
@@ -130,7 +168,7 @@
          "value": "bearer"
         }
        ],
-       "line": 136,
+       "line": 138,
        "name": "auth"
       }
      ],
@@ -161,7 +199,7 @@
          "value": "bearer"
         }
        ],
-       "line": 138,
+       "line": 140,
        "name": "auth"
       }
      ],
@@ -202,7 +240,7 @@
      "comments": [
       {
        "content": "Endpoints can take a struct of parameters",
-       "line": 142,
+       "line": 144,
        "type": "single"
       }
      ],
@@ -240,7 +278,7 @@
          "value": "use SearchUsers instead"
         }
        ],
-       "line": 145,
+       "line": 147,
        "name": "deprecated"
       }
      ],
@@ -266,7 +304,7 @@
      "comments": [
       {
        "content": "HEAD and OPTIONS support metadata-style operations like existence checks and CORS preflight",
-       "line": 148,
+       "line": 150,
        "type": "single"
       }
      ],
@@ -322,7 +360,7 @@
    "comments": [
     {
      "content": "multiple servers can be defined in a single file",
-     "line": 167,
+     "line": 169,
      "type": "single"
     }
    ],

@@ -10,7 +10,7 @@
 
 - [x] **API versioning** — URL-based versioning is composed from `group` (path prefix) plus namespaced `import` (per-version types). See "API Versioning" in `API_SPEC.md`. Remaining gaps are tracked separately: per-version package layout (file splitting TODO), deprecation signaling (deprecation markers TODO), and header/content-negotiation versioning (header definitions TODO).
 
-- [ ] **Request/response header definitions** — Add syntax for specifying required or custom request/response headers as part of an endpoint definition. Currently headers can only be handled through middleware with no type-safe contract.
+- [x] **Request/response header definitions** — Endpoint-level `@header(name, required: bool, description: string)` decorator. Documents request headers in OpenAPI and makes them reachable from server middleware via `RouteInfo.Decorators` for enforcement. Decided against typed handler-signature plumbing after triage — most headers (`X-Request-Id`, tenant IDs, ETags, idempotency keys) are middleware concerns, not handler concerns; type safety in handlers buys very little. Response headers and multi-value headers remain out of scope (will pair with the OpenAPI multi-status TODO).
 
 - [x] **HEAD and OPTIONS HTTP methods** — The parser only recognizes GET, POST, PUT, DELETE, and PATCH. HEAD and OPTIONS are standard HTTP methods with practical uses (health checks, CORS preflight) and should be supported.
 
@@ -38,7 +38,7 @@
 
 - [x] **OpenAPI examples** — Field-level `@example(value)` decorator emits `example:` on the field schema. Accepts string/number/bool literal. Skipped on `$ref` fields to keep the spec conservatively valid.
 
-- [ ] **OpenAPI request/response headers** — Depends on the broader header-definition TODO. Once headers are first-class in the `.api` language, surface them as `parameters: { in: header }` and per-response `headers:` blocks in the spec.
+- [ ] **OpenAPI response headers** — Request-side is done: `@header(...)` decorators emit `parameters: { in: header }` entries on each operation. Response headers (per-status `headers:` blocks) remain — they are coupled to per-status response declarations and will land alongside the multi-status responses TODO.
 
 - [x] **OpenAPI info block** — Added an `info { ... }` block to the `.api` language with title, version, description, contact, and license fields. The OpenAPI generator now populates the spec's `info` object from it; the CLI `-package` arg is the title fallback. Version/contact/license are content of the API and belong next to the routes — putting them in the language rather than CLI flags keeps any tool that reads the `.api` file alone fully informed.
 

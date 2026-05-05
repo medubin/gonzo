@@ -53,6 +53,7 @@ func StartUserService(s UserService, r *router.Router) error {
 		Server:       "UserService",
 		RequiresBody: true,
 		IsMultipart:  false,
+		Decorators:   []types.Decorator{{Name: "header", Args: []types.DecoratorArg{{Kind: "string", Value: "X-Tenant-Id"}}, Kwargs: map[string]types.DecoratorArg{"required": {Kind: "bool", Value: "true"}, "description": {Kind: "string", Value: "Tenant identifier"}}}, {Name: "header", Args: []types.DecoratorArg{{Kind: "string", Value: "Idempotency-Key"}}}},
 	}); err != nil {
 		return err
 	}

@@ -269,10 +269,11 @@ func (r *openapiRenderer) collectAuthSchemes() []string {
 
 func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, indent string) {
 	type param struct {
-		name     string
-		in       string
-		required bool
-		schema   *TypeExpr
+		name        string
+		in          string
+		required    bool
+		description string
+		schema      *TypeExpr
 	}
 	var params []param
 	for _, p := range ep.PathParams {
@@ -295,6 +296,26 @@ func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, 
 			})
 		}
 	}
+	// `@header` decorators on the endpoint each become an `in: header`
+	// parameter. Schema defaults to string (the common case); a future kwarg
+	// can extend that. Multiple `@header(...)` lines stack and emit one
+	// entry each, in source order.
+	for _, d := range ep.Decorators {
+		if d.Name != "header" {
+			continue
+		}
+		h := extractHeaderDecorator(d)
+		if h.name == "" {
+			continue
+		}
+		params = append(params, param{
+			name:        h.name,
+			in:          "header",
+			required:    h.required,
+			description: h.description,
+			schema:      &TypeExpr{Kind: "reference", Name: "string"},
+		})
+	}
 	if len(params) == 0 {
 		return
 	}
@@ -305,9 +326,47 @@ func (r *openapiRenderer) renderParameters(b *strings.Builder, ep *EndpointDef, 
 		if p.required {
 			b.WriteString(indent + "    required: true\n")
 		}
+		if p.description != "" {
+			b.WriteString(indent + "    description: " + yamlQuote(p.description) + "\n")
+		}
 		b.WriteString(indent + "    schema:\n")
 		b.WriteString(r.renderSchema(p.schema, len(indent)+6))
 	}
+}
+
+// headerDecorator is the parsed shape of a single @header(...) decorator.
+type headerDecorator struct {
+	name        string
+	required    bool
+	description string
+}
+
+// extractHeaderDecorator pulls the supported fields out of a @header
+// decorator. Accepts either a positional string as the header name or a
+// `name:` kwarg; recognized kwargs are `required` (bool) and `description`
+// (string). Unknown kwargs are silently ignored — the decorator surface is
+// open-vocabulary, so a future user adding `type:` or `example:` won't
+// break parsing.
+func extractHeaderDecorator(d Decorator) headerDecorator {
+	out := headerDecorator{}
+	if len(d.Args) > 0 && d.Args[0].Kind == "string" {
+		out.name = d.Args[0].Value
+	}
+	for _, kw := range d.Kwargs {
+		switch kw.Name {
+		case "name":
+			if kw.Arg.Kind == "string" {
+				out.name = kw.Arg.Value
+			}
+		case "required":
+			out.required = kw.Arg.Kind == "bool" && kw.Arg.Value == "true"
+		case "description":
+			if kw.Arg.Kind == "string" {
+				out.description = kw.Arg.Value
+			}
+		}
+	}
+	return out
 }
 
 func (r *openapiRenderer) renderRequestBody(b *strings.Builder, ep *EndpointDef, indent string) {

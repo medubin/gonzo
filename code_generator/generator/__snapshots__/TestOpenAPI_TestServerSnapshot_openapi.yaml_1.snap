@@ -141,6 +141,17 @@ paths:
       tags:
         - UserService
       operationId: CreateUser
+      parameters:
+        - name: X-Tenant-Id
+          in: header
+          required: true
+          description: Tenant identifier
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
       requestBody:
         required: true
         content:

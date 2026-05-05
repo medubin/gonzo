@@ -132,6 +132,8 @@ server UserService {
   
   // All other urls can contain a body
   // body and return always refer to a struct type
+  @header("X-Tenant-Id", required: true, description: "Tenant identifier")
+  @header("Idempotency-Key")
   CreateUser POST /users body(CreateUserRequest) returns(User)
   @auth("bearer")
   UpdateUser PUT /users/{id UserID} body(UpdateUserRequest) returns(User)

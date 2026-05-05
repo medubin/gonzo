@@ -491,6 +491,51 @@ There is no parser-side check that constraints match the field type — putting 
 
 When a field's type renders as an OpenAPI `$ref` (i.e., a named non-primitive type), validation keywords are dropped from the spec to avoid producing an invalid document. The Go/TS runtime checks still fire — only the spec is lossy in that case.
 
+#### `@header(name, required: bool, description: string)` (endpoint-level)
+
+Document a request header. The decorator surfaces in OpenAPI as a `parameters: { in: header }` entry and is reachable from server middleware via `RouteInfo.Decorators`.
+
+```api
+server UserService {
+  @header("X-Tenant-Id", required: true, description: "Tenant identifier")
+  @header("Idempotency-Key")
+  CreateUser POST /users body(CreateUserRequest) returns(User)
+}
+```
+
+**Args:**
+
+- Positional first arg (or `name:` kwarg) — header name. Required.
+- `required: true` — emit `required: true` in OpenAPI; useful for client tooling and human readers.
+- `description: "..."` — emit a description in OpenAPI.
+
+**Why a documentation decorator and not typed handler arguments?** Most "interesting" headers (`X-Request-Id`, `X-Tenant-Id`, ETags, `Idempotency-Key`) are middleware concerns and shouldn't enter the handler signature at all. The remaining handler-relevant cases are rare, and the work is "string comparison and HTTP-status decisions" where typed access buys very little. The actual gap was OpenAPI documentation and middleware-readable contracts; both are solved cheaply with this decorator.
+
+**Enforcement is opt-in via middleware.** The generator does not validate the presence of declared headers; it just makes them visible. To require them in code, write a middleware that walks `RouteInfo.Decorators`:
+
+```go
+func RequireHeaders(next handle.Handler) handle.Handler {
+    return func(req handle.Request) handle.Response {
+        for _, d := range req.RouteInfo().Decorators {
+            if d.Name != "header" {
+                continue
+            }
+            // First positional arg is the header name; check `required` kwarg.
+            var required bool
+            for _, kw := range d.Kwargs {
+                if kw.Name == "required" && kw.Arg.Value == "true" {
+                    required = true
+                }
+            }
+            if required && len(d.Args) > 0 && req.Header(d.Args[0].Value) == "" {
+                return gerrors.MissingArgumentError("missing required header " + d.Args[0].Value)
+            }
+        }
+        return next(req)
+    }
+}
+```
+
 #### `@example(value)` (field-level)
 
 Attach a sample value to a field. Surfaces in the OpenAPI spec as `example: <value>` on the field schema, so explorers like Swagger UI / Redoc render runnable samples. Go and TS generators ignore it.
