@@ -177,6 +177,13 @@ type TemplateEndpoint struct {
 	DecoratorsLiteral  string // Go-literal source for `[]types.Decorator{...}`, or "" if no decorators
 }
 
+// NeedsTypesImport reports whether the generated endpoint file references
+// the parent types package — true when the endpoint has a body, return type,
+// query parameters, or path parameters (which produce a {Name}Url type).
+func (te TemplateEndpoint) NeedsTypesImport() bool {
+	return te.HasBody || te.HasReturn || te.HasParams || len(te.PathParams) > 0
+}
+
 // RequiresBody determines if this endpoint requires a request body
 func (te *TemplateEndpoint) RequiresBody() bool {
 	// Body is required if:

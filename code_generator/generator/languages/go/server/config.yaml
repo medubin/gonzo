@@ -197,8 +197,8 @@ templates:
 
     import (
     {{range .Settings.EndpointImports}}	"{{.}}"
-    {{end}}	{{.PackageName}} "{{.TypesPackage}}"
-    )
+    {{end}}{{if .Endpoint.NeedsTypesImport}}	{{.PackageName}} "{{.TypesPackage}}"
+    {{end}})
 
     {{if .Endpoint.Comments}}{{formatComments .Endpoint.Comments}}
     {{end}}// {{.Endpoint.Method}} {{.Endpoint.Path}}
