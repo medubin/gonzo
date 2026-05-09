@@ -229,6 +229,68 @@ func TestRouter_ServeHTTP_PanicRecovery(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func TestRouter_ServeHTTP_PanicHandler_InvokedWithRequestAndStack(t *testing.T) {
+	rtr := &router.Router{}
+
+	var (
+		gotRecovered any
+		gotStack     []byte
+		gotMethod    string
+		gotPath      string
+		called       bool
+	)
+	rtr.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered any, stack []byte) {
+		called = true
+		gotRecovered = recovered
+		gotStack = stack
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+	}
+
+	rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+		panic("boom")
+	}, newRouteInfo("GET", "/panic"))
+
+	req := httptest.NewRequest("GET", "/panic", nil)
+	w := httptest.NewRecorder()
+	assert.NotPanics(t, func() { rtr.ServeHTTP(w, req) })
+
+	assert.True(t, called, "PanicHandler should have been invoked")
+	assert.Equal(t, "boom", gotRecovered)
+	assert.NotEmpty(t, gotStack, "stack trace should be non-empty")
+	assert.Equal(t, "GET", gotMethod)
+	assert.Equal(t, "/panic", gotPath)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestRouter_ServeHTTP_PanicHandler_500ReturnedRegardless(t *testing.T) {
+	t.Run("with handler", func(t *testing.T) {
+		rtr := &router.Router{
+			PanicHandler: func(w http.ResponseWriter, r *http.Request, recovered any, stack []byte) {},
+		}
+		rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+			panic("x")
+		}, newRouteInfo("GET", "/p"))
+
+		req := httptest.NewRequest("GET", "/p", nil)
+		w := httptest.NewRecorder()
+		rtr.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("without handler", func(t *testing.T) {
+		rtr := &router.Router{}
+		rtr.Route(func(w http.ResponseWriter, r *http.Request) {
+			panic("x")
+		}, newRouteInfo("GET", "/p"))
+
+		req := httptest.NewRequest("GET", "/p", nil)
+		w := httptest.NewRecorder()
+		assert.NotPanics(t, func() { rtr.ServeHTTP(w, req) })
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
 func TestRouter_ServeHTTP_MiddlewareReceivesBody(t *testing.T) {
 	rtr := &router.Router{}
 

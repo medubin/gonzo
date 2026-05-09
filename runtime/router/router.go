@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"sort"
 
 	"github.com/medubin/gonzo/runtime/cookies"
@@ -20,6 +21,13 @@ import (
 type Router struct {
 	routes     []RouteEntry
 	middleware []middleware.Middleware
+
+	// PanicHandler is invoked when a handler or middleware panics. The router
+	// still writes a 500 response itself; this hook is for observability only
+	// (log the panic, ship to Sentry, increment a metric, whatever). The
+	// stack argument is the result of debug.Stack() at the recover point.
+	// If nil, the router falls back to logging via the standard log package.
+	PanicHandler func(w http.ResponseWriter, r *http.Request, recovered any, stack []byte)
 }
 
 func (rtr *Router) Route(handlerFunc http.HandlerFunc, info *types.RouteInfo) error {
@@ -125,9 +133,14 @@ func (rtr *Router) writeMiddlewareResponse(w http.ResponseWriter, resp *middlewa
 
 func (rtr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
-		if r := recover(); r != nil {
-			log.Println("panic: ", r) // Log the error
-			gerrors.JSONError(w, fmt.Errorf("panic: %v", r))
+		if rec := recover(); rec != nil {
+			stack := debug.Stack()
+			if rtr.PanicHandler != nil {
+				rtr.PanicHandler(w, r, rec, stack)
+			} else {
+				log.Println("panic: ", rec)
+			}
+			gerrors.JSONError(w, fmt.Errorf("panic: %v", rec))
 		}
 	}()
 
